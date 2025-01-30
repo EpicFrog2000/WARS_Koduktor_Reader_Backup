@@ -1,0 +1,14 @@
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\KonduktorReader.exe
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\KonduktorReader.deps.json
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\KonduktorReader.runtimeconfig.json
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\KonduktorReader.dll
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\KonduktorReader.pdb
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.GeneratedMSBuildEditorConfig.editorconfig
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.AssemblyInfoInputs.cache
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.AssemblyInfo.cs
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.csproj.CoreCompileInputs.cache
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.dll
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\refint\KonduktorReader.dll
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.pdb
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\KonduktorReader.genruntimeconfig.cache
+E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\ref\KonduktorReader.dll
