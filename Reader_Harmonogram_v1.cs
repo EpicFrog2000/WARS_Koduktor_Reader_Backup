@@ -1,5 +1,5 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.Data.SqlClient;
 
 namespace Konduktor_Reader
 {
@@ -7,15 +7,15 @@ namespace Konduktor_Reader
     {
         public class Godzina_Pracy
         {
-            public int Dzien = 0;
+            public  int Dzien = 0;
             public TimeSpan Godzina_Rozpoczecia_Pracy = TimeSpan.Zero;
             public TimeSpan Godzina_Zakonczenia_Pracy = TimeSpan.Zero;
         }
-        public class Harmonogram
+        private class Harmonogram
         {
             public int Miesiac = 0;
             public int Rok = 0;
-            public Helper.Pracownik Konduktor = new();
+            public Pracownik Konduktor = new();
             public List<Relacja> Relacje = [];
             public void Set_Miesiac(string value)
             {
@@ -92,42 +92,11 @@ namespace Konduktor_Reader
                 Set_Rok(value);
             }
         }
-        private class Current_Position
-        {
-            private int col = 1;
-            private int row = 1;
-            public int Col
-            {
-                get => col;
-                set
-                {
-                    if (value < 1)
-                    {
-                        Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
-                        throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
-                    }
-                    col = value;
-                }
-            }
-            public int Row
-            {
-                get => row;
-                set
-                {
-                    if (value < 1)
-                    {
-                        Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
-                        throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
-                    }
-                    row = value;
-                }
-            }
-        }
         public static void Process_Zakladka(IXLWorksheet Zakladka)
         {
-            List<Current_Position> Pozcje_Harmonogramów_W_Zakladce = Find_Staring_Points_Harmonogramy(Zakladka);
+            List<Helper.Current_Position> Pozcje_Harmonogramów_W_Zakladce = Find_Staring_Points_Harmonogramy(Zakladka);
             List<Harmonogram> Harmonogramy = [];
-            foreach (Current_Position pozycja in Pozcje_Harmonogramów_W_Zakladce)
+            foreach (Helper.Current_Position pozycja in Pozcje_Harmonogramów_W_Zakladce)
             {
                 Harmonogram Harmonogram = new();
                 Get_Dane_Naglowka(ref Harmonogram, pozycja, Zakladka);
@@ -141,14 +110,14 @@ namespace Konduktor_Reader
                 foreach (Relacja Relacja in Harmonogram.Relacje)
                 {
                     Relacja.Insert_Relacja();
-                    Helper.Insert_Harmonogram(Harmonogram, Relacja)
-                    Helper.Insert_Harmonogram_Godziny(Harmonogram, Relacja);
+                    Insert_Harmonogram(Harmonogram, Relacja);
+                    Insert_Harmonogram_Godziny(Harmonogram, Relacja);
                 }
             }
         }
-        private static List<Current_Position> Find_Staring_Points_Harmonogramy(IXLWorksheet Zakladka)
+        private static List<Helper.Current_Position> Find_Staring_Points_Harmonogramy(IXLWorksheet Zakladka)
         {
-            List<Current_Position> starty = new();
+            List<Helper.Current_Position> starty = [];
             int Limiter = 1000;
             int counter = 0;
             foreach (IXLCell? cell in Zakladka.CellsUsed())
@@ -166,7 +135,7 @@ namespace Konduktor_Reader
                     }
                     if (cell.Value.ToString().Contains("Dzień miesiąca"))
                     {
-                        starty.Add(new Current_Position()
+                        starty.Add(new Helper.Current_Position()
                         {
                             Row = cell.Address.RowNumber,
                             Col = cell.Address.ColumnNumber
@@ -180,7 +149,7 @@ namespace Konduktor_Reader
             }
             return starty;
         }
-        private static void Get_Dane_Naglowka(ref Harmonogram Harmonogram, Current_Position pozycja, IXLWorksheet Zakladka)
+        private static void Get_Dane_Naglowka(ref Harmonogram Harmonogram, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             // Imie Nazwisko
             string dane = Zakladka.Cell(pozycja.Row - 2, pozycja.Col + 2).GetFormattedString().Trim().Replace("  ", " ");
@@ -210,7 +179,7 @@ namespace Konduktor_Reader
             }
 
         }
-        private static void Get_Relacje_Harmonogramu(ref Harmonogram Harmonogram, Current_Position pozycja, IXLWorksheet Zakladka)
+        private static void Get_Relacje_Harmonogramu(ref Harmonogram Harmonogram, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             int Obecny_Dzien = 0;
             string dane = Zakladka.Cell(pozycja.Row + 1, pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
@@ -236,8 +205,10 @@ namespace Konduktor_Reader
                 dane = Zakladka.Cell(pozycja.Row + Obecny_Dzien, pozycja.Col + 1).GetFormattedString().Trim().Replace("  ", " ");
                 if (!string.IsNullOrEmpty(dane))
                 {
-                    Relacja Relacja = new();
-                    Relacja.Numer_Relacji = dane;
+                    Relacja Relacja = new()
+                    {
+                        Numer_Relacji = dane
+                    };
                     dane = Zakladka.Cell(pozycja.Row + Obecny_Dzien, pozycja.Col + 2).GetFormattedString().Trim().Replace("  ", " ");
                     if (!Helper.Try_Get_Type_From_String<string>(dane, ref Relacja.Opis_Relacji_1))
                     {
@@ -300,6 +271,114 @@ namespace Konduktor_Reader
                 }
                 Obecny_Dzien++;
             }
+        }
+        private static int Get_Harmonogram_Id(Harmonogram Harmonogram, Relacja Relacja)
+        {
+            string query = @"select H_Id FROM Harmonogramy WHERE H_PraId = @Pra_Id AND H_RId = @Relacja_Id AND H_Rok = @Rok AND H_Miesiac = @Miesiac;";
+            using (SqlConnection connection = new(Program.Optima_Conection_String))
+            {
+                using (SqlCommand command = new(query, connection))
+                {
+                    int Relacja_Id = Relacja.Get_Relacja_Id();
+                    int Prac_Id = Harmonogram.Konduktor.Get_Pracownik_Id();
+                    command.Parameters.AddWithValue("@Pra_Id", Relacja_Id);
+                    command.Parameters.AddWithValue("@Relacja_Id", Prac_Id);
+                    command.Parameters.AddWithValue("@Rok", Harmonogram.Rok);
+                    command.Parameters.AddWithValue("@Miesiac", Harmonogram.Miesiac);
+                    connection.Open();
+                    object result = command.ExecuteScalar();
+                    if (result != null)
+                    {
+                        return Convert.ToInt32(result);
+                    }
+                    else
+                    {
+                        Program.error_logger.New_Custom_Error($"Nie ma takiego harmonogramu w bazie o danych Rok: {Harmonogram.Rok}, Miesiac: {Harmonogram.Miesiac}, Relacja_Id: {Relacja_Id}, Prac_Id: {Prac_Id}");
+                        throw new Exception(Program.error_logger.Get_Error_String());
+                    }
+                }
+            }
+        }
+        private static void Insert_Harmonogram(Harmonogram Harmonogram, Relacja Relacja)
+        {
+            try
+            {
+                Get_Harmonogram_Id(Harmonogram, Relacja);
+                return;
+            }
+            catch { }
+
+            string query = @"INSERT INTO Harmonogramy
+           (H_PraId
+           ,H_Miesiac
+           ,H_Rok
+           ,H_RId
+           ,H_Opis_1
+           ,H_Opis_2
+           ,H_Data_Mod
+           ,H_Os_Mod)
+     VALUES
+           (@Pra_Id
+           ,@Miesiac
+           ,@Rok
+           ,@Relacja_Id
+           ,@Opis_1
+           ,@Opis_2
+           ,@Data_Mod
+           ,@Os_Mod)";
+            using (SqlConnection connection = new(Program.Optima_Conection_String))
+            {
+                using (SqlCommand command = new(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Pra_Id", Harmonogram.Konduktor.Get_Pracownik_Id());
+                    command.Parameters.AddWithValue("@Miesiac", Harmonogram.Miesiac);
+                    command.Parameters.AddWithValue("@Rok", Harmonogram.Rok);
+                    command.Parameters.AddWithValue("@Rok", Relacja.Get_Relacja_Id());
+                    command.Parameters.AddWithValue("@Opis_1", "");
+                    command.Parameters.AddWithValue("@Opis_2", "");
+                    command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
+                    command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                    connection.Open();
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+        private static void Insert_Harmonogram_Godziny(Harmonogram Harmonogram, Relacja Relacja)
+        {
+            string query = @"INSERT INTO Harmonogramy_Godziny
+           (HG_HId
+           ,HG_Dzien
+           ,HG_Godzina_Rozpoczecia_Pracy
+           ,HG_Godzina_Zakonczenia_Pracy
+           ,HG_Data_Mod
+           ,HG_Os_Mod)
+     VALUES
+           (@Harmonogram_Id
+           ,@Dzien
+           ,@Godzina_Rozpoczecia_Pracy
+           ,@Godzina_Zakonczenia_Pracy
+           ,@Data_Mod
+           ,@Os_Mod)";
+            using (SqlConnection connection = new(Program.Optima_Conection_String))
+            {
+                foreach (var relacja in Relacja.Godziny_Pracy)
+                {
+                    using (SqlCommand command = new(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Harmonogram_Id", Get_Harmonogram_Id(Harmonogram, Relacja));
+                        command.Parameters.AddWithValue("@Dzien", relacja.Dzien);
+                        command.Parameters.AddWithValue("@Godzina_Rozpoczecia_Pracy", relacja.Godzina_Rozpoczecia_Pracy);
+                        command.Parameters.AddWithValue("@Godzina_Zakonczenia_Pracy", relacja.Godzina_Zakonczenia_Pracy);
+                        command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
+                        command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                        connection.Open();
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+        private static void Insert_Harmonogram_Nieobecnosci()
+        {
         }
     }
 }

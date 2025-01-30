@@ -16,9 +16,9 @@ namespace Konduktor_Reader
         public int Get_Relacja_Id()
         {
             string query = @"select R_Id from Relacje where  R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
-            using (SqlConnection connection = new SqlConnection(Program.Optima_Conection_String))
+            using (SqlConnection connection = new(Program.Optima_Conection_String))
             {
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (SqlCommand command = new(query, connection))
                 {
                     command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
                     command.Parameters.AddWithValue("@R_Typ", "");
@@ -60,9 +60,9 @@ namespace Konduktor_Reader
            ,@Godz_Rozpoczecia
            ,@Data_Mod
            ,@Os_Mod)";
-                using (SqlConnection connection = new SqlConnection(Program.Optima_Conection_String))
+                using (SqlConnection connection = new(Program.Optima_Conection_String))
                 {
-                    using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlCommand command = new(query, connection))
                     {
                         command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
                         command.Parameters.AddWithValue("@R_Typ", "");

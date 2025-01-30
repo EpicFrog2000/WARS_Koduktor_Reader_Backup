@@ -3,24 +3,28 @@
   "WorkspaceRootPath": "E:\\ITEGER\\Praca\\KonduktorReader\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\reader_tabela_stawek_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:reader_tabela_stawek_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\reader_karta_ewidencji_konduktora_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:reader_karta_ewidencji_konduktora_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\pracownik.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:pracownik.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\reader_harmonogram_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:reader_harmonogram_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\config.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:config.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\relacja.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:relacja.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\error_logger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:error_logger.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\reader_tabela_stawek_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:reader_tabela_stawek_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\helper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -34,70 +38,20 @@
       "DocumentGroups": [
         {
           "DockedWidth": 80,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Reader_Tabela_Stawek_v1.cs",
-              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Tabela_Stawek_v1.cs",
-              "RelativeDocumentMoniker": "Reader_Tabela_Stawek_v1.cs",
-              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Tabela_Stawek_v1.cs",
-              "RelativeToolTip": "Reader_Tabela_Stawek_v1.cs",
-              "ViewState": "AgIAAHYAAAAAAAAAAAAAwIwAAAAqAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-30T07:07:40.3Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Config.cs",
-              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Config.cs",
-              "RelativeDocumentMoniker": "Config.cs",
-              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Config.cs",
-              "RelativeToolTip": "Config.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAB5AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-28T12:45:41.547Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Reader_Harmonogram_v1.cs",
-              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Harmonogram_v1.cs",
-              "RelativeDocumentMoniker": "Reader_Harmonogram_v1.cs",
-              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Harmonogram_v1.cs",
-              "RelativeToolTip": "Reader_Harmonogram_v1.cs",
-              "ViewState": "AgIAAKkAAAAAAAAAAAAmwNoAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-28T09:15:46.84Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Helper.cs",
-              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Helper.cs",
-              "RelativeDocumentMoniker": "Helper.cs",
-              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Helper.cs",
-              "RelativeToolTip": "Helper.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAAADAAAAAhAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-24T14:47:58.446Z"
-            },
-            {
-              "$type": "Document",
               "DocumentIndex": 4,
-              "Title": "Error_Logger.cs",
-              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Error_Logger.cs",
-              "RelativeDocumentMoniker": "Error_Logger.cs",
-              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Error_Logger.cs",
-              "RelativeToolTip": "Error_Logger.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAApAAAAAAAAAA==",
+              "Title": "Relacja.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Relacja.cs",
+              "RelativeDocumentMoniker": "Relacja.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Relacja.cs",
+              "RelativeToolTip": "Relacja.cs",
+              "ViewState": "AgIAAAgAAAAAAAAAAADwvxcAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-24T14:36:34.45Z"
+              "WhenOpened": "2025-01-30T14:23:28.329Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -107,9 +61,74 @@
               "RelativeDocumentMoniker": "Program.cs",
               "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Program.cs",
               "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAABXAAAAAAAAAA==",
+              "ViewState": "AgIAAKQAAAAAAAAAAAAswLQAAAAcAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-24T14:33:26.607Z",
+              "WhenOpened": "2025-01-30T13:47:47.188Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "RelativeDocumentMoniker": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "RelativeToolTip": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAACQAAABAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T13:47:45.405Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Reader_Tabela_Stawek_v1.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Tabela_Stawek_v1.cs",
+              "RelativeDocumentMoniker": "Reader_Tabela_Stawek_v1.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Tabela_Stawek_v1.cs",
+              "RelativeToolTip": "Reader_Tabela_Stawek_v1.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwCYAAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T13:46:57.956Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Helper.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Helper.cs",
+              "RelativeDocumentMoniker": "Helper.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Helper.cs",
+              "RelativeToolTip": "Helper.cs",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAjwCAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T13:43:28.376Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Reader_Harmonogram_v1.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Harmonogram_v1.cs",
+              "RelativeDocumentMoniker": "Reader_Harmonogram_v1.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Harmonogram_v1.cs",
+              "RelativeToolTip": "Reader_Harmonogram_v1.cs",
+              "ViewState": "AgIAAGsBAAAAAAAAAADwv3sBAAAcAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T13:43:23.673Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Pracownik.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Pracownik.cs",
+              "RelativeDocumentMoniker": "Pracownik.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Pracownik.cs",
+              "RelativeToolTip": "Pracownik.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-01-30T13:43:19.517Z",
               "EditorCaption": ""
             }
           ]

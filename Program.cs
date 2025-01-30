@@ -1,14 +1,10 @@
-﻿using System.Linq;
-using ClosedXML;
-using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-
+﻿using ClosedXML.Excel;
 
 namespace Konduktor_Reader{
     static class Program
     {
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
-        private static string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\"];
+        private static readonly string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\"];
         public static readonly DateTime baseDate = new(1899, 12, 30); // Do zapytan sql
         public static string Optima_Conection_String = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;\r\n";
 
@@ -95,6 +91,16 @@ namespace Konduktor_Reader{
                                         Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
                                     }
                                     break;
+                                case 3:
+                                    try
+                                    {
+                                        Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka);
+                                    }
+                                    catch
+                                    {
+                                        Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
+                                    }
+                                    break;
                                 default:
                                     Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
                                     error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
@@ -120,6 +126,12 @@ namespace Konduktor_Reader{
             {
                 return 2;
             }
+
+            Cell_Value = Worksheet.Cell(1, 1).GetFormattedString().Trim().Replace("  ", " ");
+            if (Cell_Value.Contains(" KARTA EWIDENCJI CZASU PRACY"))
+            {
+                return 3;
+            }
             return 0;
         }
         private static void Usun_Ukryte_Karty(XLWorkbook workbook)
@@ -142,7 +154,7 @@ namespace Konduktor_Reader{
         {
             try
             {
-                using (XLWorkbook workbook = new XLWorkbook(File_Path))
+                using (XLWorkbook workbook = new(File_Path))
                 {
                     DateTime lastWriteTime = File.GetLastWriteTime(File_Path);
 
@@ -162,7 +174,7 @@ namespace Konduktor_Reader{
         }
         private static bool Is_File_Valid(string filePath)
         {
-            string[] validExtensions = { ".xlsb", ".xlsx", ".xls" };
+            string[] validExtensions = [".xlsb", ".xlsx", ".xls"];
             string fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
             return validExtensions.Contains(fileExtension);
         }
@@ -188,7 +200,7 @@ namespace Konduktor_Reader{
                     string newSheetName = sheetToCopy.Name;
                     if (newSheetName.Length > 31)
                     {
-                        newSheetName = newSheetName.Substring(0, 31);
+                        newSheetName = newSheetName[..31];
                     }
                     using (XLWorkbook workbook = File.Exists(newFilePath) ? new XLWorkbook(newFilePath) : new XLWorkbook())
                     {
@@ -211,11 +223,11 @@ namespace Konduktor_Reader{
         private static void Check_Base_Dirs(string path)
         {
             string[] directories =
-            {
+            [
                 Path.Combine(path, "Errors"),
                 Path.Combine(path, "Bad_Files"),
                 Path.Combine(path, "Processed_Files")
-            };
+            ];
             string errorFilePath = Path.Combine(directories[0], "Errors.txt");
             error_logger.Current_Processed_Files_Folder = directories[2];
             error_logger.Current_Bad_Files_Folder = directories[1];

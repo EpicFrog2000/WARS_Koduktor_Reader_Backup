@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using Microsoft.Data.SqlClient;
 
 namespace Konduktor_Reader
 {
@@ -28,82 +29,17 @@ namespace Konduktor_Reader
             public decimal Całkowite = 0;
             public decimal Dodatek_Wyjazdowy = 0;
         }
-        private class Current_Position
-        {
-            private int col = 1;
-            private int row = 1;
-            public int Col
-            {
-                get => col;
-                set
-                {
-                    if (value < 1)
-                    {
-                        Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
-                        throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
-                    }
-                    col = value;
-                }
-            }
-            public int Row
-            {
-                get => row;
-                set
-                {
-                    if (value < 1)
-                    {
-                        Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
-                        throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
-                    }
-                    row = value;
-                }
-            }
-        }
         public class Tabela_Stawek
         {
             public Czas_Relacji Czas_Relacji = new();
             public Wynagrodzenie Wynagrodzenie = new();
         }
-        private static List<Current_Position> Find_Staring_Points_Tabele_Stawek(IXLWorksheet Zakladka)
-        {
-            List<Current_Position> starty = new();
-            int Limiter = 1000;
-            int counter = 0;
-            foreach (IXLCell? cell in Zakladka.CellsUsed())
-            {
-                try
-                {
-                    if (cell.HasFormula && !cell.Address.ToString()!.Equals(cell.FormulaA1))
-                    {
-                        counter++;
-                        if (counter > Limiter)
-                        {
-                            break;
-                        }
-                        continue;
-                    }
-                    if (cell.Value.ToString().Contains("Tabela Stawek"))
-                    {
-                        starty.Add(new Current_Position()
-                        {
-                            Row = cell.Address.RowNumber,
-                            Col = cell.Address.ColumnNumber
-                        });
-                    }
-                }
-                catch
-                {
-                    continue;
-                }
-            }
-            return starty;
-        }
         public static void Process_Zakladka(IXLWorksheet Zakladka)
         {
-            Current_Position[] Pozcje_Tabeli_Stawek_W_Zakladce = Find_Staring_Points_Tabele_Stawek(Zakladka).ToArray();
+            List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Staring_Points_Tabele_Stawek(Zakladka, "Tabela Stawek");
             List<Relacja> Relacje = [];
 
-            foreach (Current_Position pozycja in Pozcje_Tabeli_Stawek_W_Zakladce)
+            foreach (Helper.Current_Position pozycja in Pozcje_Tabeli_Stawek_W_Zakladce)
             {
                 Relacja Relacja = new();
                 Get_Dane(ref Relacja, pozycja, Zakladka);
@@ -113,10 +49,10 @@ namespace Konduktor_Reader
             foreach(Relacja Relacja in Relacje)
             {
                 Relacja.Insert_Relacja();
-                Helper.Insert_Stawka(Relacja);
+                Insert_Stawka(Relacja);
             }
         }
-        private static void Get_Dane(ref Relacja Relacja, Current_Position pozycja, IXLWorksheet Zakladka)
+        private static void Get_Dane(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             pozycja.Col -= 2;
             pozycja.Row += 7;
@@ -134,7 +70,7 @@ namespace Konduktor_Reader
                 pozycja.Row += offest - 1;
             }
         }
-        private static void Get_Relacja(ref Relacja Relacja, Current_Position pozycja, IXLWorksheet Zakladka)
+        private static void Get_Relacja(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             string dane = Zakladka.Cell(pozycja.Row, pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
             if (string.IsNullOrEmpty(dane))
@@ -159,7 +95,7 @@ namespace Konduktor_Reader
             }
             Relacja.Opis_Relacji_2 = dane;
         }
-        private static int Get_Dane_Relacji(ref Relacja Relacja, Current_Position pozycja, IXLWorksheet Zakladka)
+        private static int Get_Dane_Relacji(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             int offset = 0;
             while (true)
@@ -296,7 +232,67 @@ namespace Konduktor_Reader
             }
             return offset;
         }
+        private static void Insert_Stawka(Relacja Relacja)
+        {
+            string query = @"INSERT INTO dbo.Stawki
+                            (S_RId
+                            ,S_Calkowity
+                            ,S_Ogolem
+                            ,S_Podstawowe
+                            ,S_Godz_Nadliczbowe_50
+                            ,S_Godz_Nadliczbowe_100
+                            ,S_Czas_Odpoczynku
+                            ,S_Podstawowa_Stawka_Godzinowa
+                            ,S_Wynagrodzenie_Ryczaltowe_Podstawowe
+                            ,S_Wynagrodzenie_Ryczaltowe_Za_Godz_Nadlicznowe
+                            ,S_Wynagrodzenie_Ryczaltowe_Dodatek_Za_Prace_W_Nocy
+                            ,S_Wynagrodzenie_Ryczaltowe_Calkowite
+                            ,S_Dodatek_Wyjazdowy
+                            ,S_Data_Mod
+                            ,S_Os_Mod)
+                        VALUES
+                            (@RId
+                            ,@Calkowity
+                            ,@Ogolem
+                            ,@Podstawowe
+                            ,@Godz_Nadliczbowe_50
+                            ,@Godz_Nadliczbowe_100
+                            ,@Czas_Odpoczynku
+                            ,@Podstawowa_Stawka_Godzinowa
+                            ,@Wynagrodzenie_Ryczaltowe_Podstawowe
+                            ,@Wynagrodzenie_Ryczaltowe_Za_Godz_Nadlicznowe
+                            ,@Wynagrodzenie_Ryczaltowe_Dodatek_Za_Prace_W_Nocy
+                            ,@Wynagrodzenie_Ryczaltowe_Calkowite
+                            ,@Dodatek_Wyjazdowy
+                            ,@Data_Mod
+                            ,@Os_Mod)";
+            using (SqlConnection connection = new(Program.Optima_Conection_String))
+            {
+                foreach (var System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
+                {
+                    using (SqlCommand command = new(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@RId", Relacja.Get_Relacja_Id());
+                        command.Parameters.AddWithValue("@Calkowity", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Calkowity);
+                        command.Parameters.AddWithValue("@Ogolem", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Ogolem);
+                        command.Parameters.AddWithValue("@Podstawowe", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Podstawowe);
+                        command.Parameters.AddWithValue("@Godz_Nadliczbowe_50", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Godziny_Nadliczbowe_50);
+                        command.Parameters.AddWithValue("@Godz_Nadliczbowe_100", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Godziny_Nadliczbowe_100);
+                        command.Parameters.AddWithValue("@Czas_Odpoczynku", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Czas_Odpoczynku);
+                        command.Parameters.AddWithValue("@Podstawowa_Stawka_Godzinowa", System_Obsługi_Relacji.Tabela_Stawek.Czas_Relacji.Calkowity);
+                        command.Parameters.AddWithValue("@Wynagrodzenie_Ryczaltowe_Podstawowe", System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe);
+                        command.Parameters.AddWithValue("@Wynagrodzenie_Ryczaltowe_Za_Godz_Nadlicznowe", System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe);
+                        command.Parameters.AddWithValue("@Wynagrodzenie_Ryczaltowe_Dodatek_Za_Prace_W_Nocy", System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy);
+                        command.Parameters.AddWithValue("@Wynagrodzenie_Ryczaltowe_Calkowite", System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Całkowite);
+                        command.Parameters.AddWithValue("@Dodatek_Wyjazdowy", System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy);
+                        command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
+                        command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                        connection.Open();
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+
     }
 }
-
-
