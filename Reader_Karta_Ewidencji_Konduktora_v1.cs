@@ -545,108 +545,117 @@ namespace Konduktor_Reader
         }
         private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, int Typ_Pracy, string Numer_Relacji)
         {
-            DateTime godzOdDate = Program.baseDate + startPodstawowy;
-            DateTime godzDoDate = Program.baseDate + endPodstawowy;
-            bool duplicate = false;
-            int IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
-            using (SqlCommand cmd = new SqlCommand(@"
-    IF EXISTS (
-        SELECT 1
-        FROM cdn.PracPracaDni P
-        INNER JOIN CDN.PracPracaDniGodz G ON P.PPR_PprId = G.PGR_PprId
-        WHERE P.PPR_PraId = @PRI_PraId 
-          AND P.PPR_Data = @DataInsert
-          AND G.PGR_OdGodziny = @GodzOdDate
-          AND G.PGR_DoGodziny = @GodzDoDate
-          AND G.PGR_Strefa = @TypPracy
-    )
-    BEGIN
-        SELECT 1;
-    END
-    ELSE
-    BEGIN
-        SELECT 0;
-    END", connection, transaction))
+            try
             {
-                cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                cmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
-                cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                cmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
-                duplicate = (int)cmd.ExecuteScalar() == 1;
-            }
-
-            if (!duplicate)
-            {
-                if (godzOdDate != godzDoDate)
+                DateTime godzOdDate = Program.baseDate + startPodstawowy;
+                DateTime godzDoDate = Program.baseDate + endPodstawowy;
+                bool duplicate = false;
+                int IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
+                using (SqlCommand cmd = new SqlCommand(@"
+        IF EXISTS (
+            SELECT 1
+            FROM cdn.PracPracaDni P
+            INNER JOIN CDN.PracPracaDniGodz G ON P.PPR_PprId = G.PGR_PprId
+            WHERE P.PPR_PraId = @PRI_PraId 
+              AND P.PPR_Data = @DataInsert
+              AND G.PGR_OdGodziny = @GodzOdDate
+              AND G.PGR_DoGodziny = @GodzDoDate
+              AND G.PGR_Strefa = @TypPracy
+        )
+        BEGIN
+            SELECT 1;
+        END
+        ELSE
+        BEGIN
+            SELECT 0;
+        END", connection, transaction))
                 {
-                    string sqlQueryInsertObecnościDoOptimy = @"
-DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
-IF @EXISTSDZIEN is null
-BEGIN
-    BEGIN TRY
-        INSERT INTO [CDN].[PracPracaDni]
-                    ([PPR_PraId]
-                    ,[PPR_Data]
-                    ,[PPR_TS_Zal]
-                    ,[PPR_TS_Mod]
-                    ,[PPR_OpeModKod]
-                    ,[PPR_OpeModNazwisko]
-                    ,[PPR_OpeZalKod]
-                    ,[PPR_OpeZalNazwisko]
-                    ,[PPR_Zrodlo]
-                    ,[PPR_Relacja])
-                VALUES
-                    (@PRI_PraId
-                    ,@DataInsert
-                    ,@DataMod
-                    ,@DataMod
-                    ,@ImieMod
-                    ,@NazwiskoMod
-                    ,@ImieMod
-                    ,@NazwiskoMod
-                    ,0
-                    ,@Numer_Relacji)
-    END TRY
-    BEGIN CATCH
-    END CATCH
-END
-
-INSERT INTO CDN.PracPracaDniGodz
-		(PGR_PprId,
-		PGR_Lp,
-		PGR_OdGodziny,
-		PGR_DoGodziny,
-		PGR_Strefa,
-		PGR_DzlId,
-		PGR_PrjId,
-		PGR_Uwagi,
-		PGR_OdbNadg)
-	VALUES
-		((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
-		1,
-		@GodzOdDate,
-		@GodzDoDate,
-		@TypPracy,
-		1,
-		1,
-		'',
-		1);";
-                    using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertObecnościDoOptimy, connection, transaction))
-                    {
-                        insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                        insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                        insertCmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
-                        insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                        insertCmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
-                        insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20));
-                        insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50));
-                        insertCmd.Parameters.AddWithValue("@DataMod", Program.error_logger.Last_Mod_Time);
-                        insertCmd.Parameters.AddWithValue("@Numer_Relacji", Numer_Relacji);
-                        insertCmd.ExecuteScalar();
-                    }
+                    cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                    cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                    cmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
+                    cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                    cmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
+                    duplicate = (int)cmd.ExecuteScalar() == 1;
                 }
-                return 1;
+
+                if (!duplicate)
+                {
+                    if (godzOdDate != godzDoDate)
+                    {
+                        string sqlQueryInsertObecnościDoOptimy = @"
+    DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
+    IF @EXISTSDZIEN is null
+    BEGIN
+        BEGIN TRY
+            INSERT INTO [CDN].[PracPracaDni]
+                        ([PPR_PraId]
+                        ,[PPR_Data]
+                        ,[PPR_TS_Zal]
+                        ,[PPR_TS_Mod]
+                        ,[PPR_OpeModKod]
+                        ,[PPR_OpeModNazwisko]
+                        ,[PPR_OpeZalKod]
+                        ,[PPR_OpeZalNazwisko]
+                        ,[PPR_Zrodlo]
+                        ,[PPR_Relacja])
+                    VALUES
+                        (@PRI_PraId
+                        ,@DataInsert
+                        ,@DataMod
+                        ,@DataMod
+                        ,@ImieMod
+                        ,@NazwiskoMod
+                        ,@ImieMod
+                        ,@NazwiskoMod
+                        ,0
+                        ,@Numer_Relacji)
+        END TRY
+        BEGIN CATCH
+        END CATCH
+    END
+
+    INSERT INTO CDN.PracPracaDniGodz
+		    (PGR_PprId,
+		    PGR_Lp,
+		    PGR_OdGodziny,
+		    PGR_DoGodziny,
+		    PGR_Strefa,
+		    PGR_DzlId,
+		    PGR_PrjId,
+		    PGR_Uwagi,
+		    PGR_OdbNadg)
+	    VALUES
+		    ((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
+		    1,
+		    @GodzOdDate,
+		    @GodzDoDate,
+		    @TypPracy,
+		    1,
+		    1,
+		    '',
+		    1);";
+                        using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertObecnościDoOptimy, connection, transaction))
+                        {
+                            insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                            insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                            insertCmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
+                            insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                            insertCmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
+                            insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20));
+                            insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50));
+                            insertCmd.Parameters.AddWithValue("@DataMod", Program.error_logger.Last_Mod_Time);
+                            insertCmd.Parameters.AddWithValue("@Numer_Relacji", Numer_Relacji);
+                            insertCmd.ExecuteScalar();
+                        }
+                    }
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                transaction.Rollback();
+                throw;
             }
             return 0;
         }
@@ -1055,7 +1064,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error($"{ex.Message}");
+                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
                 transaction.Rollback();
                 throw;
             }

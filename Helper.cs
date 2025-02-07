@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using Microsoft.Data.SqlClient;
 
 namespace Konduktor_Reader
 {
@@ -140,6 +141,22 @@ namespace Konduktor_Reader
                 return string.Empty;
             }
             return value.Length > maxLength ? value.Substring(0, maxLength) : value;
+        }
+        public static bool Valid_SQLConnection_String(string Connection_String)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(Connection_String))
+                {
+                    connection.Open();
+                    connection.Close();
+                    return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

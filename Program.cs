@@ -1,31 +1,52 @@
 ﻿using ClosedXML.Excel;
 using ExcelDataReader;
 using System.Data;
+using System.Runtime.InteropServices;
+using System.ServiceProcess;
+using System.Threading;
 
 namespace Konduktor_Reader{
     static class Program
     {
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
-        private static string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\", "C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Ewidencja 2\\"];
+        public static string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\", "C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Ewidencja 2\\"];
         public static readonly DateTime baseDate = new(1899, 12, 30); // Do zapytan sql
         public static string Optima_Conection_String = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
         public static bool Clear_Logs_On_Program_Restart = false;
         public static bool Clear_Processed_Files_On_Restart = false;
         public static bool Clear_Bad_Files_On_Restart = false;
         public static bool Move_Files_To_Processed_Folder = false;
+        public static bool Show_Console_Window = false;
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetConsoleWindow();
 
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        const int SW_HIDE = 0;
         public static int Main()
         {
             // TODO DODAC PETLE WHILE TRUE
+
             Config Config = new();
             Config.GetConfigFromFile();
-            // SET VARIABLES TO THOSE FROM CONFIG
-            Optima_Conection_String = Config.Optima_Conection_String;
-            Path_To_Folders_With_Files = Config.Files_Folders.ToArray();
-            Clear_Logs_On_Program_Restart = Config.Clear_Logs_On_Program_Restart;
-            Clear_Processed_Files_On_Restart = Config.Clear_Processed_Files_On_Restart;
-            Clear_Bad_Files_On_Restart = Config.Clear_Bad_Files_On_Restart;
-            Move_Files_To_Processed_Folder = Config.Move_Files_To_Processed_Folder;
+            Config.Set_Program_Config();
+            Console.WriteLine(Show_Console_Window);
+            if (!Show_Console_Window)
+            {
+                IntPtr hWnd = GetConsoleWindow();
+                if (hWnd != IntPtr.Zero)
+                {
+                    ShowWindow(hWnd, SW_HIDE);
+                }
+            }
+
+            if (!Helper.Valid_SQLConnection_String(Optima_Conection_String))
+            {
+                Console.WriteLine($"Invalid connection string: {Optima_Conection_String}");
+                Console.ReadLine();
+                return -1;
+            }
 
             if (Path_To_Folders_With_Files.Length < 1)
             {
@@ -136,6 +157,8 @@ namespace Konduktor_Reader{
                     MoveFile(File_Path, 0);
                 }
             }
+            Console.WriteLine("Kliknij aby zakończyć...");
+            Console.ReadLine();
             return 0;
         }
         private static int Get_Typ_Zakladki(IXLWorksheet Worksheet)

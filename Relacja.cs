@@ -67,39 +67,46 @@ namespace Konduktor_Reader
             }
             catch
             {
-                string query = @"INSERT INTO Relacje
-           (R_Nazwa
-           ,R_Typ
-           ,R_Opis_1
-           ,R_Opis_2
-           ,R_Godz_Rozpoczecia
-           ,R_Data_Mod
-           ,R_Os_Mod)
-     VALUES
-           (@Nazwa_Relacji
-           ,@Typ_Relacji
-           ,@Opis_1
-           ,@Opis_2
-           ,@Godz_Rozpoczecia
-           ,@Data_Mod
-           ,@Os_Mod)";
-                using (SqlConnection connection = new(Program.Optima_Conection_String))
+                try
                 {
-                    using (SqlCommand command = new(query, connection))
+                    string query = @"INSERT INTO Relacje
+               (R_Nazwa
+               ,R_Typ
+               ,R_Opis_1
+               ,R_Opis_2
+               ,R_Godz_Rozpoczecia
+               ,R_Data_Mod
+               ,R_Os_Mod)
+         VALUES
+               (@Nazwa_Relacji
+               ,@Typ_Relacji
+               ,@Opis_1
+               ,@Opis_2
+               ,@Godz_Rozpoczecia
+               ,@Data_Mod
+               ,@Os_Mod)";
+                    using (SqlConnection connection = new(Program.Optima_Conection_String))
                     {
-                        command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
-                        command.Parameters.AddWithValue("@R_Typ", "");
-                        command.Parameters.AddWithValue("@Opis_1", Opis_Relacji_1);
-                        command.Parameters.AddWithValue("@Opis_2", Opis_Relacji_2);
-                        command.Parameters.AddWithValue("@Godz_Rozpoczecia", Godzina_Rozpoczecia_Relacji);
-                        command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
-                        command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
-                        connection.Open();
-                        command.ExecuteNonQuery();
+                        using (SqlCommand command = new(query, connection))
+                        {
+                            command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
+                            command.Parameters.AddWithValue("@R_Typ", "");
+                            command.Parameters.AddWithValue("@Opis_1", Opis_Relacji_1);
+                            command.Parameters.AddWithValue("@Opis_2", Opis_Relacji_2);
+                            command.Parameters.AddWithValue("@Godz_Rozpoczecia", Godzina_Rozpoczecia_Relacji);
+                            command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
+                            command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                            connection.Open();
+                            command.ExecuteNonQuery();
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                    throw new Exception(Program.error_logger.Get_Error_String());
+                }
             }
-
         }
         public void Insert_Relacja_Do_Optimy()
         {
@@ -109,35 +116,43 @@ namespace Konduktor_Reader
             }
             catch
             {
-                using (SqlConnection connection = new(Program.Optima_Conection_String))
+                try
                 {
-                    using (SqlCommand command = new(@"INSERT INTO CDN.Relacje
-           (R_Nazwa
-           ,R_Typ
-           ,R_Opis_1
-           ,R_Opis_2
-           ,R_Godz_Rozpoczecia
-           ,R_Data_Mod
-           ,R_Os_Mod)
-     VALUES
-           (@Nazwa_Relacji
-           ,@Typ_Relacji
-           ,@Opis_1
-           ,@Opis_2
-           ,@Godz_Rozpoczecia
-           ,@Data_Mod
-           ,@Os_Mod)", connection))
+                    using (SqlConnection connection = new(Program.Optima_Conection_String))
                     {
-                        command.Parameters.AddWithValue("@Nazwa_Relacji", Numer_Relacji);
-                        command.Parameters.AddWithValue("@Typ_Relacji", "");
-                        command.Parameters.AddWithValue("@Opis_1", Opis_Relacji_1);
-                        command.Parameters.AddWithValue("@Opis_2", Opis_Relacji_2);
-                        command.Parameters.AddWithValue("@Godz_Rozpoczecia", Godzina_Rozpoczecia_Relacji);
-                        command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
-                        command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
-                        connection.Open();
-                        command.ExecuteNonQuery();
+                        using (SqlCommand command = new(@"INSERT INTO CDN.Relacje
+               (R_Nazwa
+               ,R_Typ
+               ,R_Opis_1
+               ,R_Opis_2
+               ,R_Godz_Rozpoczecia
+               ,R_Data_Mod
+               ,R_Os_Mod)
+         VALUES
+               (@Nazwa_Relacji
+               ,@Typ_Relacji
+               ,@Opis_1
+               ,@Opis_2
+               ,@Godz_Rozpoczecia
+               ,@Data_Mod
+               ,@Os_Mod)", connection))
+                        {
+                            command.Parameters.AddWithValue("@Nazwa_Relacji", Numer_Relacji);
+                            command.Parameters.AddWithValue("@Typ_Relacji", "");
+                            command.Parameters.AddWithValue("@Opis_1", Opis_Relacji_1);
+                            command.Parameters.AddWithValue("@Opis_2", Opis_Relacji_2);
+                            command.Parameters.AddWithValue("@Godz_Rozpoczecia", Godzina_Rozpoczecia_Relacji);
+                            command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
+                            command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                            connection.Open();
+                            command.ExecuteNonQuery();
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                    throw new Exception(Program.error_logger.Get_Error_String());
                 }
             }
         }

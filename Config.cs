@@ -5,11 +5,12 @@ namespace Konduktor_Reader
     internal class Config
     {
         public List<string> Files_Folders { get; set; } = [Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files")];
-        public string Optima_Conection_String { get; set; } = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;\r\n";
+        public string Optima_Conection_String { get; set; } = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
         public bool Clear_Logs_On_Program_Restart { get; set; } = false;
         public bool Clear_Bad_Files_On_Restart { get; set; } = false;
         public bool Clear_Processed_Files_On_Restart { get; set; } = false;
         public bool Move_Files_To_Processed_Folder { get; set; } = false;
+        public bool Show_Console_Window { get; set; } = true;
         public void GetConfigFromFile()
         {
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.json");
@@ -23,7 +24,8 @@ namespace Konduktor_Reader
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
-                    Move_Files_To_Processed_Folder
+                    Move_Files_To_Processed_Folder,
+                    Show_Console_Window
                 };
                 File.WriteAllText(filePath, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -37,6 +39,7 @@ namespace Konduktor_Reader
                 Clear_Bad_Files_On_Restart = config.Clear_Bad_Files_On_Restart;
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
+                Show_Console_Window = config.Show_Console_Window;
             }
         }
         public void GetConfigFromFile(string Config_File_Path)
@@ -52,6 +55,7 @@ namespace Konduktor_Reader
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
+                    Show_Console_Window
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -65,6 +69,7 @@ namespace Konduktor_Reader
                 Clear_Bad_Files_On_Restart = config.Clear_Bad_Files_On_Restart;
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
+                Show_Console_Window = config.Show_Console_Window;
             }
         }
         public void Check_File()
@@ -80,7 +85,8 @@ namespace Konduktor_Reader
                     Clear_Logs_On_Program_Restart,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
-                    Move_Files_To_Processed_Folder
+                    Move_Files_To_Processed_Folder,
+                    Show_Console_Window
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -97,10 +103,22 @@ namespace Konduktor_Reader
                     Clear_Logs_On_Program_Restart,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
-                    Move_Files_To_Processed_Folder
+                    Move_Files_To_Processed_Folder,
+                    Show_Console_Window
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
+        }
+        public void Set_Program_Config()
+        {
+            // SET VARIABLES TO THOSE FROM CONFIG
+            Program.Optima_Conection_String = Optima_Conection_String;
+            Program.Path_To_Folders_With_Files = Files_Folders.ToArray();
+            Program.Clear_Logs_On_Program_Restart = Clear_Logs_On_Program_Restart;
+            Program.Clear_Processed_Files_On_Restart = Clear_Processed_Files_On_Restart;
+            Program.Clear_Bad_Files_On_Restart = Clear_Bad_Files_On_Restart;
+            Program.Move_Files_To_Processed_Folder = Move_Files_To_Processed_Folder;
+            Program.Show_Console_Window = Show_Console_Window;
         }
     }
 }
