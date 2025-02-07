@@ -1,0 +1,3 @@
+E:\ITEGER\Praca\KonduktorReader\bin\Release\net8.0\publish\win-x86\Konduktor_Reader.pdb
+E:\ITEGER\Praca\KonduktorReader\bin\Release\net8.0\publish\win-x86\Microsoft.Data.SqlClient.SNI.dll
+E:\ITEGER\Praca\KonduktorReader\bin\Release\net8.0\publish\win-x86\Konduktor_Reader.exe

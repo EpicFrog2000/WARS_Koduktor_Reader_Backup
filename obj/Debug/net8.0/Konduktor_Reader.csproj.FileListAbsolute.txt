@@ -70,3 +70,6 @@ E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.
 E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Diagnostics.EventLog.dll
 E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
 E:\ITEGER\Praca\KonduktorReader\obj\Debug\net8.0\Kondukto.12D92F3F.Up2Date
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\ExcelDataReader.dll
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\ExcelDataReader.DataSet.dll
+E:\ITEGER\Praca\KonduktorReader\bin\Debug\net8.0\Microsoft.Office.Interop.Excel.dll

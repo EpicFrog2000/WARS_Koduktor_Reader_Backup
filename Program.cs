@@ -1,21 +1,31 @@
 ﻿using ClosedXML.Excel;
+using ExcelDataReader;
+using System.Data;
 
 namespace Konduktor_Reader{
     static class Program
     {
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
-        private static readonly string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\"];
+        private static string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\", "C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Ewidencja 2\\"];
         public static readonly DateTime baseDate = new(1899, 12, 30); // Do zapytan sql
-        public static string Optima_Conection_String = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;\r\n";
+        public static string Optima_Conection_String = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
+        public static bool Clear_Logs_On_Program_Restart = false;
+        public static bool Clear_Processed_Files_On_Restart = false;
+        public static bool Clear_Bad_Files_On_Restart = false;
+        public static bool Move_Files_To_Processed_Folder = false;
 
         public static int Main()
         {
+            // TODO DODAC PETLE WHILE TRUE
             Config Config = new();
             Config.GetConfigFromFile();
             // SET VARIABLES TO THOSE FROM CONFIG
             Optima_Conection_String = Config.Optima_Conection_String;
-            // itd...
-
+            Path_To_Folders_With_Files = Config.Files_Folders.ToArray();
+            Clear_Logs_On_Program_Restart = Config.Clear_Logs_On_Program_Restart;
+            Clear_Processed_Files_On_Restart = Config.Clear_Processed_Files_On_Restart;
+            Clear_Bad_Files_On_Restart = Config.Clear_Bad_Files_On_Restart;
+            Move_Files_To_Processed_Folder = Config.Move_Files_To_Processed_Folder;
 
             if (Path_To_Folders_With_Files.Length < 1)
             {
@@ -40,26 +50,40 @@ namespace Konduktor_Reader{
 
                 Check_Base_Dirs(Folder_Path);
 
-                foreach (string File_Path in Files_Paths)
+                foreach (string filepath in Files_Paths)
                 {
+                    string File_Path = filepath;
                     Console.ForegroundColor = ConsoleColor.Blue;
                     Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
                     Console.ForegroundColor = ConsoleColor.White;
                     if (!Is_File_Valid(File_Path))
                     {
+                        //try
+                        //{
+                        //    Convert_To_Xlsx(File_Path, Path.Combine(Path.GetDirectoryName(File_Path)!, Path.GetFileNameWithoutExtension(File_Path) + ".xlsx"));
+                        //    File_Path = Path.Combine(Path.GetDirectoryName(File_Path)!, Path.GetFileNameWithoutExtension(File_Path) + ".xlsx");
+                        //}
+                        //catch
+                        //{
+                        //    MoveFile(File_Path, 1);
+                        //    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                        //    Console.WriteLine($"Program nie możę odczytać pliku {File_Path}");
+                        //    Console.ForegroundColor = ConsoleColor.White;
+                        //    continue;
+                        //}
+                        MoveFile(File_Path, 1);
                         Console.ForegroundColor = ConsoleColor.DarkYellow;
                         Console.WriteLine($"Program nie możę odczytać pliku {File_Path}");
                         Console.ForegroundColor = ConsoleColor.White;
                         continue;
                     }
-                    // TODO konwersja pliku na xlsx czy coś
                     error_logger.Nazwa_Pliku = File_Path;
                     (error_logger.Last_Mod_Osoba, error_logger.Last_Mod_Time) = Get_Metadane_Pliku(File_Path);
                     using (XLWorkbook Workbook = new(File_Path))
                     {
                         Usun_Ukryte_Karty(Workbook);
                         int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
-                        if(Ilosc_Zakladek_W_Workbook < 1)
+                        if (Ilosc_Zakladek_W_Workbook < 1)
                         {
                             continue;
                         }
@@ -94,6 +118,7 @@ namespace Konduktor_Reader{
                                 case 3:
                                     try
                                     {
+                                        Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook; // Czytanie tylko pierwszej zakłdki
                                         Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka);
                                     }
                                     catch
@@ -108,15 +133,15 @@ namespace Konduktor_Reader{
                             }
                         }
                     }
-                    //MoveFile(File_Path);
+                    MoveFile(File_Path, 0);
                 }
             }
             return 0;
         }
         private static int Get_Typ_Zakladki(IXLWorksheet Worksheet)
         {
-            string Cell_Value = Worksheet.Cell(3,5).GetFormattedString().Trim().Replace("  ", " ");
-            if(Cell_Value.Contains("Harmonogram pracy"))
+            string Cell_Value = Worksheet.Cell(3, 5).GetFormattedString().Trim().Replace("  ", " ");
+            if (Cell_Value.Contains("Harmonogram pracy"))
             {
                 return 1;
             }
@@ -128,7 +153,7 @@ namespace Konduktor_Reader{
             }
 
             Cell_Value = Worksheet.Cell(1, 1).GetFormattedString().Trim().Replace("  ", " ");
-            if (Cell_Value.Contains(" KARTA EWIDENCJI CZASU PRACY"))
+            if (Cell_Value.Contains("KARTA EWIDENCJI CZASU PRACY"))
             {
                 return 3;
             }
@@ -172,15 +197,39 @@ namespace Konduktor_Reader{
 
             }
         }
-        private static bool Is_File_Valid(string filePath)
+        private static bool Is_File_Valid(string File_Path)
         {
-            string[] validExtensions = [".xlsb", ".xlsx", ".xls"];
-            string fileExtension = Path.GetExtension(filePath).ToLowerInvariant();
+            try
+            {
+                XLWorkbook Workbook = new(File_Path);
+            }
+            catch
+            {
+                return false;
+            }
+            string[] validExtensions = [".xlsx", ".xls"];
+            string fileExtension = Path.GetExtension(File_Path).ToLowerInvariant();
             return validExtensions.Contains(fileExtension);
         }
-        private static void MoveFile(string filePath)
+        private static void MoveFile(string filePath, int option)
         {
-            string processedFilesFolder = error_logger.Current_Processed_Files_Folder;
+            if (!Move_Files_To_Processed_Folder)
+            {
+                return;
+            }
+            string processedFilesFolder = string.Empty;
+            switch (option)
+            {
+                case 0:
+                    processedFilesFolder = error_logger.Current_Processed_Files_Folder;
+                    break;
+                case 1:
+                    processedFilesFolder = error_logger.Current_Bad_Files_Folder;
+                    break;
+                default:
+                    processedFilesFolder = error_logger.Current_Processed_Files_Folder;
+                    break;
+            }
             Directory.CreateDirectory(processedFilesFolder);
             string destinationPath = Path.Combine(processedFilesFolder, Path.GetFileName(filePath));
             if (File.Exists(destinationPath))
@@ -239,10 +288,81 @@ namespace Konduktor_Reader{
                     Directory.CreateDirectory(dir);
                 }
             }
+
+            if (Clear_Logs_On_Program_Restart)
+            {
+                foreach (string file in Directory.GetFiles(directories[0]))
+                {
+                    File.Delete(file);
+                }
+            }
+            if (Clear_Bad_Files_On_Restart)
+            {
+                foreach (string file in Directory.GetFiles(directories[1]))
+                {
+                    File.Delete(file);
+                }
+            }
+            if (Clear_Processed_Files_On_Restart)
+            {
+                foreach (string file in Directory.GetFiles(directories[2]))
+                {
+                    File.Delete(file);
+                }
+            }
+
             if (!File.Exists(errorFilePath))
             {
                 File.Create(errorFilePath);
             }
+        }
+        public static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
+        {
+            // nwm dlaczego textwrap jest zawsze true. Jebać to jest wystarczająco dobre.
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            DataSet dataSet;
+            using (FileStream stream = File.Open(inputFilePath, FileMode.Open, FileAccess.Read))
+            using (IExcelDataReader reader = ExcelReaderFactory.CreateReader(stream))
+            {
+                ExcelDataSetConfiguration config = new()
+                {
+                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                    {
+                        UseHeaderRow = true
+                    }
+                };
+                dataSet = reader.AsDataSet(config);
+            }
+
+            using XLWorkbook workbook = new XLWorkbook();
+            foreach (System.Data.DataTable table in dataSet.Tables)
+            {
+                IXLWorksheet worksheet = workbook.Worksheets.Add(table.TableName);
+                for (int i = 0; i < table.Columns.Count; i++)
+                    worksheet.Cell(1, i + 1).Value = table.Columns[i].ColumnName;
+
+                for (int i = 0; i < table.Rows.Count; i++)
+                {
+                    for (int j = 0; j < table.Columns.Count; j++)
+                    {
+                        object value = table.Rows[i][j];
+
+                        if (value == DBNull.Value)
+                        {
+                            worksheet.Cell(i + 2, j + 1).Value = string.Empty;
+                        }
+                        else
+                        {
+                            worksheet.Cell(i + 2, j + 1).Value = value.ToString();
+                        }
+                    }
+                }
+            }
+            workbook.SaveAs(outputFilePath);
+            (string o, DateTime d) = Get_Metadane_Pliku(inputFilePath);
+            workbook.Properties.LastModifiedBy = o;
+            workbook.Properties.Modified = d;
+            workbook.SaveAs(outputFilePath);
         }
     }
 }

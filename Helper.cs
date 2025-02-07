@@ -38,7 +38,6 @@ namespace Konduktor_Reader
 
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)
         {
-            result = default!;
             if (string.IsNullOrEmpty(value))
             {
                 return false;
@@ -55,12 +54,24 @@ namespace Konduktor_Reader
                     result = (T)(object)Date_Time_Value;
                     return true;
                 }
+
+                if (typeof(T) == typeof(List<TimeSpan>) && TimeSpan.TryParse(value, out var timeSpanValueNew))
+                {
+                    if (result is List<TimeSpan> list)
+                    {
+                        list.Add(timeSpanValueNew);
+                        return true;
+                    }
+                }
+
                 var Converted_Value = Convert.ChangeType(value, typeof(T));
                 if (Converted_Value != null)
                 {
                     result = (T)Converted_Value;
                     return true;
                 }
+                
+
             }
             catch
             {
@@ -121,6 +132,14 @@ namespace Konduktor_Reader
                 }
             }
             return starty;
+        }
+        public static string Truncate(string value, int maxLength)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+            return value.Length > maxLength ? value.Substring(0, maxLength) : value;
         }
     }
 }
