@@ -1,0 +1,42 @@
+# Visual Studio
+.vs/
+
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.vscode
+*.cache
+*.ncb
+*.opendb
+*.ide
+
+# Logs
+*.log
+
+# Compiled files
+*.dll
+*.exe
+*.pdb
+*.mdb
+
+# NuGet
+*.nupkg
+.nuget/
+packages/
+project.lock.json
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Publish
+publish/
+
+# ASP.NET Core secrets
+appsettings.Development.json
+secrets.json
