@@ -10,7 +10,6 @@ namespace Konduktor_Reader
         public bool Clear_Bad_Files_On_Restart { get; set; } = false;
         public bool Clear_Processed_Files_On_Restart { get; set; } = false;
         public bool Move_Files_To_Processed_Folder { get; set; } = false;
-        public bool Show_Console_Window { get; set; } = true;
         public void GetConfigFromFile()
         {
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.json");
@@ -25,7 +24,6 @@ namespace Konduktor_Reader
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
-                    Show_Console_Window
                 };
                 File.WriteAllText(filePath, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -55,7 +53,6 @@ namespace Konduktor_Reader
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
-                    Show_Console_Window
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -86,7 +83,6 @@ namespace Konduktor_Reader
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Move_Files_To_Processed_Folder,
-                    Show_Console_Window
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -104,7 +100,6 @@ namespace Konduktor_Reader
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Move_Files_To_Processed_Folder,
-                    Show_Console_Window
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
@@ -118,7 +113,6 @@ namespace Konduktor_Reader
             Program.Clear_Processed_Files_On_Restart = Clear_Processed_Files_On_Restart;
             Program.Clear_Bad_Files_On_Restart = Clear_Bad_Files_On_Restart;
             Program.Move_Files_To_Processed_Folder = Move_Files_To_Processed_Folder;
-            Program.Show_Console_Window = Show_Console_Window;
         }
     }
 }

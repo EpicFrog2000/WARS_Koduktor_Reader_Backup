@@ -16,14 +16,6 @@ namespace Konduktor_Reader{
         public static bool Clear_Processed_Files_On_Restart = false;
         public static bool Clear_Bad_Files_On_Restart = false;
         public static bool Move_Files_To_Processed_Folder = false;
-        public static bool Show_Console_Window = false;
-        [DllImport("kernel32.dll")]
-        static extern IntPtr GetConsoleWindow();
-
-        [DllImport("user32.dll")]
-        static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-        const int SW_HIDE = 0;
         public static int Main()
         {
             // TODO DODAC PETLE WHILE TRUE
@@ -31,14 +23,6 @@ namespace Konduktor_Reader{
             Config Config = new();
             Config.GetConfigFromFile();
             Config.Set_Program_Config();
-            if (!Show_Console_Window)
-            {
-                IntPtr hWnd = GetConsoleWindow();
-                if (hWnd != IntPtr.Zero)
-                {
-                    ShowWindow(hWnd, SW_HIDE);
-                }
-            }
 
             if (!Helper.Valid_SQLConnection_String(Optima_Conection_String))
             {
