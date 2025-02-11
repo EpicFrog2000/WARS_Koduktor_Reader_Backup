@@ -57,6 +57,7 @@ namespace Konduktor_Reader
         {
             public Relacja Relacja = new();
             public List<Dane_Dnia> Dane_Dni_Relacji = [];
+
         }
         private class Dane_Dnia
         {
@@ -71,6 +72,89 @@ namespace Konduktor_Reader
             public decimal Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100 = 0;
             public string Absencja_Nazwa = string.Empty;
             public decimal Liczba_Godzin_Absencji = 0;
+            public void Uwzglednij_Nadgodziny_v2()
+            {
+                if (Godziny_Pracy_Do.Count == 0) return;
+
+
+                TimeSpan shiftEnd = Godziny_Pracy_Do[^1];
+
+                TimeSpan overtime50 = Liczba_Godzin_Nadliczbowych_50 > 0
+                    ? TimeSpan.FromHours((double)Liczba_Godzin_Nadliczbowych_50)
+                    : TimeSpan.FromHours((double)Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50);
+
+                TimeSpan overtime100 = Liczba_Godzin_Nadliczbowych_100 > 0
+                    ? TimeSpan.FromHours((double)Liczba_Godzin_Nadliczbowych_100)
+                    : TimeSpan.FromHours((double)Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100);
+
+                TimeSpan overtimeStart = shiftEnd - (overtime50 + overtime100);
+                if (overtimeStart < TimeSpan.Zero)
+                {
+                    overtimeStart = TimeSpan.FromHours(24) + overtimeStart;
+                }
+
+                List<TimeSpan> newGodziny_Pracy_Od = new List<TimeSpan>();
+                List<TimeSpan> newGodziny_Pracy_Do = new List<TimeSpan>();
+
+
+                for (int i = 0; i < Godziny_Pracy_Od.Count; i++)
+                {
+                    if (Godziny_Pracy_Do[i] == TimeSpan.Zero)
+                    {
+                        if (overtimeStart > Godziny_Pracy_Od[i] && overtimeStart > Godziny_Pracy_Do[i])
+                        {
+
+                            if (Godziny_Pracy_Od[i] != overtimeStart)
+                            {
+                                newGodziny_Pracy_Od.Add(Godziny_Pracy_Od[i]);
+                                newGodziny_Pracy_Do.Add(overtimeStart);
+
+                            }
+                            if (overtimeStart + overtime50 != overtimeStart)
+                            {
+                                newGodziny_Pracy_Od.Add(overtimeStart);
+                                newGodziny_Pracy_Do.Add(overtimeStart + overtime50);
+
+                            }
+
+                            newGodziny_Pracy_Od.Add(overtimeStart + overtime50);
+                            newGodziny_Pracy_Do.Add(shiftEnd);
+                            break;
+                        }
+                    }
+                    else if (Godziny_Pracy_Do[i] > overtimeStart)
+                    {
+                        if (Godziny_Pracy_Do[i] < Godziny_Pracy_Od[i])
+                        {
+                            newGodziny_Pracy_Od.Add(Godziny_Pracy_Od[i]);
+                            newGodziny_Pracy_Do.Add(TimeSpan.FromHours(24));
+                            newGodziny_Pracy_Od.Add(TimeSpan.Zero);
+                            newGodziny_Pracy_Do.Add(overtimeStart);
+                        }
+                        else
+                        {
+                            if (Godziny_Pracy_Od[i] != overtimeStart)
+                            {
+                                newGodziny_Pracy_Od.Add(Godziny_Pracy_Od[i]);
+                                newGodziny_Pracy_Do.Add(overtimeStart);
+                            }
+                        }
+                        if (overtimeStart + overtime50 != overtimeStart)
+                        {
+                            newGodziny_Pracy_Od.Add(overtimeStart);
+                            newGodziny_Pracy_Do.Add(overtimeStart + overtime50);
+                        }
+                        newGodziny_Pracy_Od.Add(overtimeStart + overtime50);
+                        newGodziny_Pracy_Do.Add(shiftEnd);
+                        break;
+                    }
+                    newGodziny_Pracy_Od.Add(Godziny_Pracy_Od[i]);
+                    newGodziny_Pracy_Do.Add(Godziny_Pracy_Do[i]);
+                }
+                Godziny_Pracy_Od = newGodziny_Pracy_Od;
+                Godziny_Pracy_Do = newGodziny_Pracy_Do;
+            }
+
         }
         private class Absencja
         {
@@ -144,7 +228,7 @@ namespace Konduktor_Reader
         public static void Process_Zakladka(IXLWorksheet Zakladka)
         {
             List<Karta_Ewidencji> Karty_Ewidencji = [];
-            List<Helper.Current_Position> Pozycje = Helper.Find_Staring_Points_Tabele_Stawek(Zakladka, "Dzień miesiąca");
+            List<Helper.Current_Position> Pozycje = Helper.Find_Staring_Points(Zakladka, "Dzień miesiąca");
             List<Prowizje> Prowizje = [];
             foreach (Helper.Current_Position Pozycja in Pozycje)
             {
@@ -263,6 +347,7 @@ namespace Konduktor_Reader
                             }
                         }
                     }
+
                     //godz pracy do
                     dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 5).GetFormattedString().Trim().Replace("  ", " ");
                     if (!string.IsNullOrEmpty(dane))
@@ -277,6 +362,7 @@ namespace Konduktor_Reader
                             }
                         }
                     }
+
                     //godz. odpoczynku od
                     dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 6).GetFormattedString().Trim().Replace("  ", " ");
                     if (!string.IsNullOrEmpty(dane))
@@ -412,96 +498,46 @@ namespace Konduktor_Reader
                 {
                     if (DateTime.TryParse($"{Karta_Ewidencji.Rok}-{Karta_Ewidencji.Miesiac:D2}-{Dane_Dnia.Dzien:D2}", out DateTime Data_Karty))
                     {
-                        double godzNadlPlatne50 = 0;
-                        double godzNadlPlatne100 = 0;
-                        if (Dane_Dnia.Liczba_Godzin_Nadliczbowych_50 == 0)
-                        {
-                            godzNadlPlatne50 = (double)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50;
-                        }
-                        else
-                        {
-                            godzNadlPlatne50 = (double)Dane_Dnia.Liczba_Godzin_Nadliczbowych_50;
-                        }
-                        if (Dane_Dnia.Liczba_Godzin_Nadliczbowych_100 == 0)
-                        {
-                            godzNadlPlatne100 = (double)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100;
-                        }
-                        else
-                        {
-                            godzNadlPlatne100 = (double)Dane_Dnia.Liczba_Godzin_Nadliczbowych_100;
-                        }
                         if (Dane_Dnia.Godziny_Pracy_Od.Count >= 1)
                         {
-                            for (int i = 0; i < Dane_Dnia.Godziny_Pracy_Od.Count - 1; i++)
+                            Dane_Dnia.Uwzglednij_Nadgodziny_v2();
+                            for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
-                                if (Dane_Dnia.Godziny_Pracy_Od[i] != TimeSpan.Zero || Dane_Dnia.Godziny_Pracy_Do[i] != TimeSpan.Zero)
-                                {
-                                    (TimeSpan startPodstawowy, TimeSpan endPodstawowy, TimeSpan startNadl50, TimeSpan endNadl50, TimeSpan startNadl100, TimeSpan endNadl100) = Oblicz_Czas_Z_Dodatkiem(Dane_Dnia.Godziny_Pracy_Od[i], Dane_Dnia.Godziny_Pracy_Do[i], godzNadlPlatne50, godzNadlPlatne100);
-                                    double czasPrzepracowany = 0;
-                                    if (Dane_Dnia.Godziny_Pracy_Do[i] < Dane_Dnia.Godziny_Pracy_Od[i])
-                                    {
-                                        czasPrzepracowany = (TimeSpan.FromHours(24) - Dane_Dnia.Godziny_Pracy_Od[i]).TotalHours + Dane_Dnia.Godziny_Pracy_Do[i].TotalHours;
-                                    }
-                                    else
-                                    {
-                                        czasPrzepracowany = (Dane_Dnia.Godziny_Pracy_Do[i] - Dane_Dnia.Godziny_Pracy_Od[i]).TotalHours;
-                                    }
-                                    double czasPodstawowy = czasPrzepracowany;
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startPodstawowy, endPodstawowy, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji); // 2 = czas PP
-                                }
-                            }
-                        
-                            {
-                                if (Dane_Dnia.Godziny_Pracy_Od[^1] != TimeSpan.Zero || Dane_Dnia.Godziny_Pracy_Do[^1] != TimeSpan.Zero)
-                                {
-                                    // na ostatnim elemencie
-                                    (TimeSpan startPodstawowy, TimeSpan endPodstawowy, TimeSpan startNadl50, TimeSpan endNadl50, TimeSpan startNadl100, TimeSpan endNadl100) = Oblicz_Czas_Z_Dodatkiem(Dane_Dnia.Godziny_Pracy_Od[^1], Dane_Dnia.Godziny_Pracy_Do[^1], godzNadlPlatne50, godzNadlPlatne100);
-                                    double czasPrzepracowany = 0;
-                                    if (Dane_Dnia.Godziny_Pracy_Do[^1] < Dane_Dnia.Godziny_Pracy_Od[^1])
-                                    {
-                                        czasPrzepracowany = (TimeSpan.FromHours(24) - Dane_Dnia.Godziny_Pracy_Od[^1]).TotalHours + Dane_Dnia.Godziny_Pracy_Do[^1].TotalHours;
-                                    }
-                                    else
-                                    {
-                                        czasPrzepracowany = (Dane_Dnia.Godziny_Pracy_Do[^1] - Dane_Dnia.Godziny_Pracy_Od[^1]).TotalHours;
-                                    }
-                                    double czasPodstawowy = czasPrzepracowany - (godzNadlPlatne50 + godzNadlPlatne100);
-                                    if (czasPodstawowy > 0)
-                                    {
-                                        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startPodstawowy, endPodstawowy, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji); // 2 = czas PP
-                                    }
-                                    if (godzNadlPlatne50 > 0)
-                                    {
-                                        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startNadl50, endNadl50, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
-                                    }
-                                    if (godzNadlPlatne100 > 0)
-                                    {
-                                        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startNadl100, endNadl100, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
-                                    }
-                                }
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
                             }
                         }
                         else
                         {
-                            if(godzNadlPlatne50 != 0 || godzNadlPlatne100 != 0)
+                            decimal godzNadlPlatne50 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_50 <= 0
+                                ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50
+                                : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_50;
+
+                            decimal godzNadlPlatne100 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_100 <= 0
+                                ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100
+                                : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_100;
+
+                            if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
                             {
-                                double czasPrzepracowany = godzNadlPlatne50 + godzNadlPlatne100;
-                                if (czasPrzepracowany > 0)
+                                var baseTime = TimeSpan.FromHours(8);
+                                if (godzNadlPlatne50 > 0)
                                 {
-                                    (TimeSpan startPodstawowy, TimeSpan endPodstawowy, TimeSpan startNadl50, TimeSpan endNadl50, TimeSpan startNadl100, TimeSpan endNadl100) = Oblicz_Czas_Z_Dodatkiem(TimeSpan.FromHours(8), TimeSpan.FromHours(8).Add(TimeSpan.FromHours(czasPrzepracowany)), godzNadlPlatne50, godzNadlPlatne100);
-                                    double czasPodstawowy = czasPrzepracowany - (godzNadlPlatne50 + godzNadlPlatne100);
-                                    if (czasPodstawowy > 0)
+                                    Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
+                                    Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50));
+                                }
+                                if (godzNadlPlatne100 > 0)
+                                {
+                                    if (Dane_Dnia.Godziny_Pracy_Od.Count == 0)
                                     {
-                                        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startPodstawowy, endPodstawowy, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji); // 2 = czas PP
+                                        Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
                                     }
-                                    if (godzNadlPlatne50 > 0)
+                                    else
                                     {
-                                        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startNadl50, endNadl50, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
+                                        Dane_Dnia.Godziny_Pracy_Od.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50));
                                     }
-                                    if (godzNadlPlatne100 > 0)
-                                    {
-                                        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, startNadl100, endNadl100, Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
-                                    }
+                                    Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50) + TimeSpan.FromHours((double)godzNadlPlatne100));
+                                }
+                                for(int k=0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++) {
+                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
                                 }
                             }
                         }
@@ -577,76 +613,72 @@ namespace Konduktor_Reader
                     cmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
                     duplicate = (int)cmd.ExecuteScalar() == 1;
                 }
-
                 if (!duplicate)
                 {
-                    if (godzOdDate != godzDoDate)
-                    {
-                        string sqlQueryInsertObecnościDoOptimy = @"
-    DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
-    IF @EXISTSDZIEN is null
-    BEGIN
-        BEGIN TRY
-            INSERT INTO [CDN].[PracPracaDni]
-                        ([PPR_PraId]
-                        ,[PPR_Data]
-                        ,[PPR_TS_Zal]
-                        ,[PPR_TS_Mod]
-                        ,[PPR_OpeModKod]
-                        ,[PPR_OpeModNazwisko]
-                        ,[PPR_OpeZalKod]
-                        ,[PPR_OpeZalNazwisko]
-                        ,[PPR_Zrodlo]
-                        ,[PPR_Relacja])
-                    VALUES
-                        (@PRI_PraId
-                        ,@DataInsert
-                        ,@DataMod
-                        ,@DataMod
-                        ,@ImieMod
-                        ,@NazwiskoMod
-                        ,@ImieMod
-                        ,@NazwiskoMod
-                        ,0
-                        ,@Numer_Relacji)
-        END TRY
-        BEGIN CATCH
-        END CATCH
-    END
+                    string sqlQueryInsertObecnościDoOptimy = @"
+DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
+IF @EXISTSDZIEN is null
+BEGIN
+    BEGIN TRY
+        INSERT INTO [CDN].[PracPracaDni]
+                    ([PPR_PraId]
+                    ,[PPR_Data]
+                    ,[PPR_TS_Zal]
+                    ,[PPR_TS_Mod]
+                    ,[PPR_OpeModKod]
+                    ,[PPR_OpeModNazwisko]
+                    ,[PPR_OpeZalKod]
+                    ,[PPR_OpeZalNazwisko]
+                    ,[PPR_Zrodlo]
+                    ,[PPR_Relacja])
+                VALUES
+                    (@PRI_PraId
+                    ,@DataInsert
+                    ,@DataMod
+                    ,@DataMod
+                    ,@ImieMod
+                    ,@NazwiskoMod
+                    ,@ImieMod
+                    ,@NazwiskoMod
+                    ,0
+                    ,@Numer_Relacji)
+    END TRY
+    BEGIN CATCH
+    END CATCH
+END
 
-    INSERT INTO CDN.PracPracaDniGodz
-		    (PGR_PprId,
-		    PGR_Lp,
-		    PGR_OdGodziny,
-		    PGR_DoGodziny,
-		    PGR_Strefa,
-		    PGR_DzlId,
-		    PGR_PrjId,
-		    PGR_Uwagi,
-		    PGR_OdbNadg)
-	    VALUES
-		    ((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
-		    1,
-		    @GodzOdDate,
-		    @GodzDoDate,
-		    @TypPracy,
-		    1,
-		    1,
-		    '',
-		    1);";
-                        using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertObecnościDoOptimy, connection, transaction))
-                        {
-                            insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                            insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                            insertCmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
-                            insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                            insertCmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
-                            insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20));
-                            insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50));
-                            insertCmd.Parameters.AddWithValue("@DataMod", Program.error_logger.Last_Mod_Time);
-                            insertCmd.Parameters.AddWithValue("@Numer_Relacji", Numer_Relacji);
-                            insertCmd.ExecuteScalar();
-                        }
+INSERT INTO CDN.PracPracaDniGodz
+		(PGR_PprId,
+		PGR_Lp,
+		PGR_OdGodziny,
+		PGR_DoGodziny,
+		PGR_Strefa,
+		PGR_DzlId,
+		PGR_PrjId,
+		PGR_Uwagi,
+		PGR_OdbNadg)
+	VALUES
+		((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
+		1,
+		@GodzOdDate,
+		@GodzDoDate,
+		@TypPracy,
+		1,
+		1,
+		'',
+		1);";
+                    using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertObecnościDoOptimy, connection, transaction))
+                    {
+                        insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                        insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                        insertCmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
+                        insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                        insertCmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
+                        insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20));
+                        insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50));
+                        insertCmd.Parameters.AddWithValue("@DataMod", Program.error_logger.Last_Mod_Time);
+                        insertCmd.Parameters.AddWithValue("@Numer_Relacji", Numer_Relacji);
+                        insertCmd.ExecuteScalar();
                     }
                     return 1;
                 }

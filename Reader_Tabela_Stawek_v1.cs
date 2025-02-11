@@ -40,7 +40,7 @@ namespace Konduktor_Reader
 
         public static void Process_Zakladka(IXLWorksheet Zakladka)
         {
-            List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Staring_Points_Tabele_Stawek(Zakladka, "Tabela Stawek");
+            List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Staring_Points(Zakladka, "Tabela Stawek");
             List<Relacja> Relacje = [];
 
             foreach (Helper.Current_Position pozycja in Pozcje_Tabeli_Stawek_W_Zakladce)

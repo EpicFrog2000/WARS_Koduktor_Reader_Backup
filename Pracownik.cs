@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Transactions;
+using Microsoft.Data.SqlClient;
 
 namespace Konduktor_Reader
 {
@@ -36,132 +37,116 @@ namespace Konduktor_Reader
         }
         public int Get_PraId()
         {
-            string sqlQueryGetPRI_PraId = @"
--- weź @PRA_PraId z akronimu
+            const string sqlQuery = @"
+-- Get PRA_PraId from Akronim if available
+DECLARE @PRI_PraId INT = NULL;
+
 IF @Akronim IS NOT NULL AND @Akronim != 0
 BEGIN
-	DECLARE @AkroRes INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @Akronim);
-	IF @AkroRes IS NOT NULL
-	BEGIN
-		SELECT @AkroRes;
-	END
+    SELECT @PRI_PraId = PRA_PraId FROM CDN.PracKod WHERE PRA_Kod = @Akronim;
 END
 
--- weż @PRA_PraId z imie i nazwisko
-IF (
-    (
-        SELECT DISTINCT COUNT(PRI_PraId)
-        FROM cdn.Pracidx
-        WHERE
-            (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert AND PRI_Typ = 1)
-            OR
-            (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert AND PRI_Typ = 1)
-    ) > 1
-)
-BEGIN
-    DECLARE @ErrorMessageC NVARCHAR(500) = 'Jest 2 pracowników w bazie o takim samym imieniu i nazwisku, a takiego akronimu nie ma w bazie: ' + @PracownikImieInsert + ' ' + @PracownikNazwiskoInsert + ' ' + Convert(VARCHAR(200), @Akronim);
-    THROW 50001, @ErrorMessageC, 1;
-END
-
-DECLARE @PRI_PraId INT = (select DISTINCT PRI_PraId from cdn.Pracidx WHERE PRI_Imie1 = @PracownikImieInsert and PRI_Nazwisko = @PracownikNazwiskoInsert and PRI_Typ = 1);
+-- If Akronim lookup fails, try by Name & Surname
 IF @PRI_PraId IS NULL
 BEGIN
-	SET @PRI_PraId = (select DISTINCT PRI_PraId from cdn.Pracidx WHERE PRI_Imie1 = @PracownikNazwiskoInsert  and PRI_Nazwisko = @PracownikImieInsert and PRI_Typ = 1);
-	IF @PRI_PraId IS NULL
-	BEGIN
-		DECLARE @ErrorMessage NVARCHAR(500) = 'Brak takiego pracownika w bazie o imieniu, nazwisku i akronimie: ' +@PracownikImieInsert + ' ' +  @PracownikNazwiskoInsert + ' ' + Convert(VARCHAR(200), @Akronim);
-		THROW 50003, @ErrorMessage, 1;
-	END
+    IF EXISTS (
+        SELECT 1 FROM cdn.Pracidx 
+        WHERE ((PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
+            OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert)) 
+        AND PRI_Typ = 1 
+        HAVING COUNT(PRI_PraId) > 1)
+    BEGIN
+        THROW 50001, 'Duplicate employees found for the given name & surname without a unique acronym.', 1;
+    END
+
+    SELECT @PRI_PraId = PRI_PraId 
+    FROM cdn.Pracidx 
+    WHERE (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
+       OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert) 
+    AND PRI_Typ = 1;
+
+    -- If still null, throw an error
+    IF @PRI_PraId IS NULL
+    BEGIN
+        THROW 50003, 'No employee found with the provided details.', 1;
+    END
 END
 
-DECLARE @EXISTSPRACTEST INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @PRI_PraId)
-
-IF @EXISTSPRACTEST IS NULL
+-- Ensure PRA_PraId exists in CDN.PracKod
+IF NOT EXISTS (SELECT 1 FROM CDN.PracKod WHERE PRA_Kod = @PRI_PraId)
 BEGIN
-    INSERT INTO [CDN].[PracKod] ([PRA_Kod] ,[PRA_Archiwalny],[PRA_Nadrzedny],[PRA_EPEmail],[PRA_EPTelefon],[PRA_EPNrPokoju],[PRA_EPDostep],[PRA_HasloDoWydrukow])
-    VALUES (@PRI_PraId,0,0,'','','',0,'');
+    INSERT INTO CDN.PracKod (PRA_Kod, PRA_Archiwalny, PRA_Nadrzedny, PRA_EPEmail, PRA_EPTelefon, PRA_EPNrPokoju, PRA_EPDostep, PRA_HasloDoWydrukow)
+    VALUES (@PRI_PraId, 0, 0, '', '', '', 0, '');
 END
+
 SELECT @PRI_PraId;";
-            using (SqlConnection connection = new SqlConnection(Program.Optima_Conection_String))
+            try
             {
-                try
-                {
-                    connection.Open();
-                    using (SqlCommand getCmd = new SqlCommand(sqlQueryGetPRI_PraId, connection))
-                    {
-                        getCmd.Parameters.AddWithValue("@Akronim ", Akronim);
-                        getCmd.Parameters.AddWithValue("@PracownikImieInsert", Imie);
-                        getCmd.Parameters.AddWithValue("@PracownikNazwiskoInsert", Nazwisko);
-                        object result = getCmd.ExecuteScalar();
-                        return result != null ? Convert.ToInt32(result) : 0;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    connection.Close();
-                    Program.error_logger.New_Custom_Error(ex.Message + " z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
-                    throw new Exception(ex.Message + $" w pliku {Program.error_logger.Nazwa_Pliku} z zakladki {Program.error_logger.Nr_Zakladki}" + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
-                }
+                using SqlConnection connection = new();
+                using SqlCommand getCmd = new(sqlQuery, connection);
+                getCmd.Parameters.AddWithValue("@Akronim", Akronim);
+                getCmd.Parameters.AddWithValue("@PracownikImieInsert", Imie);
+                getCmd.Parameters.AddWithValue("@PracownikNazwiskoInsert", Nazwisko);
+                return getCmd.ExecuteScalar() as int? ?? 0;
+            }
+            catch (Exception ex)
+            {
+                Program.error_logger.New_Custom_Error(ex.Message + " z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
+                throw new Exception(ex.Message + $" w pliku {Program.error_logger.Nazwa_Pliku} z zakladki {Program.error_logger.Nr_Zakladki}" + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
             }
         }
         public int Get_PraId(SqlConnection connection, SqlTransaction transaction)
         {
-            string sqlQueryGetPRI_PraId = @"
--- weź @PRA_PraId z akronimu
+            const string sqlQuery = @"
+-- Get PRA_PraId from Akronim if available
+DECLARE @PRI_PraId INT = NULL;
+
 IF @Akronim IS NOT NULL AND @Akronim != 0
 BEGIN
-	DECLARE @AkroRes INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @Akronim);
-	IF @AkroRes IS NOT NULL
-	BEGIN
-		SELECT @AkroRes;
-	END
+    SELECT @PRI_PraId = PRA_PraId FROM CDN.PracKod WHERE PRA_Kod = @Akronim;
 END
 
--- weż @PRA_PraId z imie i nazwisko
-IF (
-    (
-        SELECT DISTINCT COUNT(PRI_PraId)
-        FROM cdn.Pracidx
-        WHERE
-            (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert AND PRI_Typ = 1)
-            OR
-            (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert AND PRI_Typ = 1)
-    ) > 1
-)
-BEGIN
-    DECLARE @ErrorMessageC NVARCHAR(500) = 'Jest 2 pracowników w bazie o takim samym imieniu i nazwisku, a takiego akronimu nie ma w bazie: ' + @PracownikImieInsert + ' ' + @PracownikNazwiskoInsert + ' ' + Convert(VARCHAR(200), @Akronim);
-    THROW 50001, @ErrorMessageC, 1;
-END
-
-DECLARE @PRI_PraId INT = (select DISTINCT PRI_PraId from cdn.Pracidx WHERE PRI_Imie1 = @PracownikImieInsert and PRI_Nazwisko = @PracownikNazwiskoInsert and PRI_Typ = 1);
+-- If Akronim lookup fails, try by Name & Surname
 IF @PRI_PraId IS NULL
 BEGIN
-	SET @PRI_PraId = (select DISTINCT PRI_PraId from cdn.Pracidx WHERE PRI_Imie1 = @PracownikNazwiskoInsert  and PRI_Nazwisko = @PracownikImieInsert and PRI_Typ = 1);
-	IF @PRI_PraId IS NULL
-	BEGIN
-		DECLARE @ErrorMessage NVARCHAR(500) = 'Brak takiego pracownika w bazie o imieniu, nazwisku i akronimie: ' +@PracownikImieInsert + ' ' +  @PracownikNazwiskoInsert + ' ' + Convert(VARCHAR(200), @Akronim);
-		THROW 50003, @ErrorMessage, 1;
-	END
+    IF EXISTS (
+        SELECT 1 FROM cdn.Pracidx 
+        WHERE ((PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
+            OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert)) 
+        AND PRI_Typ = 1 
+        HAVING COUNT(PRI_PraId) > 1)
+    BEGIN
+        THROW 50001, 'Duplicate employees found for the given name & surname without a unique acronym.', 1;
+    END
+
+    SELECT @PRI_PraId = PRI_PraId 
+    FROM cdn.Pracidx 
+    WHERE (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
+       OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert) 
+    AND PRI_Typ = 1;
+
+    -- If still null, throw an error
+    IF @PRI_PraId IS NULL
+    BEGIN
+        THROW 50003, 'No employee found with the provided details.', 1;
+    END
 END
 
-DECLARE @EXISTSPRACTEST INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @PRI_PraId)
-
-IF @EXISTSPRACTEST IS NULL
+-- Ensure PRA_PraId exists in CDN.PracKod
+IF NOT EXISTS (SELECT 1 FROM CDN.PracKod WHERE PRA_Kod = @PRI_PraId)
 BEGIN
-    INSERT INTO [CDN].[PracKod] ([PRA_Kod] ,[PRA_Archiwalny],[PRA_Nadrzedny],[PRA_EPEmail],[PRA_EPTelefon],[PRA_EPNrPokoju],[PRA_EPDostep],[PRA_HasloDoWydrukow])
-    VALUES (@PRI_PraId,0,0,'','','',0,'');
+    INSERT INTO CDN.PracKod (PRA_Kod, PRA_Archiwalny, PRA_Nadrzedny, PRA_EPEmail, PRA_EPTelefon, PRA_EPNrPokoju, PRA_EPDostep, PRA_HasloDoWydrukow)
+    VALUES (@PRI_PraId, 0, 0, '', '', '', 0, '');
 END
+
 SELECT @PRI_PraId;";
             try
             {
-                using (SqlCommand getCmd = new SqlCommand(sqlQueryGetPRI_PraId, connection, transaction))
-                {
-                    getCmd.Parameters.AddWithValue("@Akronim ", Akronim);
-                    getCmd.Parameters.AddWithValue("@PracownikImieInsert", Imie);
-                    getCmd.Parameters.AddWithValue("@PracownikNazwiskoInsert", Nazwisko);
-                    object result = getCmd.ExecuteScalar();
-                    return result != null ? Convert.ToInt32(result) : 0;
-                }
+                using var getCmd = new SqlCommand(sqlQuery, connection, transaction);
+                getCmd.Parameters.AddWithValue("@Akronim", Akronim);
+                getCmd.Parameters.AddWithValue("@PracownikImieInsert", Imie);
+                getCmd.Parameters.AddWithValue("@PracownikNazwiskoInsert", Nazwisko);
+                return getCmd.ExecuteScalar() as int? ?? 0;
             }
             catch (Exception ex)
             {
@@ -169,7 +154,6 @@ SELECT @PRI_PraId;";
                 Program.error_logger.New_Custom_Error(ex.Message + " z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
                 throw new Exception(ex.Message + $" w pliku {Program.error_logger.Nazwa_Pliku} z zakladki {Program.error_logger.Nr_Zakladki}" + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
             }
-            
         }
     }
 }

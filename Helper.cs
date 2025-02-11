@@ -1,5 +1,7 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.Data.SqlClient;
+using static Konduktor_Reader.Helper;
 
 namespace Konduktor_Reader
 {
@@ -71,8 +73,6 @@ namespace Konduktor_Reader
                     result = (T)Converted_Value;
                     return true;
                 }
-                
-
             }
             catch
             {
@@ -100,27 +100,25 @@ namespace Konduktor_Reader
             }
             return string.Empty;
         }
-        public static List<Current_Position> Find_Staring_Points_Tabele_Stawek(IXLWorksheet Zakladka, string Key_Word)
+        public static List<Current_Position> Find_Staring_Points(IXLWorksheet Zakladka, string Key_Word)
         {
-            List<Current_Position> starty = [];
-            int Limiter = 1000;
-            int counter = 0;
-            foreach (IXLCell? cell in Zakladka.CellsUsed())
+            var positions = new List<Current_Position>();
+            const int limit = 1000;
+            int count = 0;
+
+            foreach (var cell in Zakladka.CellsUsed())
             {
                 try
                 {
                     if (cell.HasFormula && !cell.Address.ToString()!.Equals(cell.FormulaA1))
                     {
-                        counter++;
-                        if (counter > Limiter)
-                        {
-                            break;
-                        }
+                        if (++count > limit) break;
                         continue;
                     }
-                    if (cell.Value.ToString().Contains(Key_Word))
+
+                    if (cell.GetFormattedString().Contains(Key_Word, StringComparison.OrdinalIgnoreCase))
                     {
-                        starty.Add(new Current_Position()
+                        positions.Add(new Current_Position
                         {
                             Row = cell.Address.RowNumber,
                             Col = cell.Address.ColumnNumber
@@ -132,16 +130,10 @@ namespace Konduktor_Reader
                     continue;
                 }
             }
-            return starty;
+            return positions;
         }
-        public static string Truncate(string value, int maxLength)
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                return string.Empty;
-            }
-            return value.Length > maxLength ? value.Substring(0, maxLength) : value;
-        }
+        public static string Truncate(string? value, int maxLength) =>
+            string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
         public static bool Valid_SQLConnection_String(string Connection_String)
         {
             try

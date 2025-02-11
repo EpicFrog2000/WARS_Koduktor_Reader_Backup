@@ -3,8 +3,8 @@
   "WorkspaceRootPath": "E:\\ITEGER\\Praca\\KonduktorReader\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\reader_karta_ewidencji_konduktora_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:reader_karta_ewidencji_konduktora_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -19,14 +19,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Program.cs",
-              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Program.cs",
-              "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Program.cs",
-              "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Title": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "RelativeDocumentMoniker": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "RelativeToolTip": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
+              "ViewState": "AgIAAAICAAAAAAAAAAAYwBYCAACAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-07T12:40:07.601Z",
+              "WhenOpened": "2025-02-07T14:44:32.542Z",
               "EditorCaption": ""
             }
           ]

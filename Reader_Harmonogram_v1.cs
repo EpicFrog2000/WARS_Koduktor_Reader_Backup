@@ -336,8 +336,8 @@ namespace Konduktor_Reader
                     command.Parameters.AddWithValue("@Rok", Relacja.Get_Relacja_Id());
                     command.Parameters.AddWithValue("@Opis_1", "");
                     command.Parameters.AddWithValue("@Opis_2", "");
-                    command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
-                    command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                    command.Parameters.AddWithValue("@Data_Mod", Program.error_logger.Last_Mod_Time);
+                    command.Parameters.AddWithValue("@Os_Mod", Program.error_logger.Last_Mod_Osoba);
                     connection.Open();
                     command.ExecuteNonQuery();
                 }
@@ -369,8 +369,8 @@ namespace Konduktor_Reader
                         command.Parameters.AddWithValue("@Dzien", relacja.Dzien);
                         command.Parameters.AddWithValue("@Godzina_Rozpoczecia_Pracy", relacja.Godzina_Rozpoczecia_Pracy);
                         command.Parameters.AddWithValue("@Godzina_Zakonczenia_Pracy", relacja.Godzina_Zakonczenia_Pracy);
-                        command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
-                        command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                        command.Parameters.AddWithValue("@Data_Mod", Program.error_logger.Last_Mod_Time);
+                        command.Parameters.AddWithValue("@Os_Mod", Program.error_logger.Last_Mod_Osoba);
                         connection.Open();
                         command.ExecuteNonQuery();
                     }

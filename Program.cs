@@ -31,7 +31,6 @@ namespace Konduktor_Reader{
             Config Config = new();
             Config.GetConfigFromFile();
             Config.Set_Program_Config();
-            Console.WriteLine(Show_Console_Window);
             if (!Show_Console_Window)
             {
                 IntPtr hWnd = GetConsoleWindow();
@@ -139,7 +138,7 @@ namespace Konduktor_Reader{
                                 case 3:
                                     try
                                     {
-                                        Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook; // Czytanie tylko pierwszej zakłdki
+                                        Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook+1; // Czytanie tylko pierwszej zakłdki
                                         Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka);
                                     }
                                     catch

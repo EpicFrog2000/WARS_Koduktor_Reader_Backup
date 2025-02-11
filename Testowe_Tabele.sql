@@ -1,4 +1,4 @@
-CREATE TABLE Relacje (
+CREATE TABLE CDN.Relacje (
     R_Id INT IDENTITY(1,1),
     R_Nazwa VARCHAR(50),
 	R_Typ INT,

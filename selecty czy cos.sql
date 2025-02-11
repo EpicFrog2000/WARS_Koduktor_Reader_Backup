@@ -7,5 +7,13 @@ where PRI_Typ = 1
 
 delete from cdn.PracPracaDni
 delete from cdn.PracPracaDniGodz
-delete from cdn.Relacje
 delete from cdn.OAtrybutyHist
+delete from cdn.Relacje
+
+select * from cdn.OAtrybuty
+
+select * from cdn.OAtrybutyKlasy
+
+select * from cdn.Relacje
+
+select * from cdn.PracPracaDni
