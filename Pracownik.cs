@@ -1,4 +1,4 @@
-﻿using System.Transactions;
+﻿using System.Data;
 using Microsoft.Data.SqlClient;
 
 namespace Konduktor_Reader
@@ -8,33 +8,7 @@ namespace Konduktor_Reader
         public string Imie = string.Empty;
         public string Nazwisko = string.Empty;
         public string Akronim = string.Empty;
-        public int Get_Pracownik_Id()
-        {
-            string query = @"SELECT Pra_Id FROM Pracownicy WHERE
-                            Pra_Akronim = @Akronim OR
-                            (Pra_Imie = @Imie AND Pra_Nazwisko = @Nazwisko) OR
-                            (Pra_Imie = @Nazwisko AND Pra_Nazwisko = @Imie)";
-            using (SqlConnection connection = new(Program.Optima_Conection_String))
-            {
-                using (SqlCommand command = new(query, connection))
-                {
-                    command.Parameters.AddWithValue("@Akronim", Akronim);
-                    command.Parameters.AddWithValue("@Imie", Imie);
-                    command.Parameters.AddWithValue("@Nazwisko", Nazwisko);
-                    connection.Open();
-                    object result = command.ExecuteScalar();
-                    if (result != null)
-                    {
-                        return Convert.ToInt32(result);
-                    }
-                    else
-                    {
-                        Program.error_logger.New_Custom_Error($"Nie ma takiego pracownika w bazie o danych imie: {Imie}, Nazwisko: {Nazwisko}, Akronim: {Akronim}");
-                        throw new Exception(Program.error_logger.Get_Error_String());
-                    }
-                }
-            }
-        }
+
         public int Get_PraId()
         {
             const string sqlQuery = @"
@@ -50,19 +24,19 @@ END
 IF @PRI_PraId IS NULL
 BEGIN
     IF EXISTS (
-        SELECT 1 FROM cdn.Pracidx 
-        WHERE ((PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
-            OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert)) 
-        AND PRI_Typ = 1 
+        SELECT 1 FROM cdn.Pracidx
+        WHERE ((PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert)
+            OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert))
+        AND PRI_Typ = 1
         HAVING COUNT(PRI_PraId) > 1)
     BEGIN
         THROW 50001, 'Duplicate employees found for the given name & surname without a unique acronym.', 1;
     END
 
-    SELECT @PRI_PraId = PRI_PraId 
-    FROM cdn.Pracidx 
-    WHERE (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
-       OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert) 
+    SELECT @PRI_PraId = PRI_PraId
+    FROM cdn.Pracidx
+    WHERE (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert)
+       OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert)
     AND PRI_Typ = 1;
 
     -- If still null, throw an error
@@ -84,9 +58,9 @@ SELECT @PRI_PraId;";
             {
                 using SqlConnection connection = new();
                 using SqlCommand getCmd = new(sqlQuery, connection);
-                getCmd.Parameters.AddWithValue("@Akronim", Akronim);
-                getCmd.Parameters.AddWithValue("@PracownikImieInsert", Imie);
-                getCmd.Parameters.AddWithValue("@PracownikNazwiskoInsert", Nazwisko);
+                getCmd.Parameters.Add("@Akronim", SqlDbType.Int).Value = int.Parse(Akronim);
+                getCmd.Parameters.Add("@PracownikImieInsert", SqlDbType.NVarChar, 50).Value = Imie;
+                getCmd.Parameters.Add("@PracownikNazwiskoInsert", SqlDbType.NVarChar, 50).Value = Nazwisko;
                 return getCmd.ExecuteScalar() as int? ?? 0;
             }
             catch (Exception ex)
@@ -95,6 +69,7 @@ SELECT @PRI_PraId;";
                 throw new Exception(ex.Message + $" w pliku {Program.error_logger.Nazwa_Pliku} z zakladki {Program.error_logger.Nr_Zakladki}" + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
             }
         }
+
         public int Get_PraId(SqlConnection connection, SqlTransaction transaction)
         {
             const string sqlQuery = @"
@@ -110,19 +85,19 @@ END
 IF @PRI_PraId IS NULL
 BEGIN
     IF EXISTS (
-        SELECT 1 FROM cdn.Pracidx 
-        WHERE ((PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
-            OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert)) 
-        AND PRI_Typ = 1 
+        SELECT 1 FROM cdn.Pracidx
+        WHERE ((PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert)
+            OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert))
+        AND PRI_Typ = 1
         HAVING COUNT(PRI_PraId) > 1)
     BEGIN
         THROW 50001, 'Duplicate employees found for the given name & surname without a unique acronym.', 1;
     END
 
-    SELECT @PRI_PraId = PRI_PraId 
-    FROM cdn.Pracidx 
-    WHERE (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert) 
-       OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert) 
+    SELECT @PRI_PraId = PRI_PraId
+    FROM cdn.Pracidx
+    WHERE (PRI_Imie1 = @PracownikImieInsert AND PRI_Nazwisko = @PracownikNazwiskoInsert)
+       OR (PRI_Imie1 = @PracownikNazwiskoInsert AND PRI_Nazwisko = @PracownikImieInsert)
     AND PRI_Typ = 1;
 
     -- If still null, throw an error
@@ -143,9 +118,9 @@ SELECT @PRI_PraId;";
             try
             {
                 using var getCmd = new SqlCommand(sqlQuery, connection, transaction);
-                getCmd.Parameters.AddWithValue("@Akronim", Akronim);
-                getCmd.Parameters.AddWithValue("@PracownikImieInsert", Imie);
-                getCmd.Parameters.AddWithValue("@PracownikNazwiskoInsert", Nazwisko);
+                getCmd.Parameters.Add("@Akronim", SqlDbType.Int).Value = int.Parse(Akronim);
+                getCmd.Parameters.Add("@PracownikImieInsert", SqlDbType.NVarChar, 50).Value = Imie;
+                getCmd.Parameters.Add("@PracownikNazwiskoInsert", SqlDbType.NVarChar, 50).Value = Nazwisko;
                 return getCmd.ExecuteScalar() as int? ?? 0;
             }
             catch (Exception ex)

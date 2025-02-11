@@ -1,9 +1,8 @@
 ﻿using ClosedXML.Excel;
 using ExcelDataReader;
+using Microsoft.Data.SqlClient;
 using System.Data;
-using System.Runtime.InteropServices;
-using System.ServiceProcess;
-using System.Threading;
+using System.Diagnostics;
 
 namespace Konduktor_Reader{
     static class Program
@@ -16,8 +15,22 @@ namespace Konduktor_Reader{
         public static bool Clear_Processed_Files_On_Restart = false;
         public static bool Clear_Bad_Files_On_Restart = false;
         public static bool Move_Files_To_Processed_Folder = false;
+        public static readonly bool TEST_CLEAR_DB_TABLES = true;
+        public static readonly bool LOG_TO_Terminal = false;
         public static int Main()
         {
+            Stopwatch stopwatch = new Stopwatch();
+
+            // Start measuring time
+            stopwatch.Start();
+            TextWriter originalOut = Console.Out;
+            if (!LOG_TO_Terminal)
+            {
+                Console.SetOut(TextWriter.Null);
+            }
+            Clear_Tables(); // FOR TESTING ONLY
+
+
             // TODO DODAC PETLE WHILE TRUE
 
             Config Config = new();
@@ -99,16 +112,7 @@ namespace Konduktor_Reader{
                             int Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
                             switch (Typ_Zakladki)
                             {
-                                case 1: // Reader_Harmonogram_v1
-                                    try
-                                    {
-                                        Reader_Harmonogram_v1.Process_Zakladka(Zakladka);
-                                    }
-                                    catch
-                                    {
-                                        Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
-                                    }
-                                    break;
+
                                 case 2:
                                     try
                                     {
@@ -140,6 +144,13 @@ namespace Konduktor_Reader{
                     MoveFile(File_Path, 0);
                 }
             }
+            if (!LOG_TO_Terminal)
+            {
+                Console.SetOut(originalOut);
+            }
+            TimeSpan elapsedTime = stopwatch.Elapsed;
+            Console.WriteLine("Elapsed Time: " + elapsedTime.ToString(@"hh\:mm\:ss\:fff"));
+
             Console.WriteLine("Kliknij aby zakończyć...");
             Console.ReadLine();
             return 0;
@@ -369,6 +380,18 @@ namespace Konduktor_Reader{
             workbook.Properties.LastModifiedBy = o;
             workbook.Properties.Modified = d;
             workbook.SaveAs(outputFilePath);
+        }
+
+        private static void Clear_Tables()
+        {
+            if (TEST_CLEAR_DB_TABLES)
+            {
+                using SqlConnection connection = new(Optima_Conection_String);
+                connection.Open();
+                using SqlCommand command = new("delete from cdn.PracPracaDniGodz; delete from cdn.PracPracaDni", connection);
+                command.ExecuteScalar();
+                connection.Close();
+            }
         }
     }
 }

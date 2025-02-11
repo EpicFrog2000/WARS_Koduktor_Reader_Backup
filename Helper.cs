@@ -1,7 +1,6 @@
-﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
+﻿using System.Collections.Concurrent;
+using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
-using static Konduktor_Reader.Helper;
 
 namespace Konduktor_Reader
 {
@@ -11,6 +10,7 @@ namespace Konduktor_Reader
         {
             private int col = 1;
             private int row = 1;
+
             public int Col
             {
                 get => col;
@@ -24,6 +24,7 @@ namespace Konduktor_Reader
                     col = value;
                 }
             }
+
             public int Row
             {
                 get => row;
@@ -79,6 +80,7 @@ namespace Konduktor_Reader
             }
             return false;
         }
+
         public static bool Try_Get_Type_From_String<T>(string? value, Action<T> method)
         {
             T refvalue = default!;
@@ -89,51 +91,54 @@ namespace Konduktor_Reader
             }
             return false;
         }
+
         public static string Read_Value_Diffrent_Possible_Cells_In_Row(int Rows, int StartRow, int StartCol, IXLWorksheet Zakladka)
         {
             for (int i = 0; i < Rows; i++)
             {
                 string Result = Zakladka.Cell(StartRow, StartCol).GetFormattedString().Trim().Replace("  ", " ");
-                if (!string.IsNullOrEmpty(Result)){
+                if (!string.IsNullOrEmpty(Result))
+                {
                     return Result;
                 }
             }
             return string.Empty;
         }
-        public static List<Current_Position> Find_Staring_Points(IXLWorksheet Zakladka, string Key_Word)
+
+        public static List<Current_Position> Find_Starting_Points(IXLWorksheet worksheet, string keyWord)
         {
-            var positions = new List<Current_Position>();
             const int limit = 1000;
-            int count = 0;
+            var positions = new ConcurrentBag<Current_Position>();
+            var cells = worksheet.CellsUsed().ToArray();
 
-            foreach (var cell in Zakladka.CellsUsed())
+            Parallel.ForEach(cells, (cell, state) =>
             {
-                try
+                if (positions.Count >= limit)
                 {
-                    if (cell.HasFormula && !cell.Address.ToString()!.Equals(cell.FormulaA1))
-                    {
-                        if (++count > limit) break;
-                        continue;
-                    }
+                    state.Stop();
+                    return;
+                }
 
-                    if (cell.GetFormattedString().Contains(Key_Word, StringComparison.OrdinalIgnoreCase))
-                    {
-                        positions.Add(new Current_Position
-                        {
-                            Row = cell.Address.RowNumber,
-                            Col = cell.Address.ColumnNumber
-                        });
-                    }
-                }
-                catch
+                if (cell.HasFormula && !cell.FormulaA1.Equals(cell.Address.ToString()))
+                    return;
+
+                var formattedValue = cell.GetFormattedString();
+                if (formattedValue.Contains(keyWord, StringComparison.OrdinalIgnoreCase))
                 {
-                    continue;
+                    positions.Add(new Current_Position
+                    {
+                        Row = cell.Address.RowNumber,
+                        Col = cell.Address.ColumnNumber
+                    });
                 }
-            }
-            return positions;
+            });
+
+            return positions.Take(limit).ToList();
         }
+
         public static string Truncate(string? value, int maxLength) =>
             string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
+
         public static bool Valid_SQLConnection_String(string Connection_String)
         {
             try

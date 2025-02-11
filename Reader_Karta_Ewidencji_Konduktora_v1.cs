@@ -4,6 +4,7 @@ using System.Transactions;
 using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Drawing.Wordprocessing;
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Data.SqlClient;
 using static Konduktor_Reader.Reader_Tabela_Stawek_v1;
 
@@ -228,7 +229,7 @@ namespace Konduktor_Reader
         public static void Process_Zakladka(IXLWorksheet Zakladka)
         {
             List<Karta_Ewidencji> Karty_Ewidencji = [];
-            List<Helper.Current_Position> Pozycje = Helper.Find_Staring_Points(Zakladka, "Dzień miesiąca");
+            List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Dzień miesiąca");
             List<Prowizje> Prowizje = [];
             foreach (Helper.Current_Position Pozycja in Pozycje)
             {
@@ -608,9 +609,9 @@ namespace Konduktor_Reader
                 {
                     cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                     cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                    cmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
-                    cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                    cmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
+                    cmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                    cmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
                     duplicate = (int)cmd.ExecuteScalar() == 1;
                 }
                 if (!duplicate)
@@ -671,13 +672,13 @@ INSERT INTO CDN.PracPracaDniGodz
                     {
                         insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                        insertCmd.Parameters.AddWithValue("@DataInsert", Data_Karty);
-                        insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                        insertCmd.Parameters.AddWithValue("@TypPracy", Typ_Pracy);
-                        insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20));
-                        insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50));
-                        insertCmd.Parameters.AddWithValue("@DataMod", Program.error_logger.Last_Mod_Time);
-                        insertCmd.Parameters.AddWithValue("@Numer_Relacji", Numer_Relacji);
+                        insertCmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                        insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                        insertCmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                        insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
+                        insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50);
+                        insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Program.error_logger.Last_Mod_Time;
+                        insertCmd.Parameters.Add("@Numer_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                         insertCmd.ExecuteScalar();
                     }
                     return 1;
@@ -685,7 +686,7 @@ INSERT INTO CDN.PracPracaDniGodz
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): " + ex.Message);
                 transaction.Rollback();
                 throw;
             }
@@ -883,13 +884,15 @@ ELSE
 BEGIN
 SELECT 0
 END
-", connection, tran))
+"
+                , connection, tran))
                 {
-                    cmd.Parameters.AddWithValue("@PRI_PraId", Pracownik.Get_PraId(connection, tran));
-                    cmd.Parameters.AddWithValue("@NazwaNieobecnosci", nazwa_nieobecnosci);
-                    cmd.Parameters.AddWithValue("@DniPracy", dni_robocze);
-                    cmd.Parameters.AddWithValue("@DniKalendarzowe", dni_calosc);
-                    cmd.Parameters.AddWithValue("@Przyczyna", przyczyna);
+
+                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = Pracownik.Get_PraId(connection, tran);
+                    cmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
+                    cmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
+                    cmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
+                    cmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                     cmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
                     cmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Program.baseDate;
                     cmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
@@ -968,17 +971,17 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                ,0);";
                         using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertNieObecnoŚciDoOptimy, connection, tran))
                         {
-                            insertCmd.Parameters.AddWithValue("@PRI_PraId", Pracownik.Get_PraId(connection, tran));
-                            insertCmd.Parameters.AddWithValue("@NazwaNieobecnosci", nazwa_nieobecnosci);
-                            insertCmd.Parameters.AddWithValue("@DniPracy", dni_robocze);
-                            insertCmd.Parameters.AddWithValue("@DniKalendarzowe", dni_calosc);
-                            insertCmd.Parameters.AddWithValue("@Przyczyna", przyczyna);
+                            insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = Pracownik.Get_PraId(connection, tran);
+                            insertCmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
+                            insertCmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
+                            insertCmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
+                            insertCmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                             insertCmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
                             insertCmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Program.baseDate;
                             insertCmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
-                            insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20));
-                            insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50));
-                            insertCmd.Parameters.AddWithValue("@DataMod", Program.error_logger.Last_Mod_Time);
+                            insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
+                            insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
+                            insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Program.error_logger.Last_Mod_Time;
                             insertCmd.ExecuteScalar();
                         }
                     }
@@ -1072,9 +1075,9 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                     {
                         using (SqlCommand command = new(query, connection, transaction))
                         {
-                            command.Parameters.AddWithValue("@PracID", pracId);
+                            command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Liczba_Napojow_Awaryjnych;
-                            command.Parameters.AddWithValue("@NazwaAtrybutu", "Prowizja za wydane napoje awaryjne");
+                            command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 50).Value = "Prowizja za wydane napoje awaryjne";
                             command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
                             command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                             count += command.ExecuteNonQuery();
@@ -1084,9 +1087,9 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                     {
                         using (SqlCommand command = new(query, connection, transaction))
                         {
-                            command.Parameters.AddWithValue("@PracID", pracId);
+                            command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Wartosc_Towarow;
-                            command.Parameters.AddWithValue("@NazwaAtrybutu", "Prowizja za towar");
+                            command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 50).Value = "Prowizja za towar";
                             command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
                             command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                             count += command.ExecuteNonQuery();
@@ -1096,7 +1099,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Prowizje): " + ex.Message);
                 transaction.Rollback();
                 throw;
             }

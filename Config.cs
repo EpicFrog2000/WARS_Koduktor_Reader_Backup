@@ -37,7 +37,6 @@ namespace Konduktor_Reader
                 Clear_Bad_Files_On_Restart = config.Clear_Bad_Files_On_Restart;
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
-                Show_Console_Window = config.Show_Console_Window;
             }
         }
         public void GetConfigFromFile(string Config_File_Path)
@@ -66,7 +65,6 @@ namespace Konduktor_Reader
                 Clear_Bad_Files_On_Restart = config.Clear_Bad_Files_On_Restart;
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
-                Show_Console_Window = config.Show_Console_Window;
             }
         }
         public void Check_File()

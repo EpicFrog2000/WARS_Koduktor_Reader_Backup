@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Data;
 using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
@@ -13,6 +13,7 @@ namespace Konduktor_Reader
             public Relacja Relacja = new();
             public Tabela_Stawek Tabela_Stawek = new();
         }
+
         public class Czas_Relacji
         {
             public decimal Calkowity = 0;
@@ -23,6 +24,7 @@ namespace Konduktor_Reader
             public decimal Godziny_Pracy_W_Nocy = 0;
             public decimal Czas_Odpoczynku = 0;
         }
+
         public class Wynagrodzenie
         {
             public decimal Podstawowa_Stawka_Godzinowa = -1;
@@ -32,6 +34,7 @@ namespace Konduktor_Reader
             public decimal Całkowite = -1;
             public decimal Dodatek_Wyjazdowy = -1;
         }
+
         public class Tabela_Stawek
         {
             public Czas_Relacji Czas_Relacji = new();
@@ -40,7 +43,7 @@ namespace Konduktor_Reader
 
         public static void Process_Zakladka(IXLWorksheet Zakladka)
         {
-            List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Staring_Points(Zakladka, "Tabela Stawek");
+            List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Starting_Points(Zakladka, "Tabela Stawek");
             List<Relacja> Relacje = [];
 
             foreach (Helper.Current_Position pozycja in Pozcje_Tabeli_Stawek_W_Zakladce)
@@ -48,7 +51,6 @@ namespace Konduktor_Reader
                 Relacja Relacja = new();
                 Get_Dane(ref Relacja, pozycja, Zakladka);
                 Relacje.Add(Relacja);
-
             }
 
             foreach (Relacja Relacja in Relacje)
@@ -60,8 +62,8 @@ namespace Konduktor_Reader
                 }
                 Insert_Atrybuty_Do_Optimy(Relacja);
             }
-            
         }
+
         private static void Get_Dane(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             pozycja.Col -= 2;
@@ -84,6 +86,7 @@ namespace Konduktor_Reader
                 pozycja.Row += offest;
             }
         }
+
         private static void Get_Relacja(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             string dane = Zakladka.Cell(pozycja.Row, pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
@@ -109,6 +112,7 @@ namespace Konduktor_Reader
             }
             Relacja.Opis_Relacji_2 = dane;
         }
+
         private static int Get_Dane_Relacji(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             int offset = 0;
@@ -184,6 +188,7 @@ namespace Konduktor_Reader
             }
             return offset;
         }
+
         private static void Insert_Atrybuty_Do_Optimy(Relacja Relacja)
         {
             int counter = 0;
@@ -213,6 +218,7 @@ namespace Konduktor_Reader
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
+
         private static int Insert_Command_Atrybuty(string wartosc, string Nazwa_Atrybutu, DateTime Data_Od, DateTime Data_Do)
         {
             try
@@ -221,8 +227,8 @@ namespace Konduktor_Reader
                 {
                     using (SqlCommand command = new(@$"
         WITH CTE AS (
-            SELECT OAT_OatId 
-            FROM cdn.OAtrybuty 
+            SELECT OAT_OatId
+            FROM cdn.OAtrybuty
             WHERE OAT_AtkId = (SELECT ATK_AtkId FROM cdn.OAtrybutyKlasy WHERE ATK_Nazwa = @NazwaAtrybutu)
         )
 
@@ -237,10 +243,10 @@ namespace Konduktor_Reader
             INSERT (ATH_PrcId, ATH_AtkId, ATH_OatId, ATH_Wartosc, ATH_DataOd, ATH_DataDo)
             VALUES (0, 4, source.OAT_OatId, @NowaWartosc, @ATHDataOd, @ATHDataDo);", connection))
                     {
-                        command.Parameters.AddWithValue("@NowaWartosc", wartosc);
-                        command.Parameters.AddWithValue("@NazwaAtrybutu", Nazwa_Atrybutu);
-                        command.Parameters.AddWithValue("@ATHDataOd", Data_Od);
-                        command.Parameters.AddWithValue("@ATHDataDo", Data_Do);
+                        command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = decimal.Parse(wartosc);
+                        command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 100).Value = Nazwa_Atrybutu;
+                        command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
+                        command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                         connection.Open();
                         command.ExecuteNonQuery();
                     }
@@ -249,10 +255,9 @@ namespace Konduktor_Reader
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Command_Atrybuty): " + ex.Message);
                 throw new Exception(Program.error_logger.Get_Error_String());
             }
         }
-
     }
 }

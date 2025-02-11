@@ -6,6 +6,7 @@
         {
             ShowErrorMessageOnWrite = showmsg;
         }
+
         private bool ShowErrorMessageOnWrite = true;
 
         // Plik excel na którym obecnie wykonwywane są operacje
@@ -13,6 +14,7 @@
 
         // Zakładka na której wystąpił błąd
         public int Nr_Zakladki = 0;
+
         public string Nazwa_Zakladki = "";
 
         // Obecna wartość pola z błędem
@@ -35,10 +37,12 @@
 
         // Osoba która ostatnio zedytowała dane
         public string Last_Mod_Osoba = "";
+
         public DateTime Last_Mod_Time = DateTime.Now;
 
         // Nazwa obecnie przetwarzanych plików
         public string Current_Processed_Files_Folder = "";
+
         public string Current_Bad_Files_Folder = "";
 
         /// <summary>
@@ -57,6 +61,7 @@
                 Console.WriteLine(Get_Error_String());
             }
         }
+
         /// <summary>
         /// Zwraca wiadomość jaką wpisało by do pliku z errorami.
         /// </summary>
@@ -93,6 +98,7 @@
             Wiadomosc += Environment.NewLine + "-------------------------------------------------------------------------------" + Environment.NewLine;
             return Wiadomosc;
         }
+
         /// <summary>
         /// Wpisuje do pliku z errorami wiadomość z parametru.
         /// </summary>
@@ -105,10 +111,12 @@
                 Console.WriteLine(Get_Error_String());
             }
         }
+
         public void Set_Error_File_Path(string New_Error_File_Path)
         {
             ErrorFilePath = New_Error_File_Path;
         }
+
         private void Append_Error_To_File()
         {
             if (ErrorFilePath == "") { throw new Exception("ErrorLogger nie posiada właściwej scierzki do pliku Errors.txt"); }
@@ -119,6 +127,7 @@
             }
             File.AppendAllText(ErrorsLogFile, Get_Error_String() + Environment.NewLine);
         }
+
         private void Append_Error_To_File(string Error_Msg)
         {
             if (ErrorFilePath == "") { throw new Exception("ErrorLogger nie posiada właściwej scierzki do pliku Errors.txt"); }

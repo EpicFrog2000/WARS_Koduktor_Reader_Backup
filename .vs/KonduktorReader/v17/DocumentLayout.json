@@ -5,6 +5,18 @@
     {
       "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\reader_karta_ewidencji_konduktora_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:reader_karta_ewidencji_konduktora_v1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\helper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:helper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|e:\\iteger\\praca\\konduktorreader\\konduktor_reader.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{8389A1BA-4529-4393-AF7A-7815A43B6676}|Konduktor_Reader.csproj|solutionrelative:konduktor_reader.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,8 +26,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 80,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAIUAAAAAAAAAAAAMwJUAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-11T14:53:13.778Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -24,9 +49,35 @@
               "RelativeDocumentMoniker": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
               "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Reader_Karta_Ewidencji_Konduktora_v1.cs",
               "RelativeToolTip": "Reader_Karta_Ewidencji_Konduktora_v1.cs",
-              "ViewState": "AgIAAAICAAAAAAAAAAAYwBYCAACAAAAAAAAAAA==",
+              "ViewState": "AgIAAOwBAAAAAAAAAAA2wCIDAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-07T14:44:32.542Z",
+              "WhenOpened": "2025-02-11T14:46:33.316Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Konduktor_Reader",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Konduktor_Reader.csproj",
+              "RelativeDocumentMoniker": "Konduktor_Reader.csproj",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Konduktor_Reader.csproj",
+              "RelativeToolTip": "Konduktor_Reader.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-02-11T14:21:52.218Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Helper.cs",
+              "DocumentMoniker": "E:\\ITEGER\\Praca\\KonduktorReader\\Helper.cs",
+              "RelativeDocumentMoniker": "Helper.cs",
+              "ToolTip": "E:\\ITEGER\\Praca\\KonduktorReader\\Helper.cs",
+              "RelativeToolTip": "Helper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAwHIAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-11T13:51:27.575Z",
               "EditorCaption": ""
             }
           ]

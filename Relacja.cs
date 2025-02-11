@@ -1,5 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using static Konduktor_Reader.Reader_Harmonogram_v1;
+﻿using System.Data;
+using Microsoft.Data.SqlClient;
 using static Konduktor_Reader.Reader_Tabela_Stawek_v1;
 
 namespace Konduktor_Reader
@@ -12,30 +12,7 @@ namespace Konduktor_Reader
         public TimeSpan Godzina_Rozpoczecia_Relacji = TimeSpan.Zero;
         public int Dzien_Rozpoczenia_Relacji = 0;
         public List<System_Obsługi_Relacji> System_Obsługi_Relacji = [];
-        public List<Godzina_Pracy> Godziny_Pracy = [];
-        public int Get_Relacja_Id()
-        {
-            string query = @"select R_Id from Relacje where  R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
-            using (SqlConnection connection = new(Program.Optima_Conection_String))
-            {
-                using (SqlCommand command = new(query, connection))
-                {
-                    command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
-                    command.Parameters.AddWithValue("@R_Typ", "");
-                    connection.Open();
-                    object result = command.ExecuteScalar();
-                    if (result != null)
-                    {
-                        return Convert.ToInt32(result);
-                    }
-                    else
-                    {
-                        Program.error_logger.New_Custom_Error($"Nie ma takiej relacji w bazie o danych Numer_Relacji: {Numer_Relacji}");
-                        throw new Exception(Program.error_logger.Get_Error_String());
-                    }
-                }
-            }
-        }
+
         public int Get_Relacja_Id_From_Optima(string Numer_Relacji)
         {
             string query = @"select R_Id from cdn.Relacje where  R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
@@ -43,8 +20,8 @@ namespace Konduktor_Reader
             {
                 using (SqlCommand command = new(query, connection))
                 {
-                    command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
-                    command.Parameters.AddWithValue("@R_Typ", "");
+                    command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
+                    command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = null;
                     connection.Open();
                     object result = command.ExecuteScalar();
                     if (result != null)
@@ -59,55 +36,7 @@ namespace Konduktor_Reader
                 }
             }
         }
-        public void Insert_Relacja()
-        {
-            try
-            {
-                Get_Relacja_Id();
-            }
-            catch
-            {
-                try
-                {
-                    string query = @"INSERT INTO Relacje
-               (R_Nazwa
-               ,R_Typ
-               ,R_Opis_1
-               ,R_Opis_2
-               ,R_Godz_Rozpoczecia
-               ,R_Data_Mod
-               ,R_Os_Mod)
-         VALUES
-               (@Nazwa_Relacji
-               ,@Typ_Relacji
-               ,@Opis_1
-               ,@Opis_2
-               ,@Godz_Rozpoczecia
-               ,@Data_Mod
-               ,@Os_Mod)";
-                    using (SqlConnection connection = new(Program.Optima_Conection_String))
-                    {
-                        using (SqlCommand command = new(query, connection))
-                        {
-                            command.Parameters.AddWithValue("@R_Nazwa", Numer_Relacji);
-                            command.Parameters.AddWithValue("@R_Typ", "");
-                            command.Parameters.AddWithValue("@Opis_1", Opis_Relacji_1);
-                            command.Parameters.AddWithValue("@Opis_2", Opis_Relacji_2);
-                            command.Parameters.AddWithValue("@Godz_Rozpoczecia", Godzina_Rozpoczecia_Relacji);
-                            command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
-                            command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
-                            connection.Open();
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
-                    throw new Exception(Program.error_logger.Get_Error_String());
-                }
-            }
-        }
+
         public void Insert_Relacja_Do_Optimy()
         {
             try
@@ -137,13 +66,13 @@ namespace Konduktor_Reader
                ,@Data_Mod
                ,@Os_Mod)", connection))
                         {
-                            command.Parameters.AddWithValue("@Nazwa_Relacji", Numer_Relacji);
-                            command.Parameters.AddWithValue("@Typ_Relacji", "");
-                            command.Parameters.AddWithValue("@Opis_1", Opis_Relacji_1);
-                            command.Parameters.AddWithValue("@Opis_2", Opis_Relacji_2);
-                            command.Parameters.AddWithValue("@Godz_Rozpoczecia", Godzina_Rozpoczecia_Relacji);
-                            command.Parameters.AddWithValue("@Data_Mod", DateTime.Now);
-                            command.Parameters.AddWithValue("@Os_Mod", "Norbert Tasarz");
+                            command.Parameters.Add("@Nazwa_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
+                            command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = null;
+                            command.Parameters.Add("@Opis_1", SqlDbType.NVarChar, 200).Value = Opis_Relacji_1;
+                            command.Parameters.Add("@Opis_2", SqlDbType.NVarChar, 200).Value = Opis_Relacji_2;
+                            command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = Godzina_Rozpoczecia_Relacji;
+                            command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
+                            command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = "Norbert Tasarz";
                             connection.Open();
                             command.ExecuteNonQuery();
                         }
@@ -151,7 +80,7 @@ namespace Konduktor_Reader
                 }
                 catch (Exception ex)
                 {
-                    Program.error_logger.New_Custom_Error("Error podczas operacji w bazie: " + ex.Message);
+                    Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Get_Relacja_Id_From_Optima): " + ex.Message);
                     throw new Exception(Program.error_logger.Get_Error_String());
                 }
             }
