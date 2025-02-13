@@ -16,7 +16,7 @@ namespace Konduktor_Reader{
         public static bool Clear_Bad_Files_On_Restart = false;
         public static bool Move_Files_To_Processed_Folder = false;
         public static readonly bool TEST_CLEAR_DB_TABLES = true;
-        public static readonly bool LOG_TO_Terminal = false;
+        public static readonly bool LOG_TO_Terminal = true;
         public static int Main()
         {
             Stopwatch stopwatch = new Stopwatch();

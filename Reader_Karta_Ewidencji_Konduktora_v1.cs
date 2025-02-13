@@ -73,7 +73,7 @@ namespace Konduktor_Reader
             public decimal Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100 = 0;
             public string Absencja_Nazwa = string.Empty;
             public decimal Liczba_Godzin_Absencji = 0;
-            public void Uwzglednij_Nadgodziny_v2()
+            public void Podziel_Nadgodziny()
             {
                 if (Godziny_Pracy_Do.Count == 0) return;
 
@@ -492,6 +492,25 @@ namespace Konduktor_Reader
         }
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji, SqlTransaction tran, SqlConnection connection)
         {
+            
+            HashSet<DateTime> Pasujace_Daty = [];
+            foreach (var daneKarty in Karta_Ewidencji.Dane_Karty)
+            {
+                foreach (var daneDnia in daneKarty.Dane_Dni_Relacji)
+                {
+                    Pasujace_Daty.Add(new DateTime(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, daneDnia.Dzien));
+                }
+            }
+            DateTime startDate = new(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, 1);
+            DateTime endDate = new(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, DateTime.DaysInMonth(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac));
+            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
+            {
+                if (!Pasujace_Daty.Contains(dzien))
+                {
+                    Zrob_Insert_Obecnosc_Command(connection, tran, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
+                }
+            }
+
             int ilosc_wpisow = 0;
             foreach (Dane_Karty Dane_Karty in Karta_Ewidencji.Dane_Karty)
             {
@@ -501,7 +520,7 @@ namespace Konduktor_Reader
                     {
                         if (Dane_Dnia.Godziny_Pracy_Od.Count >= 1)
                         {
-                            Dane_Dnia.Uwzglednij_Nadgodziny_v2();
+                            Dane_Dnia.Podziel_Nadgodziny();
                             for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
                                 ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
@@ -537,48 +556,20 @@ namespace Konduktor_Reader
                                     }
                                     Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50) + TimeSpan.FromHours((double)godzNadlPlatne100));
                                 }
-                                for(int k=0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++) {
+                                for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++)
+                                {
                                     ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
                                 }
+                            }
+                            else
+                            {
+                                Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
                             }
                         }
                     }
                 }
             }
             return ilosc_wpisow;
-        }
-        private static (TimeSpan, TimeSpan, TimeSpan, TimeSpan, TimeSpan, TimeSpan) Oblicz_Czas_Z_Dodatkiem(TimeSpan godzRozpPracy, TimeSpan godzZakonczPracy, double godzNadlPlatne50, double godzNadlPlatne100)
-        {
-            double czasPrzepracowany = 0;
-
-
-
-            if (godzZakonczPracy < godzRozpPracy)
-            {
-                czasPrzepracowany = (TimeSpan.FromHours(24) - godzRozpPracy).TotalHours + godzZakonczPracy.TotalHours;
-            }
-            else
-            {
-                czasPrzepracowany = (godzZakonczPracy - godzRozpPracy).TotalHours;
-            }
-
-            double czasPodstawowy = czasPrzepracowany - (godzNadlPlatne50 + godzNadlPlatne100);
-
-            TimeSpan startPodstawowy = godzRozpPracy;
-            TimeSpan endPodstawowy = startPodstawowy + TimeSpan.FromHours(czasPodstawowy);
-
-            TimeSpan startNadl50 = endPodstawowy;
-            TimeSpan endNadl50 = startNadl50 + TimeSpan.FromHours(godzNadlPlatne50);
-
-            TimeSpan startNadl100 = endNadl50;
-            TimeSpan endNadl100 = startNadl100 + TimeSpan.FromHours(godzNadlPlatne100);
-
-            return (new TimeSpan((int)startPodstawowy.TotalHours % 24, startPodstawowy.Minutes, startPodstawowy.Seconds),
-                new TimeSpan((int)endPodstawowy.TotalHours % 24, endPodstawowy.Minutes, endPodstawowy.Seconds),
-                new TimeSpan((int)startNadl50.TotalHours % 24, startNadl50.Minutes, startNadl50.Seconds),
-                new TimeSpan((int)endNadl50.TotalHours % 24, endNadl50.Minutes, endNadl50.Seconds),
-                new TimeSpan((int)startNadl100.TotalHours % 24, startNadl100.Minutes, startNadl100.Seconds),
-                new TimeSpan((int)endNadl100.TotalHours % 24, endNadl100.Minutes, endNadl100.Seconds));
         }
         private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, int Typ_Pracy, string Numer_Relacji)
         {
@@ -588,7 +579,7 @@ namespace Konduktor_Reader
                 DateTime godzDoDate = Program.baseDate + endPodstawowy;
                 bool duplicate = false;
                 int IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
-                using (SqlCommand cmd = new SqlCommand(@"
+                using (SqlCommand cmd = new(@"
         IF EXISTS (
             SELECT 1
             FROM cdn.PracPracaDni P
@@ -668,7 +659,7 @@ INSERT INTO CDN.PracPracaDniGodz
 		1,
 		'',
 		1);";
-                    using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertObecnościDoOptimy, connection, transaction))
+                    using (SqlCommand insertCmd = new(sqlQueryInsertObecnościDoOptimy, connection, transaction))
                     {
                         insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -684,9 +675,15 @@ INSERT INTO CDN.PracPracaDniGodz
                     return 1;
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): " + ex.Message);
+                transaction.Rollback();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Program.error_logger.New_Custom_Error("Error: " + ex.Message);
                 transaction.Rollback();
                 throw;
             }
@@ -985,6 +982,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                             insertCmd.ExecuteScalar();
                         }
                     }
+
                     catch (FormatException ex)
                     {
                         Program.error_logger.New_Custom_Error($"{ex.Message}");
@@ -1097,9 +1095,15 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                     }
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Prowizje): " + ex.Message);
+                transaction.Rollback();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Program.error_logger.New_Custom_Error("Error: " + ex.Message);
                 transaction.Rollback();
                 throw;
             }
