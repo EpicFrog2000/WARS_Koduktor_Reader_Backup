@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Konduktor_Reader")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e6006c4d756f5464c65eaeb6b271532222e6d3df")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68c43ef38ab5ebb6b8945f1b974f19dd44cd984c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Konduktor_Reader")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Konduktor_Reader")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

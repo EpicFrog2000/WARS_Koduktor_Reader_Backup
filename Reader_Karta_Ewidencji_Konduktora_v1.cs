@@ -575,8 +575,8 @@ namespace Konduktor_Reader
         {
             try
             {
-                DateTime godzOdDate = Program.baseDate + startPodstawowy;
-                DateTime godzDoDate = Program.baseDate + endPodstawowy;
+                DateTime godzOdDate = Helper.baseDate + startPodstawowy;
+                DateTime godzDoDate = Helper.baseDate + endPodstawowy;
                 bool duplicate = false;
                 int IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
                 using (SqlCommand cmd = new(@"
@@ -691,7 +691,7 @@ INSERT INTO CDN.PracPracaDniGodz
         }
         private static void Dodaj_Dane_Do_Optimy(Karta_Ewidencji Karta_Ewidencji, List<Prowizje> Prowizje)
         {
-            using (SqlConnection connection = new SqlConnection(Program.Optima_Conection_String))
+            using (SqlConnection connection = new SqlConnection(Program.config.Optima_Conection_String))
             {
                 connection.Open();
                 using (SqlTransaction tran = connection.BeginTransaction())
@@ -891,7 +891,7 @@ END
                     cmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
                     cmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                     cmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                    cmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Program.baseDate;
+                    cmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Helper.baseDate;
                     cmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
                     if ((int)cmd.ExecuteScalar() == 1)
                     {
@@ -974,7 +974,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                             insertCmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
                             insertCmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                             insertCmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                            insertCmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Program.baseDate;
+                            insertCmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Helper.baseDate;
                             insertCmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
                             insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
                             insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);

@@ -7,51 +7,42 @@ using System.Diagnostics;
 namespace Konduktor_Reader{
     static class Program
     {
+
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
-        public static string[] Path_To_Folders_With_Files = ["C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Wynagrodzenia1\\", "C:\\Users\\norbert.tasarz\\Desktop\\Arkusze konduktorzy\\Ewidencja 2\\"];
-        public static readonly DateTime baseDate = new(1899, 12, 30); // Do zapytan sql
-        public static string Optima_Conection_String = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
-        public static bool Clear_Logs_On_Program_Restart = false;
-        public static bool Clear_Processed_Files_On_Restart = false;
-        public static bool Clear_Bad_Files_On_Restart = false;
-        public static bool Move_Files_To_Processed_Folder = false;
+        public static Config config = new();
+        public static Stopwatch stopwatch = new();
         public static readonly bool TEST_CLEAR_DB_TABLES = true;
-        public static readonly bool LOG_TO_Terminal = true;
+        public static readonly bool LOG_TO_TERMINAL = true;
         public static int Main()
         {
-            Stopwatch stopwatch = new Stopwatch();
-
             // Start measuring time
             stopwatch.Start();
             TextWriter originalOut = Console.Out;
-            if (!LOG_TO_Terminal)
+            if (!LOG_TO_TERMINAL)
             {
                 Console.SetOut(TextWriter.Null);
             }
+
             Clear_Tables(); // FOR TESTING ONLY
 
+            config.GetConfigFromFile();
 
-            // TODO DODAC PETLE WHILE TRUE
-
-            Config Config = new();
-            Config.GetConfigFromFile();
-            Config.Set_Program_Config();
-
-            if (!Helper.Valid_SQLConnection_String(Optima_Conection_String))
+            if (!Helper.Valid_SQLConnection_String(config.Optima_Conection_String))
             {
-                Console.WriteLine($"Invalid connection string: {Optima_Conection_String}");
+                Console.WriteLine($"Invalid connection string: {config.Optima_Conection_String}");
                 Console.ReadLine();
                 return -1;
             }
 
-            if (Path_To_Folders_With_Files.Length < 1)
+            if (config.Files_Folders.Count < 1)
             {
                 Console.WriteLine($"Program nie ma ustawionych folderów");
+                Console.ReadLine();
                 return 0;
             }
 
 
-            foreach (string Folder_Path in Path_To_Folders_With_Files)
+            foreach (string Folder_Path in config.Files_Folders)
             {
                 if (!Directory.Exists(Folder_Path))
                 {
@@ -144,13 +135,11 @@ namespace Konduktor_Reader{
                     MoveFile(File_Path, 0);
                 }
             }
-            if (!LOG_TO_Terminal)
+            if (!LOG_TO_TERMINAL)
             {
                 Console.SetOut(originalOut);
             }
-            TimeSpan elapsedTime = stopwatch.Elapsed;
-            Console.WriteLine("Elapsed Time: " + elapsedTime.ToString(@"hh\:mm\:ss\:fff"));
-
+            Console.WriteLine("Czas wykonania programu: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\:fff"));
             Console.WriteLine("Kliknij aby zakończyć...");
             Console.ReadLine();
             return 0;
@@ -230,7 +219,7 @@ namespace Konduktor_Reader{
         }
         private static void MoveFile(string filePath, int option)
         {
-            if (!Move_Files_To_Processed_Folder)
+            if (!config.Move_Files_To_Processed_Folder)
             {
                 return;
             }
@@ -306,21 +295,21 @@ namespace Konduktor_Reader{
                 }
             }
 
-            if (Clear_Logs_On_Program_Restart)
+            if (config.Clear_Logs_On_Program_Restart)
             {
                 foreach (string file in Directory.GetFiles(directories[0]))
                 {
                     File.Delete(file);
                 }
             }
-            if (Clear_Bad_Files_On_Restart)
+            if (config.Clear_Bad_Files_On_Restart)
             {
                 foreach (string file in Directory.GetFiles(directories[1]))
                 {
                     File.Delete(file);
                 }
             }
-            if (Clear_Processed_Files_On_Restart)
+            if (config.Clear_Processed_Files_On_Restart)
             {
                 foreach (string file in Directory.GetFiles(directories[2]))
                 {
@@ -381,12 +370,11 @@ namespace Konduktor_Reader{
             workbook.Properties.Modified = d;
             workbook.SaveAs(outputFilePath);
         }
-
         private static void Clear_Tables()
         {
             if (TEST_CLEAR_DB_TABLES)
             {
-                using SqlConnection connection = new(Optima_Conection_String);
+                using SqlConnection connection = new(config.Optima_Conection_String);
                 connection.Open();
                 using SqlCommand command = new("delete from cdn.PracPracaDniGodz; delete from cdn.PracPracaDni", connection);
                 command.ExecuteScalar();

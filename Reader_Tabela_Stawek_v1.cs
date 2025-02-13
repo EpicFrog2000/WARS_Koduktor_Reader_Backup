@@ -227,7 +227,7 @@ namespace Konduktor_Reader
         {
             try
             {
-                using (SqlConnection connection = new(Program.Optima_Conection_String))
+                using (SqlConnection connection = new(Program.config.Optima_Conection_String))
                 {
                     using (SqlCommand command = new(@$"
         WITH CTE AS (

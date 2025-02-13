@@ -102,15 +102,5 @@ namespace Konduktor_Reader
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
             }
         }
-        public void Set_Program_Config()
-        {
-            // SET VARIABLES TO THOSE FROM CONFIG
-            Program.Optima_Conection_String = Optima_Conection_String;
-            Program.Path_To_Folders_With_Files = Files_Folders.ToArray();
-            Program.Clear_Logs_On_Program_Restart = Clear_Logs_On_Program_Restart;
-            Program.Clear_Processed_Files_On_Restart = Clear_Processed_Files_On_Restart;
-            Program.Clear_Bad_Files_On_Restart = Clear_Bad_Files_On_Restart;
-            Program.Move_Files_To_Processed_Folder = Move_Files_To_Processed_Folder;
-        }
     }
 }

@@ -16,7 +16,7 @@ namespace Konduktor_Reader
         public int Get_Relacja_Id_From_Optima(string Numer_Relacji)
         {
             string query = @"select R_Id from cdn.Relacje where  R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
-            using (SqlConnection connection = new(Program.Optima_Conection_String))
+            using (SqlConnection connection = new(Program.config.Optima_Conection_String))
             {
                 using (SqlCommand command = new(query, connection))
                 {
@@ -46,7 +46,7 @@ namespace Konduktor_Reader
             {
                 try
                 {
-                    using (SqlConnection connection = new(Program.Optima_Conection_String))
+                    using (SqlConnection connection = new(Program.config.Optima_Conection_String))
                     {
                         using (SqlCommand command = new(@"INSERT INTO CDN.Relacje
                (R_Nazwa
@@ -69,7 +69,7 @@ namespace Konduktor_Reader
                             //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = null;
                             command.Parameters.Add("@Opis_1", SqlDbType.NVarChar, 200).Value = Opis_Relacji_1;
                             command.Parameters.Add("@Opis_2", SqlDbType.NVarChar, 200).Value = Opis_Relacji_2;
-                            command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = Program.baseDate + Godzina_Rozpoczecia_Relacji;
+                            command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = Helper.baseDate + Godzina_Rozpoczecia_Relacji;
                             command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
                             command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = "Norbert Tasarz";
                             connection.Open();

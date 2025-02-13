@@ -6,6 +6,7 @@ namespace Konduktor_Reader
 {
     internal static class Helper
     {
+        public static readonly DateTime baseDate = new(1899, 12, 30); // Do zapytan sql
         public class Current_Position
         {
             private int col = 1;
