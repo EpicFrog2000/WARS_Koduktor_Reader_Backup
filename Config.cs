@@ -16,27 +16,30 @@ namespace Konduktor_Reader
             Check_File(filePath);
             if (!File.Exists(filePath))
             {
-                File.Create(filePath).Dispose();
                 var defaultConfig = new
                 {
+                    Files_Folders,
                     Optima_Conection_String,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
                 };
-                File.WriteAllText(filePath, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
+
+                string defaultJson = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(filePath, defaultJson);
             }
+
             string json = File.ReadAllText(filePath);
-            Config? config = JsonSerializer.Deserialize<Config>(json);
-            if (config != null)
+            Config? new_config = JsonSerializer.Deserialize<Config>(json);
+            if (new_config != null)
             {
-                Files_Folders = config.Files_Folders;
-                Optima_Conection_String = config.Optima_Conection_String;
-                Clear_Logs_On_Program_Restart = config.Clear_Logs_On_Program_Restart;
-                Clear_Bad_Files_On_Restart = config.Clear_Bad_Files_On_Restart;
-                Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
-                Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
+                Files_Folders = new_config.Files_Folders;
+                Optima_Conection_String = new_config.Optima_Conection_String ?? "";
+                Clear_Logs_On_Program_Restart = new_config.Clear_Logs_On_Program_Restart;
+                Clear_Bad_Files_On_Restart = new_config.Clear_Bad_Files_On_Restart;
+                Clear_Processed_Files_On_Restart = new_config.Clear_Processed_Files_On_Restart;
+                Move_Files_To_Processed_Folder = new_config.Move_Files_To_Processed_Folder;
             }
         }
         public void GetConfigFromFile(string Config_File_Path)

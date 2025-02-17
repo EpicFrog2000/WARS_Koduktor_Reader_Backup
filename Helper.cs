@@ -19,7 +19,7 @@ namespace Konduktor_Reader
                 {
                     if (value < 1)
                     {
-                        Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
+                        //Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
                         throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w kolumnie mniejszej niż 1");
                     }
                     col = value;
@@ -33,7 +33,7 @@ namespace Konduktor_Reader
                 {
                     if (value < 1)
                     {
-                        Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
+                        //Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
                         throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
                     }
                     row = value;
@@ -106,11 +106,11 @@ namespace Konduktor_Reader
             return string.Empty;
         }
 
-        public static List<Current_Position> Find_Starting_Points(IXLWorksheet worksheet, string keyWord)
+        public static List<Current_Position> Find_Starting_Points(IXLWorksheet worksheet, string keyWord, bool CompareMode=true)
         {
             const int limit = 1000;
-            var positions = new ConcurrentBag<Current_Position>();
-            var cells = worksheet.CellsUsed().ToArray();
+            ConcurrentBag<Current_Position> positions = new();
+            IXLCell[] cells = worksheet.CellsUsed().ToArray();
 
             Parallel.ForEach(cells, (cell, state) =>
             {
@@ -123,15 +123,30 @@ namespace Konduktor_Reader
                 if (cell.HasFormula && !cell.FormulaA1.Equals(cell.Address.ToString()))
                     return;
 
-                var formattedValue = cell.GetFormattedString();
-                if (formattedValue.Contains(keyWord, StringComparison.OrdinalIgnoreCase))
+                string formattedValue = cell.GetFormattedString();
+                if (CompareMode)
                 {
-                    positions.Add(new Current_Position
+                    if (formattedValue.Contains(keyWord, StringComparison.OrdinalIgnoreCase))
                     {
-                        Row = cell.Address.RowNumber,
-                        Col = cell.Address.ColumnNumber
-                    });
+                        positions.Add(new Current_Position
+                        {
+                            Row = cell.Address.RowNumber,
+                            Col = cell.Address.ColumnNumber
+                        });
+                    }
                 }
+                else
+                {
+                    if (formattedValue == keyWord)
+                    {
+                        positions.Add(new Current_Position
+                        {
+                            Row = cell.Address.RowNumber,
+                            Col = cell.Address.ColumnNumber
+                        });
+                    }
+                }
+                
             });
 
             return positions.Take(limit).ToList();
@@ -144,7 +159,7 @@ namespace Konduktor_Reader
         {
             try
             {
-                using (var connection = new SqlConnection(Connection_String))
+                using (SqlConnection connection = new(Connection_String))
                 {
                     connection.Open();
                     connection.Close();

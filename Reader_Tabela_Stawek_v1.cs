@@ -41,9 +41,10 @@ namespace Konduktor_Reader
             public Czas_Relacji Czas_Relacji = new();
             public Wynagrodzenie Wynagrodzenie = new();
         }
-
-        public static void Process_Zakladka(IXLWorksheet Zakladka)
+        private static Error_Logger Internal_Error_Logger = new(true);
+        public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
         {
+            Internal_Error_Logger = Error_Logger;
             List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Starting_Points(Zakladka, "Tabela Stawek");
             List<Relacja> Relacje = [];
 
@@ -56,10 +57,37 @@ namespace Konduktor_Reader
 
             foreach (Relacja Relacja in Relacje)
             {
-                Relacja.Insert_Relacja_Do_Optimy();
+                try
+                {
+                    Relacja.Insert_Relacja_Do_Optimy();
+                }
+                catch (SqlException ex)
+                {
+                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Relacja_Do_Optimy): " + ex.Message);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
+                }
+                catch (Exception ex)
+                {
+                    Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
+                }
+                
                 foreach (System_Obsługi_Relacji System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
                 {
-                    System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy();
+                    try
+                    {
+                        System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy();
+                    }
+                    catch (SqlException ex)
+                    {
+                        Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
+                        throw new Exception(Internal_Error_Logger.Get_Error_String());
+                    }
+                    catch (Exception ex)
+                    {
+                        Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                        throw new Exception(Internal_Error_Logger.Get_Error_String());
+                    }
                 }
                 Insert_Atrybuty_Do_Optimy(Relacja);
             }
@@ -100,16 +128,16 @@ namespace Konduktor_Reader
             dane = Zakladka.Cell(pozycja.Row, pozycja.Col + 1).GetFormattedString().Trim().Replace("  ", " ");
             if (string.IsNullOrEmpty(dane))
             {
-                Program.error_logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row, "Brak opisu relacji");
-                throw new Exception(Program.error_logger.Get_Error_String());
+                Internal_Error_Logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row, "Brak opisu relacji");
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             Relacja.Opis_Relacji_1 = dane;
 
             dane = Zakladka.Cell(pozycja.Row + 1, pozycja.Col + 1).GetFormattedString().Trim().Replace("  ", " ");
             if (string.IsNullOrEmpty(dane))
             {
-                Program.error_logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row + 1, "Brak opisu relacji");
-                throw new Exception(Program.error_logger.Get_Error_String());
+                Internal_Error_Logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row + 1, "Brak opisu relacji");
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             Relacja.Opis_Relacji_2 = dane;
         }
@@ -123,8 +151,8 @@ namespace Konduktor_Reader
                 string dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
                 if (string.IsNullOrEmpty(dane))
                 {
-                    //Program.error_logger.New_Error(dane, "PodNumer Relacji", pozycja.Col, pozycja.Row + offset, "Brak Numeru Relacji");
-                    //throw new Exception(Program.error_logger.Get_Error_String());
+                    //Internal_Error_Logger.New_Error(dane, "PodNumer Relacji", pozycja.Col, pozycja.Row + offset, "Brak Numeru Relacji");
+                    //throw new Exception(Internal_Error_Logger.Get_Error_String());
                     offset++;
                     break;
                 }
@@ -139,8 +167,8 @@ namespace Konduktor_Reader
                 dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 1).GetFormattedString().Trim().Replace("  ", " ");
                 if (string.IsNullOrEmpty(dane))
                 {
-                    Program.error_logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row + offset, "Brak Opisu Relacji");
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row + offset, "Brak Opisu Relacji");
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 System_Obsługi_Relacji.Relacja.Opis_Relacji_1 = dane;
 
@@ -148,40 +176,40 @@ namespace Konduktor_Reader
                 dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 10).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe))
                 {
-                    Program.error_logger.New_Error(dane, "Wynagrodzenie ryczałtowe podstawowe", pozycja.Col + 10, pozycja.Row + offset);
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Wynagrodzenie ryczałtowe podstawowe", pozycja.Col + 10, pozycja.Row + offset);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Wynagrodzenie ryczałtowe za godz. nadliczbowe
                 dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 11).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe))
                 {
-                    Program.error_logger.New_Error(dane, "Wynagrodzenie ryczałtowe za godz. nadliczbow", pozycja.Col + 11, pozycja.Row + offset);
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Wynagrodzenie ryczałtowe za godz. nadliczbow", pozycja.Col + 11, pozycja.Row + offset);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Dodatek za pracę w nocy
                 dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 12).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy))
                 {
-                    Program.error_logger.New_Error(dane, "Dodatek za pracę w nocy", pozycja.Col + 12, pozycja.Row + offset);
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Dodatek za pracę w nocy", pozycja.Col + 12, pozycja.Row + offset);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Wynagrodzenie Calkowite
                 dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 13).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Całkowite))
                 {
-                    Program.error_logger.New_Error(dane, "Wynagrodzenie Calkowite", pozycja.Col + 13, pozycja.Row + offset);
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Wynagrodzenie Calkowite", pozycja.Col + 13, pozycja.Row + offset);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Dodatek wyjazdowy
                 dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 14).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy))
                 {
-                    Program.error_logger.New_Error(dane, "Dodatek wyjazdowy", pozycja.Col + 14, pozycja.Row + offset);
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Dodatek wyjazdowy", pozycja.Col + 14, pozycja.Row + offset);
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 offset++;
@@ -192,8 +220,8 @@ namespace Konduktor_Reader
 
         private static void Insert_Atrybuty_Do_Optimy(Relacja Relacja)
         {
-            DateTime Data_Od = DateTime.ParseExact("2025.01.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture);
-            DateTime Data_Do = DateTime.ParseExact("2025.02.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture).AddDays(-1);
+            DateTime Data_Od = DateTime.ParseExact("2025.02.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture);
+            DateTime Data_Do = DateTime.ParseExact("2025.03.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture).AddDays(-1);
 
             int counter = 0;
             foreach (System_Obsługi_Relacji System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
@@ -218,7 +246,7 @@ namespace Konduktor_Reader
             if (counter > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"Poprawnie dodano dane z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
+                Console.WriteLine($"Poprawnie dodano dane z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
@@ -230,22 +258,22 @@ namespace Konduktor_Reader
                 using (SqlConnection connection = new(Program.config.Optima_Conection_String))
                 {
                     using (SqlCommand command = new(@$"
-        WITH CTE AS (
-            SELECT OAT_OatId
+                            WITH CTE AS (
+                                SELECT OAT_OatId
             FROM cdn.OAtrybuty
             WHERE OAT_AtkId = (SELECT ATK_AtkId FROM cdn.OAtrybutyKlasy WHERE ATK_Nazwa = @NazwaAtrybutu)
-        )
+                            )
 
-        MERGE cdn.OAtrybutyHist AS target
-        USING CTE AS source
-        ON target.ATH_OatId = source.OAT_OatId
-           AND target.ATH_DataOd = @ATHDataOd
-           AND target.ATH_DataDo = @ATHDataDo
-        WHEN MATCHED THEN
-            UPDATE SET ATH_Wartosc = @NowaWartosc
-        WHEN NOT MATCHED THEN
-            INSERT (ATH_PrcId, ATH_AtkId, ATH_OatId, ATH_Wartosc, ATH_DataOd, ATH_DataDo)
-            VALUES (0, 4, source.OAT_OatId, @NowaWartosc, @ATHDataOd, @ATHDataDo);", connection))
+                            MERGE cdn.OAtrybutyHist AS target
+                            USING CTE AS source
+                            ON target.ATH_OatId = source.OAT_OatId
+                               AND target.ATH_DataOd = @ATHDataOd
+                               AND target.ATH_DataDo = @ATHDataDo
+                            WHEN MATCHED THEN
+                                UPDATE SET ATH_Wartosc = @NowaWartosc
+                            WHEN NOT MATCHED THEN
+                                INSERT (ATH_PrcId, ATH_AtkId, ATH_OatId, ATH_Wartosc, ATH_DataOd, ATH_DataDo)
+                                VALUES (0, 4, source.OAT_OatId, @NowaWartosc, @ATHDataOd, @ATHDataDo);", connection))
                     {
                         command.Parameters.Add("@NowaWartosc", SqlDbType.NVarChar, 101).Value = wartosc;
                         command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 100).Value = Nazwa_Atrybutu;
@@ -259,12 +287,12 @@ namespace Konduktor_Reader
             }
             catch (SqlException ex)
             {
-                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Command_Atrybuty): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Command_Atrybuty): " + ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
                 throw;
             }
         }

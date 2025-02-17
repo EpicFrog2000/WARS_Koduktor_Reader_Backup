@@ -1,4 +1,6 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Office2013.Drawing.ChartStyle;
+using Excel_Data_Importer_WARS;
 using ExcelDataReader;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -11,9 +13,8 @@ namespace Konduktor_Reader{
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         public static Config config = new();
         public static Stopwatch stopwatch = new();
-        public static readonly bool TEST_CLEAR_DB_TABLES = true;
         public static readonly bool LOG_TO_TERMINAL = true;
-        public static int Main()
+        public static async Task<int> Main()
         {
             // Start measuring time
             stopwatch.Start();
@@ -23,7 +24,6 @@ namespace Konduktor_Reader{
                 Console.SetOut(TextWriter.Null);
             }
 
-            Clear_Tables(); // FOR TESTING ONLY
 
             config.GetConfigFromFile();
 
@@ -40,6 +40,7 @@ namespace Konduktor_Reader{
                 Console.ReadLine();
                 return 0;
             }
+
 
 
             foreach (string Folder_Path in config.Files_Folders)
@@ -60,81 +61,10 @@ namespace Konduktor_Reader{
 
                 foreach (string filepath in Files_Paths)
                 {
-                    string File_Path = filepath;
-                    Console.ForegroundColor = ConsoleColor.Blue;
-                    Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
-                    Console.ForegroundColor = ConsoleColor.White;
-                    if (!Is_File_Valid(File_Path))
-                    {
-                        //try
-                        //{
-                        //    Convert_To_Xlsx(File_Path, Path.Combine(Path.GetDirectoryName(File_Path)!, Path.GetFileNameWithoutExtension(File_Path) + ".xlsx"));
-                        //    File_Path = Path.Combine(Path.GetDirectoryName(File_Path)!, Path.GetFileNameWithoutExtension(File_Path) + ".xlsx");
-                        //}
-                        //catch
-                        //{
-                        //    MoveFile(File_Path, 1);
-                        //    Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        //    Console.WriteLine($"Program nie możę odczytać pliku {File_Path}");
-                        //    Console.ForegroundColor = ConsoleColor.White;
-                        //    continue;
-                        //}
-                        MoveFile(File_Path, 1);
-                        Console.ForegroundColor = ConsoleColor.DarkYellow;
-                        Console.WriteLine($"Program nie możę odczytać pliku {File_Path}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                        continue;
-                    }
-                    error_logger.Nazwa_Pliku = File_Path;
-                    (error_logger.Last_Mod_Osoba, error_logger.Last_Mod_Time) = Get_Metadane_Pliku(File_Path);
-                    using (XLWorkbook Workbook = new(File_Path))
-                    {
-                        Usun_Ukryte_Karty(Workbook);
-                        int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
-                        if (Ilosc_Zakladek_W_Workbook < 1)
-                        {
-                            continue;
-                        }
-                        for (int Obecny_Numer_Zakladki = 1; Obecny_Numer_Zakladki <= Ilosc_Zakladek_W_Workbook; Obecny_Numer_Zakladki++)
-                        {
-                            error_logger.Nr_Zakladki = Obecny_Numer_Zakladki;
-                            IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
-                            error_logger.Nazwa_Zakladki = Zakladka.Name;
-                            int Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
-                            switch (Typ_Zakladki)
-                            {
-
-                                case 2:
-                                    try
-                                    {
-                                        Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka);
-                                    }
-                                    catch
-                                    {
-                                        Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
-                                    }
-                                    break;
-                                case 3:
-                                    try
-                                    {
-                                        Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook+1; // Czytanie tylko pierwszej zakłdki
-                                        Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka);
-                                    }
-                                    catch
-                                    {
-                                        Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
-                                    }
-                                    break;
-                                default:
-                                    Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki);
-                                    error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
-                                    continue;
-                            }
-                        }
-                    }
-                    MoveFile(File_Path, 0);
+                    await Process_Files(filepath).ConfigureAwait(false);
                 }
             }
+
             if (!LOG_TO_TERMINAL)
             {
                 Console.SetOut(originalOut);
@@ -144,8 +74,94 @@ namespace Konduktor_Reader{
             Console.ReadLine();
             return 0;
         }
+        private static async Task Process_Files(string File_Path)
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
+            Console.ForegroundColor = ConsoleColor.White;
+            if (!Is_File_Valid(File_Path))
+            {
+                return;
+            }
+            Error_Logger Internal_Error_Logger = new(true);
+            Internal_Error_Logger.Current_Processed_Files_Folder = error_logger.Current_Processed_Files_Folder;
+            Internal_Error_Logger.Current_Bad_Files_Folder = error_logger.Current_Bad_Files_Folder;
+            Internal_Error_Logger.ErrorFilePath = error_logger.ErrorFilePath;
+            Internal_Error_Logger.Nazwa_Pliku = File_Path;
+            (Internal_Error_Logger.Last_Mod_Osoba, Internal_Error_Logger.Last_Mod_Time) = await Get_Metadane_Pliku(File_Path).ConfigureAwait(false);
+            error_logger.Nazwa_Pliku = Internal_Error_Logger.Nazwa_Pliku;
+            error_logger.Last_Mod_Osoba = Internal_Error_Logger.Last_Mod_Osoba;
+            error_logger.Last_Mod_Time = Internal_Error_Logger.Last_Mod_Time;
+
+            using (XLWorkbook Workbook = new(File_Path))
+            {
+                await Usun_Ukryte_Karty(Workbook).ConfigureAwait(false);
+                int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
+                if (Ilosc_Zakladek_W_Workbook < 1)
+                {
+                    return;
+                }
+                for (int Obecny_Numer_Zakladki = 1; Obecny_Numer_Zakladki <= Ilosc_Zakladek_W_Workbook; Obecny_Numer_Zakladki++)
+                {
+                    Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
+                    IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
+                    Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
+                    int Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
+                    switch (Typ_Zakladki)
+                    {
+                        case 2:
+                            try
+                            {
+                                Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            }
+                            catch
+                            {
+                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
+                            }
+                            break;
+                        case 3:
+                            try
+                            {
+                                Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
+                                Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            }
+                            catch
+                            {
+                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
+                            }
+                            break;
+                        case 4:
+                            try
+                            {
+                                Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            }
+                            catch
+                            {
+                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
+                            }
+                            break;
+                        case 5:
+                            try
+                            {
+                                Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            }
+                            catch
+                            {
+                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
+                            }
+                            break;
+                        default:
+                            await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
+                            error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
+                            return;
+                    }
+                }
+            }
+            await MoveFile(File_Path, 0).ConfigureAwait(false);
+        }
         private static int Get_Typ_Zakladki(IXLWorksheet Worksheet)
         {
+
             string Cell_Value = Worksheet.Cell(3, 5).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("Harmonogram pracy"))
             {
@@ -163,44 +179,69 @@ namespace Konduktor_Reader{
             {
                 return 3;
             }
+
+            Cell_Value = Worksheet.Cell(1, 1).Value.ToString();
+            if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
+            {
+                return 5;
+            }
+
+            Cell_Value = Worksheet.Cell(1, 2).Value.ToString();
+            if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
+            {
+                return 5;
+            }
+
+            foreach (IXLCell cell in Worksheet.CellsUsed()) // karta pracy NIE konduktora
+            {
+                try
+                {
+                    if (cell.GetString().Trim() == "Dzień")
+                    {
+                        return 4;
+                    }
+                }
+                catch { }
+            }
+
             return 0;
         }
-        private static void Usun_Ukryte_Karty(XLWorkbook workbook)
+        private static async Task Usun_Ukryte_Karty(XLWorkbook workbook)
         {
-            List<IXLWorksheet> hiddenSheets = [];
-            foreach (IXLWorksheet sheet in workbook.Worksheets)
+            await Task.Run(() =>
             {
-                if (sheet.Visibility == XLWorksheetVisibility.Hidden)
+                List<IXLWorksheet> hiddenSheets = [];
+                foreach (IXLWorksheet sheet in workbook.Worksheets)
                 {
-                    hiddenSheets.Add(sheet);
+                    if (sheet.Visibility == XLWorksheetVisibility.Hidden)
+                    {
+                        hiddenSheets.Add(sheet);
+                    }
                 }
-            }
-            foreach (IXLWorksheet sheet in hiddenSheets)
-            {
-                workbook.Worksheets.Delete(sheet.Name);
-            }
-            workbook.Save();
+                foreach (IXLWorksheet sheet in hiddenSheets)
+                {
+                    workbook.Worksheets.Delete(sheet.Name);
+                }
+                workbook.Save();
+            });
         }
-        private static (string, DateTime) Get_Metadane_Pliku(string File_Path)
+        private static async Task<(string, DateTime)> Get_Metadane_Pliku(string File_Path)
         {
+            DateTime lastWriteTime = File.GetLastWriteTime(File_Path);
+
             try
             {
-                using (XLWorkbook workbook = new(File_Path))
+                using (FileStream fs = new FileStream(File_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    DateTime lastWriteTime = File.GetLastWriteTime(File_Path);
+                    var workbook = await Task.Run(() => new XLWorkbook(fs));
 
-                    if (workbook.Properties.LastModifiedBy == null)
-                    {
-                        return ("", lastWriteTime);
-                    }
-                    return (workbook.Properties.LastModifiedBy, lastWriteTime);
+                    string lastModifiedBy = workbook.Properties.LastModifiedBy ?? "";
+                    return (lastModifiedBy, lastWriteTime);
                 }
             }
             catch
             {
-                DateTime lastWriteTime = File.GetLastWriteTime(File_Path);
                 return ("", lastWriteTime);
-
             }
         }
         private static bool Is_File_Valid(string File_Path)
@@ -211,13 +252,25 @@ namespace Konduktor_Reader{
             }
             catch
             {
+                MoveFile(File_Path, 1).ConfigureAwait(false);
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
+                Console.ForegroundColor = ConsoleColor.White;
                 return false;
             }
             string[] validExtensions = [".xlsx", ".xls"];
             string fileExtension = Path.GetExtension(File_Path).ToLowerInvariant();
-            return validExtensions.Contains(fileExtension);
+            if (!validExtensions.Contains(fileExtension))
+            {
+                MoveFile(File_Path, 1).ConfigureAwait(false);
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
+                Console.ForegroundColor = ConsoleColor.White;
+                return false;
+            }
+            return true;
         }
-        private static void MoveFile(string filePath, int option)
+        private static async Task MoveFile(string filePath, int option)
         {
             if (!config.Move_Files_To_Processed_Folder)
             {
@@ -242,34 +295,38 @@ namespace Konduktor_Reader{
             {
                 File.Delete(destinationPath);
             }
-            File.Move(filePath, destinationPath);
+            await Task.Run(() => File.Move(filePath, destinationPath));
         }
-        private static void Copy_Bad_Sheet_To_Files_Folder(string filePath, int sheetIndex)
+        private static async Task Copy_Bad_Sheet_To_Files_Folder(string filePath, int sheetIndex)
         {
-            string newFilePath = System.IO.Path.Combine(error_logger.Current_Bad_Files_Folder, "DO_POPRAWY_" + System.IO.Path.GetFileName(filePath));
+            string newFilePath = Path.Combine(error_logger.Current_Bad_Files_Folder, "DO_POPRAWY_" + Path.GetFileName(filePath));
             try
             {
-                using (XLWorkbook originalwb = new(filePath))
+                await Task.Run(() =>
                 {
-                    IXLWorksheet sheetToCopy = originalwb.Worksheet(sheetIndex);
-                    string newSheetName = sheetToCopy.Name;
-                    if (newSheetName.Length > 31)
+                    using (XLWorkbook originalwb = new(filePath))
                     {
-                        newSheetName = newSheetName[..31];
-                    }
-                    using (XLWorkbook workbook = File.Exists(newFilePath) ? new XLWorkbook(newFilePath) : new XLWorkbook())
-                    {
-                        if (workbook.Worksheets.Contains(newSheetName))
+                        IXLWorksheet sheetToCopy = originalwb.Worksheet(sheetIndex);
+                        string newSheetName = sheetToCopy.Name;
+                        if (newSheetName.Length > 31)
                         {
-                            return;
+                            newSheetName = newSheetName[..31];
                         }
-                        sheetToCopy.CopyTo(workbook, newSheetName);
-                        XLWorkbookProperties properties = originalwb.Properties;
-                        properties.Author = "Copied by program";
-                        properties.Modified = DateTime.Now;
-                        workbook.SaveAs(newFilePath);
+
+                        using (XLWorkbook workbook = File.Exists(newFilePath) ? new XLWorkbook(newFilePath) : new XLWorkbook())
+                        {
+                            if (workbook.Worksheets.Contains(newSheetName))
+                            {
+                                return;
+                            }
+                            sheetToCopy.CopyTo(workbook, newSheetName);
+                            XLWorkbookProperties properties = originalwb.Properties;
+                            properties.Author = "Copied by program";
+                            properties.Modified = DateTime.Now;
+                            workbook.SaveAs(newFilePath);
+                        }
                     }
-                }
+                });
             }
             catch
             {
@@ -322,7 +379,7 @@ namespace Konduktor_Reader{
                 File.Create(errorFilePath);
             }
         }
-        public static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
+        public static async Task Convert_To_Xlsx(string inputFilePath, string outputFilePath)
         {
             // nwm dlaczego textwrap jest zawsze true. Jebać to jest wystarczająco dobre.
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -340,7 +397,7 @@ namespace Konduktor_Reader{
                 dataSet = reader.AsDataSet(config);
             }
 
-            using XLWorkbook workbook = new XLWorkbook();
+            using XLWorkbook workbook = new();
             foreach (System.Data.DataTable table in dataSet.Tables)
             {
                 IXLWorksheet worksheet = workbook.Worksheets.Add(table.TableName);
@@ -365,21 +422,10 @@ namespace Konduktor_Reader{
                 }
             }
             workbook.SaveAs(outputFilePath);
-            (string o, DateTime d) = Get_Metadane_Pliku(inputFilePath);
+            (string o, DateTime d) = await Get_Metadane_Pliku(inputFilePath).ConfigureAwait(false);
             workbook.Properties.LastModifiedBy = o;
             workbook.Properties.Modified = d;
             workbook.SaveAs(outputFilePath);
-        }
-        private static void Clear_Tables()
-        {
-            if (TEST_CLEAR_DB_TABLES)
-            {
-                using SqlConnection connection = new(config.Optima_Conection_String);
-                connection.Open();
-                using SqlCommand command = new("delete from cdn.PracPracaDniGodz; delete from cdn.PracPracaDni", connection);
-                command.ExecuteScalar();
-                connection.Close();
-            }
         }
     }
 }

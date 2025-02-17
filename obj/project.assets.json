@@ -2056,9 +2056,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\ITEGER\\Praca\\KonduktorReader\\Konduktor_Reader.csproj",
-      "projectName": "Konduktor_Reader",
-      "projectPath": "E:\\ITEGER\\Praca\\KonduktorReader\\Konduktor_Reader.csproj",
+      "projectUniqueName": "E:\\ITEGER\\Praca\\KonduktorReader\\Excel_Data_Importer_WARS.csproj",
+      "projectName": "Excel_Data_Importer_WARS",
+      "projectPath": "E:\\ITEGER\\Praca\\KonduktorReader\\Excel_Data_Importer_WARS.csproj",
       "packagesPath": "C:\\Users\\norbert.tasarz\\.nuget\\packages\\",
       "outputPath": "E:\\ITEGER\\Praca\\KonduktorReader\\obj\\",
       "projectStyle": "PackageReference",

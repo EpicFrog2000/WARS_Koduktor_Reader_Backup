@@ -27,7 +27,7 @@ namespace Konduktor_Reader
                     return;
                 }
                 value = value.ToLower().Trim();
-                var months = new Dictionary<int, string>
+                Dictionary<int, string> months = new()
                 {
                     {1, "styczeń"}, {2, "luty"}, {3, "marzec"}, {4, "kwiecień"},
                     {5, "maj"}, {6, "czerwiec"}, {7, "lipiec"}, {8, "sierpień"},
@@ -42,7 +42,7 @@ namespace Konduktor_Reader
                     return;
                 }
                 value = value.ToLower().Trim();
-                var parts = value.Split(' ');
+                string[] parts = value.Split(' ');
                 if (!Helper.Try_Get_Type_From_String<int>(parts[^1], ref Rok))
                 {
                     return;
@@ -58,7 +58,6 @@ namespace Konduktor_Reader
         {
             public Relacja Relacja = new();
             public List<Dane_Dnia> Dane_Dni_Relacji = [];
-
         }
         private class Dane_Dnia
         {
@@ -226,8 +225,10 @@ namespace Konduktor_Reader
             ZY,     // Zwolnienie powypadkowe (ZUS ZLA)
             ZZ      // Zwolnienie lek. (ciąża) (ZUS ZLA)
         }
-        public static void Process_Zakladka(IXLWorksheet Zakladka)
+        private static Error_Logger Internal_Error_Logger = new(true);
+        public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
         {
+            Internal_Error_Logger = Error_Logger;
             List<Karta_Ewidencji> Karty_Ewidencji = [];
             List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Dzień miesiąca");
             List<Prowizje> Prowizje = [];
@@ -256,14 +257,14 @@ namespace Konduktor_Reader
             string dane = Zakladka.Cell(Pozycja.Row - 3, Pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
             if (string.IsNullOrEmpty(dane))
             {
-                Program.error_logger.New_Error(dane, "Naglowek", Pozycja.Col, Pozycja.Row - 3, "Program nie znalazł naglowka karty");
-                throw new Exception(Program.error_logger.Get_Error_String());
+                Internal_Error_Logger.New_Error(dane, "Naglowek", Pozycja.Col, Pozycja.Row - 3, "Program nie znalazł naglowka karty");
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             Karta_Ewidencji.Set_Date(dane);
             if (Karta_Ewidencji.Miesiac < 1 || Karta_Ewidencji.Rok == 0)
             {
-                Program.error_logger.New_Error(dane, "Naglowek", Pozycja.Col, Pozycja.Row - 3, "Zły format naglowka, nie wczytano miesiaca lub roku");
-                throw new Exception(Program.error_logger.Get_Error_String());
+                Internal_Error_Logger.New_Error(dane, "Naglowek", Pozycja.Col, Pozycja.Row - 3, "Zły format naglowka, nie wczytano miesiaca lub roku");
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
 
             dane = Zakladka.Cell(Pozycja.Row - 2, Pozycja.Col + 22).GetFormattedString().Trim().Replace("  ", " ");
@@ -283,8 +284,8 @@ namespace Konduktor_Reader
 
             if (string.IsNullOrEmpty(Karta_Ewidencji.Pracownik.Akronim) && string.IsNullOrEmpty(Karta_Ewidencji.Pracownik.Imie))
             {
-                Program.error_logger.New_Error(dane, "Imie Nazwisko Akronim", Pozycja.Col + 22, Pozycja.Row - 2, "Program nie znalazł imienia nazwiska i akronimu karty");
-                throw new Exception(Program.error_logger.Get_Error_String());
+                Internal_Error_Logger.New_Error(dane, "Imie Nazwisko Akronim", Pozycja.Col + 22, Pozycja.Row - 2, "Program nie znalazł imienia nazwiska i akronimu karty");
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
         }
         private static void Get_Dane_Miesiaca(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
@@ -293,8 +294,8 @@ namespace Konduktor_Reader
             string dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
             if (string.IsNullOrEmpty(dane))
             {
-                Program.error_logger.New_Error(dane, "Dzien", Pozycja.Col, Pozycja.Row, "Program nie znalazł danych dnia miesiaca karty");
-                throw new Exception(Program.error_logger.Get_Error_String());
+                Internal_Error_Logger.New_Error(dane, "Dzien", Pozycja.Col, Pozycja.Row, "Program nie znalazł danych dnia miesiaca karty");
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             int Row_Offset = 0;
             while (true) // skip puste pierwsze rzędy
@@ -311,16 +312,16 @@ namespace Konduktor_Reader
                 dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 1).GetFormattedString().Trim().Replace("  ", " ");
                 if(dane.Contains("Relacja z poprzedniego miesiąca"))
                 {
-                    Program.error_logger.New_Error(dane, "Numer relacji", Pozycja.Col + 1, Pozycja.Row + Row_Offset, $"Proszę wpisać poprawny nr relacji oraz jej opis zamiast {dane}");
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Numer relacji", Pozycja.Col + 1, Pozycja.Row + Row_Offset, $"Proszę wpisać poprawny nr relacji oraz jej opis zamiast {dane}");
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 Dane_Karty Dane_Karty = new();
                 Dane_Karty.Relacja.Numer_Relacji = dane;
                 dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 2).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<string>(dane, ref Dane_Karty.Relacja.Opis_Relacji_1))
                 {
-                    Program.error_logger.New_Error(dane, "Opis Relacji", Pozycja.Col + 2, Pozycja.Row + Row_Offset, "Program nie znalazł opisu do relacji");
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Opis Relacji", Pozycja.Col + 2, Pozycja.Row + Row_Offset, "Program nie znalazł opisu do relacji");
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 do // exit na brak nr dnia
@@ -330,8 +331,8 @@ namespace Konduktor_Reader
                     dzien = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
                     if (!Helper.Try_Get_Type_From_String<int>(dzien, ref Dane_Dnia.Dzien))
                     {
-                        Program.error_logger.New_Error(dzien, "Dzien", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia miesiaca");
-                        throw new Exception(Program.error_logger.Get_Error_String());
+                        Internal_Error_Logger.New_Error(dzien, "Dzien", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia miesiaca");
+                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
                     //godz pracy od
@@ -343,8 +344,8 @@ namespace Konduktor_Reader
                         {
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Pracy_Od))
                             {
-                                Program.error_logger.New_Error(part, "Godziny Pracy Od", Pozycja.Col + 4, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Od");
-                                throw new Exception(Program.error_logger.Get_Error_String());
+                                Internal_Error_Logger.New_Error(part, "Godziny Pracy Od", Pozycja.Col + 4, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Od");
+                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -358,8 +359,8 @@ namespace Konduktor_Reader
                         {
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Pracy_Do))
                             {
-                                Program.error_logger.New_Error(part, "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Do");
-                                throw new Exception(Program.error_logger.Get_Error_String());
+                                Internal_Error_Logger.New_Error(part, "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Do");
+                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -373,8 +374,8 @@ namespace Konduktor_Reader
                         {
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Odpoczynku_Od))
                             {
-                                Program.error_logger.New_Error(part, "Godziny Odpoczynku Od", Pozycja.Col + 6, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Od");
-                                throw new Exception(Program.error_logger.Get_Error_String());
+                                Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Od", Pozycja.Col + 6, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Od");
+                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -387,8 +388,8 @@ namespace Konduktor_Reader
                         {
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Odpoczynku_Do))
                             {
-                                Program.error_logger.New_Error(part, "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Do");
-                                throw new Exception(Program.error_logger.Get_Error_String());
+                                Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Do");
+                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -398,8 +399,8 @@ namespace Konduktor_Reader
                     {
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_50))
                         {
-                            Program.error_logger.New_Error(dane, "Liczba Godzin Nadliczbowych 50", Pozycja.Col + 13, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych 50");
-                            throw new Exception(Program.error_logger.Get_Error_String());
+                            Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych 50", Pozycja.Col + 13, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych 50");
+                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     //nadg 100
@@ -408,8 +409,8 @@ namespace Konduktor_Reader
                     {
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_100))
                         {
-                            Program.error_logger.New_Error(dane, "Liczba Godzin Nadliczbowych 100", Pozycja.Col + 14, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych 100");
-                            throw new Exception(Program.error_logger.Get_Error_String());
+                            Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych 100", Pozycja.Col + 14, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych 100");
+                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     //nadg rycz 50
@@ -418,8 +419,8 @@ namespace Konduktor_Reader
                     {
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50))
                         {
-                            Program.error_logger.New_Error(dane, "Liczba Godzin Nadliczbowych W Ryczalcie 50", Pozycja.Col + 15, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych W Ryczalcie 50");
-                            throw new Exception(Program.error_logger.Get_Error_String());
+                            Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych W Ryczalcie 50", Pozycja.Col + 15, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych W Ryczalcie 50");
+                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     //nadg rycz 100
@@ -428,8 +429,8 @@ namespace Konduktor_Reader
                     {
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100))
                         {
-                            Program.error_logger.New_Error(dane, "Liczba Godzin Nadliczbowych W Ryczalcie 100", Pozycja.Col + 16, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych W Ryczalcie 100");
-                            throw new Exception(Program.error_logger.Get_Error_String());
+                            Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych W Ryczalcie 100", Pozycja.Col + 16, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych W Ryczalcie 100");
+                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     Dane_Karty.Dane_Dni_Relacji.Add(Dane_Dnia);
@@ -464,24 +465,24 @@ namespace Konduktor_Reader
                 Absencja Absencja = new();
                 if (!Helper.Try_Get_Type_From_String<int>(dzien, ref Absencja.Dzien))
                 {
-                    Program.error_logger.New_Error(dzien, "Dzien Absencji", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia absencji");
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dzien, "Dzien Absencji", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia absencji");
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 if (!Helper.Try_Get_Type_From_String<string>(dane, ref Absencja.Nazwa))
                 {
-                    Program.error_logger.New_Error(dane, "Nazwa Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Zły format Nazwy absencji");
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Nazwa Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Zły format Nazwy absencji");
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 if(!RodzajAbsencji.TryParse(Absencja.Nazwa, out Absencja.Rodzaj_Absencji)){
-                    Program.error_logger.New_Error(dane, "Rodzaj Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Nierozpoznany rodzaj absencji");
-                    throw new Exception(Program.error_logger.Get_Error_String());
+                    Internal_Error_Logger.New_Error(dane, "Rodzaj Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Nierozpoznany rodzaj absencji");
+                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 18).GetFormattedString().Trim().Replace("  ", " ");
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Absencja.Liczba_Godzin_Absencji))
                 {
-                    //Program.error_logger.New_Error(dane, "Liczba godz Absencji", Pozycja.Col + 18, Pozycja.Row + Row_Offset, "Zły format lub bark Liczba godz Absencji");
-                    //throw new Exception(Program.error_logger.Get_Error_String());
+                    //Internal_Error_Logger.New_Error(dane, "Liczba godz Absencji", Pozycja.Col + 18, Pozycja.Row + Row_Offset, "Zły format lub bark Liczba godz Absencji");
+                    //throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 Absencja.Rok = Karta_Ewidencji.Rok;
                 Absencja.Miesiac = Karta_Ewidencji.Miesiac;
@@ -494,9 +495,9 @@ namespace Konduktor_Reader
         {
             
             HashSet<DateTime> Pasujace_Daty = [];
-            foreach (var daneKarty in Karta_Ewidencji.Dane_Karty)
+            foreach (Dane_Karty daneKarty in Karta_Ewidencji.Dane_Karty)
             {
-                foreach (var daneDnia in daneKarty.Dane_Dni_Relacji)
+                foreach (Dane_Dnia daneDnia in daneKarty.Dane_Dni_Relacji)
                 {
                     Pasujace_Daty.Add(new DateTime(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, daneDnia.Dzien));
                 }
@@ -520,7 +521,7 @@ namespace Konduktor_Reader
                     {
                         if (Dane_Dnia.Godziny_Pracy_Od.Count >= 1)
                         {
-                            Dane_Dnia.Podziel_Nadgodziny();
+                            //Dane_Dnia.Podziel_Nadgodziny();
                             for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
                                 ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
@@ -538,7 +539,7 @@ namespace Konduktor_Reader
 
                             if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
                             {
-                                var baseTime = TimeSpan.FromHours(8);
+                                TimeSpan baseTime = TimeSpan.FromHours(8);
                                 if (godzNadlPlatne50 > 0)
                                 {
                                     Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
@@ -578,7 +579,18 @@ namespace Konduktor_Reader
                 DateTime godzOdDate = Helper.baseDate + startPodstawowy;
                 DateTime godzDoDate = Helper.baseDate + endPodstawowy;
                 bool duplicate = false;
-                int IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
+                int IdPracownika = -1;
+                try
+                {
+                    IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
+                }
+                catch (Exception ex)
+                {
+                    connection.Close();
+                    Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                }
+
                 using (SqlCommand cmd = new(@"
         IF EXISTS (
             SELECT 1
@@ -605,10 +617,11 @@ namespace Konduktor_Reader
                     cmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
                     duplicate = (int)cmd.ExecuteScalar() == 1;
                 }
+
                 if (!duplicate)
                 {
                     string sqlQueryInsertObecnościDoOptimy = @"
-DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
+DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WITH (NOLOCK) WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
 IF @EXISTSDZIEN is null
 BEGIN
     BEGIN TRY
@@ -658,7 +671,9 @@ INSERT INTO CDN.PracPracaDniGodz
 		1,
 		1,
 		'',
-		1);";
+		1);
+";
+
                     using (SqlCommand insertCmd = new(sqlQueryInsertObecnościDoOptimy, connection, transaction))
                     {
                         insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
@@ -666,9 +681,9 @@ INSERT INTO CDN.PracPracaDniGodz
                         insertCmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                         insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                         insertCmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
-                        insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
-                        insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 50);
-                        insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Program.error_logger.Last_Mod_Time;
+                        insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
+                        insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
+                        insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
                         insertCmd.Parameters.Add("@Numer_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                         insertCmd.ExecuteScalar();
                     }
@@ -677,13 +692,13 @@ INSERT INTO CDN.PracPracaDniGodz
             }
             catch (SqlException ex)
             {
-                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): " + ex.Message);
                 transaction.Rollback();
                 throw;
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
                 transaction.Rollback();
                 throw;
             }
@@ -699,7 +714,7 @@ INSERT INTO CDN.PracPracaDniGodz
                     if(Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji, tran, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -711,7 +726,7 @@ INSERT INTO CDN.PracPracaDniGodz
                     if (Dodaj_Absencje_do_Optimy(Karta_Ewidencji.Absencje, tran, connection, Karta_Ewidencji.Pracownik) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano absencje z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano absencje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -723,7 +738,7 @@ INSERT INTO CDN.PracPracaDniGodz
                     if (Insert_Prowizje(Prowizje, tran, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano prowizje z pliku: " + Program.error_logger.Nazwa_Pliku + " z zakladki: " + Program.error_logger.Nr_Zakladki + " nazwa zakladki: " + Program.error_logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano prowizje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -828,7 +843,7 @@ INSERT INTO CDN.PracPracaDniGodz
         {
             int ilosc_wpisow = 0;
             List<List<Absencja>> ListyAbsencji = Podziel_Absencje_Na_Osobne(Absencje);
-            foreach (var ListaAbsencji in ListyAbsencji)
+            foreach (List<Absencja> ListaAbsencji in ListyAbsencji)
             {
                 DateTime Data_Absencji_Start;
                 DateTime Data_Absencji_End;
@@ -848,17 +863,29 @@ INSERT INTO CDN.PracPracaDniGodz
 
                 if (string.IsNullOrEmpty(nazwa_nieobecnosci))
                 {
-                    Program.error_logger.New_Custom_Error($"W programie brak dopasowanego kodu nieobecnosci: {ListaAbsencji[0].Rodzaj_Absencji} w dniu {new DateTime(ListaAbsencji[0].Rok, ListaAbsencji[0].Miesiac, ListaAbsencji[0].Dzien)} z pliku: {Program.error_logger.Nazwa_Pliku} z zakladki: {Program.error_logger.Nr_Zakladki}. Absencja nie dodana.");
-                    var e = new Exception();
+                    Internal_Error_Logger.New_Custom_Error($"W programie brak dopasowanego kodu nieobecnosci: {ListaAbsencji[0].Rodzaj_Absencji} w dniu {new DateTime(ListaAbsencji[0].Rok, ListaAbsencji[0].Miesiac, ListaAbsencji[0].Dzien)} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki}. Absencja nie dodana.");
+                    Exception e = new();
                     e.Data["Kod"] = 42069;
                     throw e;
                 }
-                var dni_robocze = Ile_Dni_Roboczych(ListaAbsencji);
-                var dni_calosc = ListaAbsencji.Count;
+                int dni_robocze = Ile_Dni_Roboczych(ListaAbsencji);
+                int dni_calosc = ListaAbsencji.Count;
 
                 bool duplicate = false;
 
-                using (SqlCommand cmd = new SqlCommand(@"IF EXISTS (
+                int IdPracownika = -1;
+                try
+                {
+                    IdPracownika = Pracownik.Get_PraId(connection, tran);
+                }
+                catch (Exception ex)
+                {
+                    connection.Close();
+                    Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                }
+
+                using (SqlCommand cmd = new(@"IF EXISTS (
 SELECT 1 
 FROM CDN.PracNieobec
 WHERE [PNB_PraId] = @PRI_PraId
@@ -881,11 +908,9 @@ ELSE
 BEGIN
 SELECT 0
 END
-"
-                , connection, tran))
+", connection, tran))
                 {
-
-                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = Pracownik.Get_PraId(connection, tran);
+                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                     cmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
                     cmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
                     cmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
@@ -968,7 +993,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                ,0);";
                         using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertNieObecnoŚciDoOptimy, connection, tran))
                         {
-                            insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = Pracownik.Get_PraId(connection, tran);
+                            insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                             insertCmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
                             insertCmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
                             insertCmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
@@ -985,7 +1010,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
 
                     catch (FormatException ex)
                     {
-                        Program.error_logger.New_Custom_Error($"{ex.Message}");
+                        Internal_Error_Logger.New_Custom_Error($"{ex.Message}");
 
                         continue;
                     }
@@ -1020,8 +1045,8 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                     decimal parsed_wartosc = 0;
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref parsed_wartosc))
                     {
-                        Program.error_logger.New_Error(dane, "Wartość Towarów", pozycja.Col + 23, pozycja.Row + offset);
-                        throw new Exception(Program.error_logger.Get_Error_String());
+                        Internal_Error_Logger.New_Error(dane, "Wartość Towarów", pozycja.Col + 23, pozycja.Row + offset);
+                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     suma_wart_towarow += parsed_wartosc;
                 }
@@ -1031,8 +1056,8 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                     decimal parsed_wartosc = 0;
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref parsed_wartosc))
                     {
-                        Program.error_logger.New_Error(dane, "Liczba Napojow Awaryjnych", pozycja.Col + 24, pozycja.Row + offset);
-                        throw new Exception(Program.error_logger.Get_Error_String());
+                        Internal_Error_Logger.New_Error(dane, "Liczba Napojow Awaryjnych", pozycja.Col + 24, pozycja.Row + offset);
+                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     Liczba_Napojow_Awaryjnych += parsed_wartosc;
                 }
@@ -1046,29 +1071,41 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
         {
             int count = 0;
             string query = @"WITH CTE AS (
-            SELECT OAT_OatId 
+    SELECT OAT_OatId 
             FROM cdn.OAtrybuty 
             WHERE OAT_AtkId = (SELECT ATK_AtkId FROM cdn.OAtrybutyKlasy WHERE ATK_Nazwa = @NazwaAtrybutu) and
 			OAT_PrcId = @PracID
-        )
+)
 
-        MERGE cdn.OAtrybutyHist AS target
-        USING CTE AS source
-        ON target.ATH_OatId = source.OAT_OatId
-           AND target.ATH_DataOd = @ATHDataOd
-           AND target.ATH_DataDo = @ATHDataDo
-        WHEN MATCHED THEN
-            UPDATE SET ATH_Wartosc = @NowaWartosc
-        WHEN NOT MATCHED THEN
-            INSERT (ATH_PrcId, ATH_AtkId, ATH_OatId, ATH_Wartosc, ATH_DataOd, ATH_DataDo)
-            VALUES (0, 4, source.OAT_OatId, @NowaWartosc, @ATHDataOd, @ATHDataDo);";
+MERGE cdn.OAtrybutyHist AS target
+USING CTE AS source
+ON target.ATH_OatId = source.OAT_OatId
+   AND target.ATH_DataOd = @ATHDataOd
+   AND target.ATH_DataDo = @ATHDataDo
+WHEN MATCHED THEN
+    UPDATE SET ATH_Wartosc = @NowaWartosc
+WHEN NOT MATCHED THEN
+    INSERT (ATH_PrcId, ATH_AtkId, ATH_OatId, ATH_Wartosc, ATH_DataOd, ATH_DataDo)
+    VALUES (0, 4, source.OAT_OatId, @NowaWartosc, @ATHDataOd, @ATHDataDo);";
             try
             {
                 foreach (Prowizje Prowizja in Prowizje)
                 {
                     DateTime Data_Od = DateTime.ParseExact($"{Prowizja.Rok}.{Prowizja.Miesiac}.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture);
                     DateTime Data_Do = Data_Od.AddMonths(1).AddDays(-1);
-                    int pracId = Prowizja.Pracownik.Get_PraId(connection, transaction);
+
+                    int pracId = -1;
+                    try
+                    {
+                        pracId = Prowizja.Pracownik.Get_PraId(connection, transaction);
+                    }
+                    catch (Exception ex)
+                    {
+                        connection.Close();
+                        Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    }
+
                     if(Prowizja.Suma_Liczba_Napojow_Awaryjnych > 0)
                     {
                         using (SqlCommand command = new(query, connection, transaction))
@@ -1091,19 +1128,20 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                             command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
                             command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                             count += command.ExecuteNonQuery();
+
                         }
                     }
                 }
             }
             catch (SqlException ex)
             {
-                Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Prowizje): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Prowizje): " + ex.Message);
                 transaction.Rollback();
                 throw;
             }
             catch (Exception ex)
             {
-                Program.error_logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
                 transaction.Rollback();
                 throw;
             }

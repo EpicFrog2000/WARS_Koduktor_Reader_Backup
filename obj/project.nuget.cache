@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Ak3U5Z8eFA0=",
+  "dgSpecHash": "YN0TIHSLG2A=",
   "success": true,
-  "projectFilePath": "E:\\ITEGER\\Praca\\KonduktorReader\\Konduktor_Reader.csproj",
+  "projectFilePath": "E:\\ITEGER\\Praca\\KonduktorReader\\Excel_Data_Importer_WARS.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\norbert.tasarz\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\norbert.tasarz\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

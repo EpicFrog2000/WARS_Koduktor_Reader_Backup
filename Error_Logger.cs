@@ -24,7 +24,7 @@
         private string Poprawna_Wartosc_Pola = "";
 
         // Scierzka do pliku w którym maja być zapisywane błędy
-        private string ErrorFilePath = "";
+        public string ErrorFilePath = "";
 
         // Kolumna w której wystąpił błąd
         public int Kolumna = -1;
@@ -120,7 +120,7 @@
         private void Append_Error_To_File()
         {
             if (ErrorFilePath == "") { throw new Exception("ErrorLogger nie posiada właściwej scierzki do pliku Errors.txt"); }
-            var ErrorsLogFile = Path.Combine(ErrorFilePath, "Errors.txt");
+            string ErrorsLogFile = Path.Combine(ErrorFilePath, "Errors.txt");
             if (!File.Exists(ErrorsLogFile))
             {
                 File.Create(ErrorsLogFile).Dispose();
@@ -131,7 +131,7 @@
         private void Append_Error_To_File(string Error_Msg)
         {
             if (ErrorFilePath == "") { throw new Exception("ErrorLogger nie posiada właściwej scierzki do pliku Errors.txt"); }
-            var ErrorsLogFile = Path.Combine(ErrorFilePath, "Errors.txt");
+            string ErrorsLogFile = Path.Combine(ErrorFilePath, "Errors.txt");
             if (!File.Exists(ErrorsLogFile))
             {
                 File.Create(ErrorsLogFile).Dispose();

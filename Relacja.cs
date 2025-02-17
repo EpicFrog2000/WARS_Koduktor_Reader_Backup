@@ -21,7 +21,7 @@ namespace Konduktor_Reader
                 using (SqlCommand command = new(query, connection))
                 {
                     command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
-                    command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = null;
+                    command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = DBNull.Value;
                     connection.Open();
                     object result = command.ExecuteScalar();
                     if (result != null)
@@ -36,6 +36,7 @@ namespace Konduktor_Reader
                 }
             }
         }
+
         public void Insert_Relacja_Do_Optimy()
         {
             try
@@ -44,48 +45,35 @@ namespace Konduktor_Reader
             }
             catch
             {
-                try
+                using (SqlConnection connection = new(Program.config.Optima_Conection_String))
                 {
-                    using (SqlConnection connection = new(Program.config.Optima_Conection_String))
+                    using (SqlCommand command = new(@"INSERT INTO CDN.Relacje
+            (R_Nazwa
+            --,R_Typ
+            ,R_Opis_1
+            ,R_Opis_2
+            ,R_Godz_Rozpoczecia
+            ,R_Data_Mod
+            ,R_Os_Mod)
+        VALUES
+            (@Nazwa_Relacji
+            --,@R_Typ
+            ,@Opis_1
+            ,@Opis_2
+            ,@Godz_Rozpoczecia
+            ,@Data_Mod
+            ,@Os_Mod)", connection))
                     {
-                        using (SqlCommand command = new(@"INSERT INTO CDN.Relacje
-               (R_Nazwa
-               --,R_Typ
-               ,R_Opis_1
-               ,R_Opis_2
-               ,R_Godz_Rozpoczecia
-               ,R_Data_Mod
-               ,R_Os_Mod)
-         VALUES
-               (@Nazwa_Relacji
-               --,@R_Typ
-               ,@Opis_1
-               ,@Opis_2
-               ,@Godz_Rozpoczecia
-               ,@Data_Mod
-               ,@Os_Mod)", connection))
-                        {
-                            command.Parameters.Add("@Nazwa_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
-                            //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = null;
-                            command.Parameters.Add("@Opis_1", SqlDbType.NVarChar, 200).Value = Opis_Relacji_1;
-                            command.Parameters.Add("@Opis_2", SqlDbType.NVarChar, 200).Value = Opis_Relacji_2;
-                            command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = Helper.baseDate + Godzina_Rozpoczecia_Relacji;
-                            command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
-                            command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = "Norbert Tasarz";
-                            connection.Open();
-                            command.ExecuteNonQuery();
-                        }
+                        command.Parameters.Add("@Nazwa_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
+                        //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = null;
+                        command.Parameters.Add("@Opis_1", SqlDbType.NVarChar, 200).Value = Opis_Relacji_1;
+                        command.Parameters.Add("@Opis_2", SqlDbType.NVarChar, 200).Value = Opis_Relacji_2;
+                        command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = Helper.baseDate + Godzina_Rozpoczecia_Relacji;
+                        command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
+                        command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = "Norbert Tasarz";
+                        connection.Open();
+                        command.ExecuteNonQuery();
                     }
-                }
-                catch (SqlException ex)
-                {
-                    Program.error_logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Relacja_Do_Optimy): " + ex.Message);
-                    throw new Exception(Program.error_logger.Get_Error_String());
-                }
-                catch (Exception ex)
-                {
-                    Program.error_logger.New_Custom_Error("Error: " + ex.Message);
-                    throw new Exception(Program.error_logger.Get_Error_String());
                 }
             }
         }
