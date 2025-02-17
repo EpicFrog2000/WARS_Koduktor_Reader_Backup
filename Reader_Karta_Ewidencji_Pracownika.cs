@@ -843,23 +843,8 @@ namespace Konduktor_Reader
                         if (Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 > 0 || Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100 > 0)
                         {
                             TimeSpan baseTime = TimeSpan.FromHours(8);
-                            if (Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 > 0)
-                            {
-                                Dane_Karty.Godziny_Rozpoczecia_Pracy.Add(baseTime);
-                                Dane_Karty.Godziny_Zakonczenia_Pracy.Add(baseTime + TimeSpan.FromHours((double)Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50));
-                            }
-                            if (Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100 > 0)
-                            {
-                                if (Dane_Karty.Godziny_Rozpoczecia_Pracy.Count == 0)
-                                {
-                                    Dane_Karty.Godziny_Rozpoczecia_Pracy.Add(baseTime);
-                                }
-                                else
-                                {
-                                    Dane_Karty.Godziny_Rozpoczecia_Pracy.Add(baseTime + TimeSpan.FromHours((double)Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50));
-                                }
-                                Dane_Karty.Godziny_Zakonczenia_Pracy.Add(baseTime + TimeSpan.FromHours((double)Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50) + TimeSpan.FromHours((double)Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100));
-                            }
+                            Dane_Karty.Godziny_Rozpoczecia_Pracy.Add(baseTime);
+                            Dane_Karty.Godziny_Zakonczenia_Pracy.Add(baseTime + TimeSpan.FromHours((double)(Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 + Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100)));
                             for (int k = 0; k < Dane_Karty.Godziny_Rozpoczecia_Pracy.Count; k++)
                             {
                                 ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[k], Dane_Karty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, 2);
