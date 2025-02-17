@@ -540,23 +540,8 @@ namespace Konduktor_Reader
                             if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
                             {
                                 TimeSpan baseTime = TimeSpan.FromHours(8);
-                                if (godzNadlPlatne50 > 0)
-                                {
-                                    Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
-                                    Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50));
-                                }
-                                if (godzNadlPlatne100 > 0)
-                                {
-                                    if (Dane_Dnia.Godziny_Pracy_Od.Count == 0)
-                                    {
-                                        Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
-                                    }
-                                    else
-                                    {
-                                        Dane_Dnia.Godziny_Pracy_Od.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50));
-                                    }
-                                    Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)godzNadlPlatne50) + TimeSpan.FromHours((double)godzNadlPlatne100));
-                                }
+                                Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
+                                Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
                                 for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++)
                                 {
                                     ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
