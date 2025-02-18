@@ -6,7 +6,6 @@ namespace Konduktor_Reader
 {
     internal static class Helper
     {
-        public static readonly DateTime baseDate = new(1899, 12, 30); // Do zapytan sql
         public class Current_Position
         {
             private int col = 1;
@@ -154,22 +153,5 @@ namespace Konduktor_Reader
 
         public static string Truncate(string? value, int maxLength) =>
             string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
-
-        public static bool Valid_SQLConnection_String(string Connection_String)
-        {
-            try
-            {
-                using (SqlConnection connection = new(Connection_String))
-                {
-                    connection.Open();
-                    connection.Close();
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
     }
 }

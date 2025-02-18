@@ -1,22 +1,22 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Office2013.Drawing.ChartStyle;
 using Excel_Data_Importer_WARS;
 using ExcelDataReader;
-using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Diagnostics;
+
+// TODO better error log messages
 
 namespace Konduktor_Reader{
     static class Program
     {
-
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         public static Config config = new();
         public static Stopwatch stopwatch = new();
-        public static readonly bool LOG_TO_TERMINAL = true;
+        public static readonly bool LOG_TO_TERMINAL = false;
         public static async Task<int> Main()
         {
             // Start measuring time
+
             stopwatch.Start();
             TextWriter originalOut = Console.Out;
             if (!LOG_TO_TERMINAL)
@@ -24,12 +24,11 @@ namespace Konduktor_Reader{
                 Console.SetOut(TextWriter.Null);
             }
 
-
             config.GetConfigFromFile();
 
-            if (!Helper.Valid_SQLConnection_String(config.Optima_Conection_String))
+            if (!DbManager.Valid_SQLConnection_String())
             {
-                Console.WriteLine($"Invalid connection string: {config.Optima_Conection_String}");
+                Console.WriteLine($"Invalid connection string: {DbManager.Connection_String}");
                 Console.ReadLine();
                 return -1;
             }
@@ -40,8 +39,6 @@ namespace Konduktor_Reader{
                 Console.ReadLine();
                 return 0;
             }
-
-
 
             foreach (string Folder_Path in config.Files_Folders)
             {
@@ -59,10 +56,13 @@ namespace Konduktor_Reader{
 
                 Check_Base_Dirs(Folder_Path);
 
-                foreach (string filepath in Files_Paths)
+                /*foreach (string filepath in Files_Paths)
                 {
                     await Process_Files(filepath).ConfigureAwait(false);
-                }
+                }*/
+
+                await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)));
+
             }
 
             if (!LOG_TO_TERMINAL)
@@ -83,19 +83,26 @@ namespace Konduktor_Reader{
             {
                 return;
             }
-            Error_Logger Internal_Error_Logger = new(true);
-            Internal_Error_Logger.Current_Processed_Files_Folder = error_logger.Current_Processed_Files_Folder;
-            Internal_Error_Logger.Current_Bad_Files_Folder = error_logger.Current_Bad_Files_Folder;
-            Internal_Error_Logger.ErrorFilePath = error_logger.ErrorFilePath;
-            Internal_Error_Logger.Nazwa_Pliku = File_Path;
+            Error_Logger Internal_Error_Logger = new(true)
+            {
+                Current_Processed_Files_Folder = error_logger.Current_Processed_Files_Folder,
+                Current_Bad_Files_Folder = error_logger.Current_Bad_Files_Folder,
+                ErrorFilePath = error_logger.ErrorFilePath,
+                Nazwa_Pliku = File_Path
+            };
+
             (Internal_Error_Logger.Last_Mod_Osoba, Internal_Error_Logger.Last_Mod_Time) = await Get_Metadane_Pliku(File_Path).ConfigureAwait(false);
+
             error_logger.Nazwa_Pliku = Internal_Error_Logger.Nazwa_Pliku;
             error_logger.Last_Mod_Osoba = Internal_Error_Logger.Last_Mod_Osoba;
             error_logger.Last_Mod_Time = Internal_Error_Logger.Last_Mod_Time;
 
-            using (XLWorkbook Workbook = new(File_Path))
+
+
+            using var stream = File.Open(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            using (XLWorkbook Workbook = new(stream))
             {
-                await Usun_Ukryte_Karty(Workbook).ConfigureAwait(false);
+                await Usun_Ukryte_Karty(Workbook);
                 int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
                 if (Ilosc_Zakladek_W_Workbook < 1)
                 {
@@ -107,53 +114,32 @@ namespace Konduktor_Reader{
                     IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
                     Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
                     int Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
-                    switch (Typ_Zakladki)
+                    try
                     {
-                        case 2:
-                            try
-                            {
+                        switch (Typ_Zakladki)
+                        {
+                            case 2:
                                 Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                            }
-                            catch
-                            {
-                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                            }
-                            break;
-                        case 3:
-                            try
-                            {
+                                break;
+                            case 3:
                                 Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
                                 Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                            }
-                            catch
-                            {
-                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                            }
-                            break;
-                        case 4:
-                            try
-                            {
+                                break;
+                            case 4:
                                 Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                            }
-                            catch
-                            {
-                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                            }
-                            break;
-                        case 5:
-                            try
-                            {
+                                break;
+                            case 5:
                                 Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                            }
-                            catch
-                            {
+                                break;
+                            default:
                                 await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                            }
-                            break;
-                        default:
-                            await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                            error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
-                            return;
+                                error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
+                                return;
+                        }
+                    }
+                    catch
+                    {
+                        await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
                     }
                 }
             }

@@ -323,7 +323,7 @@ namespace Excel_Data_Importer_WARS
         private static void Dodaj_Plany_do_Optimy(List<Grafik> grafiki)
         {
             int dodano = 0;
-            using (SqlConnection connection = new SqlConnection(Program.config.Optima_Conection_String))
+            using (SqlConnection connection = new SqlConnection(DbManager.Connection_String))
             {
                 connection.Open();
                 using (SqlTransaction tran = connection.BeginTransaction())
@@ -369,104 +369,22 @@ namespace Excel_Data_Importer_WARS
             int IdPracownika = -1;
             IdPracownika = pracownik.Get_PraId(connection, transaction);
 
-            using (SqlCommand cmd = new(@"
-IF EXISTS (
-SELECT 1 
-FROM cdn.PracPlanDni 
-WHERE PPL_Data = @DataInsert 
-    AND PPL_PraId = @PRI_PraId
-)
-BEGIN
-IF EXISTS (
-    SELECT 1 
-    FROM cdn.PracPlanDniGodz 
-    WHERE PGL_PplId = (
-        SELECT PPL_PplId 
-        FROM cdn.PracPlanDni 
-        WHERE PPL_Data = @DataInsert 
-            AND PPL_PraId = @PRI_PraId
-    )
-        AND PGL_OdGodziny = @GodzOdDate 
-        AND PGL_DoGodziny = @GodzDoDate
-)
-BEGIN
-    SELECT 1;
-END
-ELSE
-BEGIN
-    SELECT 0;
-END
-END
-ELSE
-BEGIN
-SELECT 0;
-END", connection, transaction))
+            using (SqlCommand cmd = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
             {
                 cmd.Parameters.AddWithValue("@DataInsert", data);
-                cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(Helper.baseDate + startGodz);
-                cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(Helper.baseDate + endGodz);
+                cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                 cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
                 if ((int)cmd.ExecuteScalar() == 1)
                 {
                     return 0;
                 }
             }
-            using (SqlCommand insertCmd = new($@"
-DECLARE @id int;
-DECLARE @EXISTSDZIEN INT = (SELECT COUNT([CDN].[PracPlanDni].[PPL_Data]) FROM cdn.PracPlanDni WHERE cdn.PracPlanDni.PPL_PraId = @PRI_PraId and [CDN].[PracPlanDni].[PPL_Data] = @DataInsert)
-IF @EXISTSDZIEN = 0
-BEGIN
-BEGIN TRY
-INSERT INTO [CDN].[PracPlanDni]
-        ([PPL_PraId]
-        ,[PPL_Data]
-        ,[PPL_TS_Zal]
-        ,[PPL_TS_Mod]
-        ,[PPL_OpeModKod]
-        ,[PPL_OpeModNazwisko]
-        ,[PPL_OpeZalKod]
-        ,[PPL_OpeZalNazwisko]
-        ,[PPL_Zrodlo]
-        ,[PPL_TypDnia])
-VALUES
-        (@PRI_PraId
-        ,@DataInsert
-        ,@DataMod
-        ,@DataMod
-        ,@ImieMod
-        ,@NazwiskoMod
-        ,@ImieMod
-        ,@NazwiskoMod
-        ,0
-        ,ISNULL((SELECT TOP 1 KAD_TypDnia FROM cdn.KalendDni WHERE KAD_Data = @DataInsert), 1))
-END TRY
-BEGIN CATCH
-END CATCH
-END
-
-SET @id = (select [cdn].[PracPlanDni].[PPL_PplId] from [cdn].[PracPlanDni] where [cdn].[PracPlanDni].[PPL_Data] = @DataInsert and [cdn].[PracPlanDni].[PPL_PraId] = @PRI_PraId);
-INSERT INTO CDN.PracPlanDniGodz
-	        (PGL_PplId,
-	        PGL_Lp,
-	        PGL_OdGodziny,
-	        PGL_DoGodziny,
-	        PGL_Strefa,
-	        PGL_DzlId,
-	        PGL_PrjId,
-	        PGL_UwagiPlanu)
-        VALUES
-	        (@id,
-	        1,
-	        @GodzOdDate,
-	        @GodzDoDate,
-	        2,
-	        1,
-	        1,
-	        '');", connection, transaction))
+            using (SqlCommand insertCmd = new(DbManager.Insert_Plan_Pracy, connection, transaction))
             {
                 insertCmd.Parameters.AddWithValue("@DataInsert", data);
-                insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(Helper.baseDate + startGodz);
-                insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(Helper.baseDate + endGodz);
+                insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                 insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
                 insertCmd.Parameters.AddWithValue("@ImieMod", Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                 insertCmd.Parameters.AddWithValue("@NazwiskoMod", Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));

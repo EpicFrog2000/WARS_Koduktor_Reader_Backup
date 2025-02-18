@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using Excel_Data_Importer_WARS;
 using Microsoft.Data.SqlClient;
 using static Konduktor_Reader.Reader_Tabela_Stawek_v1;
 
@@ -15,10 +16,9 @@ namespace Konduktor_Reader
 
         public int Get_Relacja_Id_From_Optima(string Numer_Relacji)
         {
-            string query = @"select R_Id from cdn.Relacje where  R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
-            using (SqlConnection connection = new(Program.config.Optima_Conection_String))
+            using (SqlConnection connection = new(DbManager.Connection_String))
             {
-                using (SqlCommand command = new(query, connection))
+                using (SqlCommand command = new(DbManager.Get_Relacja, connection))
                 {
                     command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                     command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = DBNull.Value;
@@ -45,30 +45,15 @@ namespace Konduktor_Reader
             }
             catch
             {
-                using (SqlConnection connection = new(Program.config.Optima_Conection_String))
+                using (SqlConnection connection = new(DbManager.Connection_String))
                 {
-                    using (SqlCommand command = new(@"INSERT INTO CDN.Relacje
-            (R_Nazwa
-            --,R_Typ
-            ,R_Opis_1
-            ,R_Opis_2
-            ,R_Godz_Rozpoczecia
-            ,R_Data_Mod
-            ,R_Os_Mod)
-        VALUES
-            (@Nazwa_Relacji
-            --,@R_Typ
-            ,@Opis_1
-            ,@Opis_2
-            ,@Godz_Rozpoczecia
-            ,@Data_Mod
-            ,@Os_Mod)", connection))
+                    using (SqlCommand command = new(DbManager.Insert_Relacja, connection))
                     {
                         command.Parameters.Add("@Nazwa_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                         //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = null;
                         command.Parameters.Add("@Opis_1", SqlDbType.NVarChar, 200).Value = Opis_Relacji_1;
                         command.Parameters.Add("@Opis_2", SqlDbType.NVarChar, 200).Value = Opis_Relacji_2;
-                        command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = Helper.baseDate + Godzina_Rozpoczecia_Relacji;
+                        command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = DbManager.Base_Date + Godzina_Rozpoczecia_Relacji;
                         command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
                         command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = "Norbert Tasarz";
                         connection.Open();

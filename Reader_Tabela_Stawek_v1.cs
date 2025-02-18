@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Transactions;
 using ClosedXML.Excel;
+using Excel_Data_Importer_WARS;
 using Microsoft.Data.SqlClient;
 
 namespace Konduktor_Reader
@@ -63,7 +64,7 @@ namespace Konduktor_Reader
                 }
                 catch (SqlException ex)
                 {
-                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Relacja_Do_Optimy): " + ex.Message);
+                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (Insert_Relacja_Do_Optimy): " + ex.Message);
                     throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 catch (Exception ex)
@@ -80,12 +81,12 @@ namespace Konduktor_Reader
                     }
                     catch (SqlException ex)
                     {
-                        Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
+                        Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     catch (Exception ex)
                     {
-                        Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                        Internal_Error_Logger.New_Custom_Error("Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
@@ -255,25 +256,9 @@ namespace Konduktor_Reader
         {
             try
             {
-                using (SqlConnection connection = new(Program.config.Optima_Conection_String))
+                using (SqlConnection connection = new(DbManager.Connection_String))
                 {
-                    using (SqlCommand command = new(@$"
-                            WITH CTE AS (
-                                SELECT OAT_OatId
-            FROM cdn.OAtrybuty
-            WHERE OAT_AtkId = (SELECT ATK_AtkId FROM cdn.OAtrybutyKlasy WHERE ATK_Nazwa = @NazwaAtrybutu)
-                            )
-
-                            MERGE cdn.OAtrybutyHist AS target
-                            USING CTE AS source
-                            ON target.ATH_OatId = source.OAT_OatId
-                               AND target.ATH_DataOd = @ATHDataOd
-                               AND target.ATH_DataDo = @ATHDataDo
-                            WHEN MATCHED THEN
-                                UPDATE SET ATH_Wartosc = @NowaWartosc
-                            WHEN NOT MATCHED THEN
-                                INSERT (ATH_PrcId, ATH_AtkId, ATH_OatId, ATH_Wartosc, ATH_DataOd, ATH_DataDo)
-                                VALUES (0, 4, source.OAT_OatId, @NowaWartosc, @ATHDataOd, @ATHDataDo);", connection))
+                    using (SqlCommand command = new(DbManager.Insert_Atrybuty, connection))
                     {
                         command.Parameters.Add("@NowaWartosc", SqlDbType.NVarChar, 101).Value = wartosc;
                         command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 100).Value = Nazwa_Atrybutu;

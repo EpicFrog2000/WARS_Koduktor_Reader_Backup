@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Office2010.PowerPoint;
+using Excel_Data_Importer_WARS;
 using Microsoft.Data.SqlClient;
 using static Konduktor_Reader.Helper;
 
@@ -760,7 +761,7 @@ namespace Konduktor_Reader
         private static void Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika)
         {
             //TODO
-            using (SqlConnection connection = new SqlConnection(Program.config.Optima_Conection_String))
+            using (SqlConnection connection = new SqlConnection(DbManager.Connection_String))
             {
                 connection.Open();
                 using (SqlTransaction transaction = connection.BeginTransaction())
@@ -869,8 +870,8 @@ namespace Konduktor_Reader
 
             try
             {
-                DateTime godzOdDate = Helper.baseDate + startPodstawowy;
-                DateTime godzDoDate = Helper.baseDate + endPodstawowy;
+                DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
+                DateTime godzDoDate = DbManager.Base_Date + endPodstawowy;
                 bool duplicate = false;
                 int IdPracownika = -1;
                 try
@@ -884,24 +885,7 @@ namespace Konduktor_Reader
                     throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 }
 
-                using (SqlCommand cmd = new(@"
-        IF EXISTS (
-            SELECT 1
-            FROM cdn.PracPracaDni P
-            INNER JOIN CDN.PracPracaDniGodz G ON P.PPR_PprId = G.PGR_PprId
-            WHERE P.PPR_PraId = @PRI_PraId 
-              AND P.PPR_Data = @DataInsert
-              AND G.PGR_OdGodziny = @GodzOdDate
-              AND G.PGR_DoGodziny = @GodzDoDate
-              AND G.PGR_Strefa = @TypPracy
-        )
-        BEGIN
-            SELECT 1;
-        END
-        ELSE
-        BEGIN
-            SELECT 0;
-        END", connection, transaction))
+                using (SqlCommand cmd = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
                 {
                     cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                     cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -913,57 +897,7 @@ namespace Konduktor_Reader
 
                 if (!duplicate)
                 {
-                    using (SqlCommand insertCmd = new(@"
-DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WITH (NOLOCK) WHERE PPR_PraId = @PRI_PraId and PPR_Data = @DataInsert)
-IF @EXISTSDZIEN is null
-BEGIN
-    BEGIN TRY
-        INSERT INTO [CDN].[PracPracaDni]
-                    ([PPR_PraId]
-                    ,[PPR_Data]
-                    ,[PPR_TS_Zal]
-                    ,[PPR_TS_Mod]
-                    ,[PPR_OpeModKod]
-                    ,[PPR_OpeModNazwisko]
-                    ,[PPR_OpeZalKod]
-                    ,[PPR_OpeZalNazwisko]
-                    ,[PPR_Zrodlo])
-                VALUES
-                    (@PRI_PraId
-                    ,@DataInsert
-                    ,@DataMod
-                    ,@DataMod
-                    ,@ImieMod
-                    ,@NazwiskoMod
-                    ,@ImieMod
-                    ,@NazwiskoMod
-                    ,0)
-    END TRY
-    BEGIN CATCH
-    END CATCH
-END
-
-INSERT INTO CDN.PracPracaDniGodz
-		(PGR_PprId,
-		PGR_Lp,
-		PGR_OdGodziny,
-		PGR_DoGodziny,
-		PGR_Strefa,
-		PGR_DzlId,
-		PGR_PrjId,
-		PGR_Uwagi,
-		PGR_OdbNadg)
-	VALUES
-		((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
-		1,
-		@GodzOdDate,
-		@GodzDoDate,
-		@TypPracy,
-		1,
-		1,
-		'',
-		1);
-", connection, transaction))
+                    using (SqlCommand insertCmd = new(DbManager.Insert_Obecnosci, connection, transaction))
                     {
                         insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -1063,30 +997,7 @@ INSERT INTO CDN.PracPracaDniGodz
                     throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 }
 
-                using (SqlCommand cmd = new(@"IF EXISTS (
-SELECT 1 
-FROM CDN.PracNieobec
-WHERE [PNB_PraId] = @PRI_PraId
-    AND [PNB_TnbId] = (
-        SELECT TNB_TnbId 
-        FROM cdn.TypNieobec 
-        WHERE TNB_Nazwa = @NazwaNieobecnosci
-    )
-    AND [PNB_OkresOd] = @DataOd
-    AND [PNB_OkresDo] = @DataDo
-    AND [PNB_RozliczData] = @BaseDate
-    AND [PNB_Przyczyna] = @Przyczyna
-    AND [PNB_DniPracy] = @DniPracy
-    AND [PNB_DniKalend] = @DniKalendarzowe
-)
-BEGIN
-SELECT 1
-END
-ELSE 
-BEGIN
-SELECT 0
-END
-", connection, tran))
+                using (SqlCommand cmd = new(DbManager.Check_Duplicate_Absencje, connection, tran))
                 {
                     cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                     cmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
@@ -1094,7 +1005,7 @@ END
                     cmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
                     cmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                     cmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                    cmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Helper.baseDate;
+                    cmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
                     cmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
                     if ((int)cmd.ExecuteScalar() == 1)
                     {
@@ -1107,69 +1018,7 @@ END
                 {
                     try
                     {
-                        const string sqlQueryInsertNieObecnoŚciDoOptimy = @$"
-DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @NazwaNieobecnosci);
-    INSERT INTO [CDN].[PracNieobec]
-               ([PNB_PraId]
-               ,[PNB_TnbId]
-               ,[PNB_TyuId]
-               ,[PNB_NaPodstPoprzNB]
-               ,[PNB_OkresOd]
-               ,[PNB_Seria]
-               ,[PNB_Numer]
-               ,[PNB_OkresDo]
-               ,[PNB_Opis]
-               ,[PNB_Rozliczona]
-               ,[PNB_RozliczData]
-               ,[PNB_ZwolFPFGSP]
-               ,[PNB_UrlopNaZadanie]
-               ,[PNB_Przyczyna]
-               ,[PNB_DniPracy]
-               ,[PNB_DniKalend]
-               ,[PNB_Calodzienna]
-               ,[PNB_ZlecZasilekPIT]
-               ,[PNB_PracaRodzic]
-               ,[PNB_Dziecko]
-               ,[PNB_OpeZalId]
-               ,[PNB_StaZalId]
-               ,[PNB_TS_Zal]
-               ,[PNB_TS_Mod]
-               ,[PNB_OpeModKod]
-               ,[PNB_OpeModNazwisko]
-               ,[PNB_OpeZalKod]
-               ,[PNB_OpeZalNazwisko]
-               ,[PNB_Zrodlo])
-         VALUES
-               (@PRI_PraId
-               ,@TNBID
-               ,99999
-               ,0
-               ,@DataOd
-               ,''
-               ,''
-               ,@DataDo
-               ,''
-               ,0
-               ,@BaseDate
-               ,0
-               ,0
-               ,@Przyczyna
-               ,@DniPracy
-               ,@DniKalendarzowe
-               ,1
-               ,0
-               ,0
-               ,''
-               ,1
-               ,1
-               ,@DataMod
-               ,@DataMod
-               ,@ImieMod
-               ,@NazwiskoMod
-               ,@ImieMod
-               ,@NazwiskoMod
-               ,0);";
-                        using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertNieObecnoŚciDoOptimy, connection, tran))
+                        using (SqlCommand insertCmd = new SqlCommand(DbManager.Insert_Nieobecnosci, connection, tran))
                         {
                             insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                             insertCmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
@@ -1177,7 +1026,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                             insertCmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
                             insertCmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                             insertCmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                            insertCmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = Helper.baseDate;
+                            insertCmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
                             insertCmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
                             insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
                             insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
@@ -1274,26 +1123,10 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                 {
                     int IdPracownika = karta.Pracownik.Get_PraId(connection, transaction);
                     var Ilosc_Godzin = dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach;
-                    DateTime godzOdDate = Helper.baseDate + TimeSpan.FromHours(8);
-                    DateTime godzDoDate = Helper.baseDate + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach);
+                    DateTime godzOdDate = DbManager.Base_Date + TimeSpan.FromHours(8);
+                    DateTime godzDoDate = DbManager.Base_Date + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach);
                     bool duplicate = false;
-                    using (SqlCommand cmd = new SqlCommand(@"
-    DECLARE @EXISTSDZIEN INT;
-    DECLARE @EXISTSDATA INT;
-    SET @EXISTSDZIEN = (SELECT COUNT(PPR_Data) FROM cdn.PracPracaDni WHERE PPR_PraId = @PRI_PraId AND PPR_Data = @DataInsert);
-    SET @EXISTSDATA = (
-        SELECT COUNT(*)
-        FROM CDN.PracPracaDniGodz 
-        WHERE PGR_OdbNadg = 4
-            AND PGR_Strefa = 2
-            AND PGR_OdGodziny = DATEADD(MINUTE, 0, @GodzOdDate)
-            AND PGR_DoGodziny = DATEADD(MINUTE, 0, @GodzDoDate)
-            AND PGR_PprId = (SELECT PPR_PprId FROM cdn.PracPracaDni WHERE CAST(PPR_Data AS datetime) = @DataInsert AND PPR_PraId = @PRI_PraId)
-    );
-    SELECT CASE 
-        WHEN @EXISTSDZIEN > 0 AND @EXISTSDATA > 0 THEN 1
-        ELSE 0
-    END;", connection, transaction))
+                    using (SqlCommand cmd = new SqlCommand(DbManager.Check_Duplicate_Odbior_Nadgodzin, connection, transaction))
                     {
                         cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
                         cmd.Parameters.AddWithValue("@TypPracy", 2);
@@ -1313,58 +1146,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
                             if (dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach > 0)
                             {
                                 ilosc_wpisow++;
-                                const string sqlQueryInsertOdbNadgodzin = @"
-    DECLARE @PRA_PraId INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @PRI_PraId);
-    DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRA_PraId and PPR_Data = @DataInsert)
-    IF @EXISTSDZIEN is null
-    BEGIN
-        BEGIN TRY
-            INSERT INTO [CDN].[PracPracaDni]
-                        ([PPR_PraId]
-                        ,[PPR_Data]
-                        ,[PPR_TS_Zal]
-                        ,[PPR_TS_Mod]
-                        ,[PPR_OpeModKod]
-                        ,[PPR_OpeModNazwisko]
-                        ,[PPR_OpeZalKod]
-                        ,[PPR_OpeZalNazwisko]
-                        ,[PPR_Zrodlo])
-                    VALUES
-                        (@PRI_PraId
-                        ,@DataInsert
-                        ,GETDATE()
-                        ,GETDATE()
-                        ,'ADMIN'
-                        ,'Administrator'
-                        ,'ADMIN'
-                        ,'Administrator'
-                        ,0)
-        END TRY
-        BEGIN CATCH
-        END CATCH
-    END
-
-    INSERT INTO CDN.PracPracaDniGodz
-		    (PGR_PprId,
-		    PGR_Lp,
-		    PGR_OdGodziny,
-		    PGR_DoGodziny,
-		    PGR_Strefa,
-		    PGR_DzlId,
-		    PGR_PrjId,
-		    PGR_Uwagi,
-		    PGR_OdbNadg)
-	    VALUES
-		    ((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
-		    1,
-		    DATEADD(MINUTE, 0, @GodzOdDate),
-		    DATEADD(MINUTE, 0, @GodzDoDate),
-		    @TypPracy,
-		    1,
-		    1,
-		    '',
-		    @TypNadg);";
-                                using (SqlCommand insertCmd = new SqlCommand(sqlQueryInsertOdbNadgodzin, connection, transaction))
+                                using (SqlCommand insertCmd = new SqlCommand(DbManager.Insert_Odbior_Nadgodzin, connection, transaction))
                                 {
                                     insertCmd.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
                                     insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;

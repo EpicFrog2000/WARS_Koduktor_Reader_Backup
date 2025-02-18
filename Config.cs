@@ -1,11 +1,12 @@
-﻿using System.Text.Json;
+﻿using Excel_Data_Importer_WARS;
+using System.Text.Json;
 
 namespace Konduktor_Reader
 {
     internal class Config
     {
         public List<string> Files_Folders { get; set; } = [Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files")];
-        public string Optima_Conection_String { get; set; } = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
+        private string Optima_Conection_String { get; set; } = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
         public bool Clear_Logs_On_Program_Restart { get; set; } = false;
         public bool Clear_Bad_Files_On_Restart { get; set; } = false;
         public bool Clear_Processed_Files_On_Restart { get; set; } = false;
@@ -41,6 +42,7 @@ namespace Konduktor_Reader
                 Clear_Processed_Files_On_Restart = new_config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = new_config.Move_Files_To_Processed_Folder;
             }
+            DbManager.Connection_String = Optima_Conection_String;
         }
         public void GetConfigFromFile(string Config_File_Path)
         {
@@ -69,6 +71,7 @@ namespace Konduktor_Reader
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
             }
+            DbManager.Connection_String = Optima_Conection_String;
         }
         public void Check_File()
         {

@@ -108,7 +108,7 @@
             Append_Error_To_File(Error_Msg);
             if (ShowErrorMessageOnWrite)
             {
-                Console.WriteLine(Get_Error_String());
+                Console.WriteLine(Error_Msg);
             }
         }
 
