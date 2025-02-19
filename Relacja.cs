@@ -1,9 +1,8 @@
 ﻿using System.Data;
-using Excel_Data_Importer_WARS;
 using Microsoft.Data.SqlClient;
-using static Konduktor_Reader.Reader_Tabela_Stawek_v1;
+using static Excel_Data_Importer_WARS.Reader_Tabela_Stawek_v1;
 
-namespace Konduktor_Reader
+namespace Excel_Data_Importer_WARS
 {
     internal class Relacja
     {
@@ -14,7 +13,7 @@ namespace Konduktor_Reader
         public int Dzien_Rozpoczenia_Relacji = 0;
         public List<System_Obsługi_Relacji> System_Obsługi_Relacji = [];
 
-        public int Get_Relacja_Id_From_Optima(string Numer_Relacji)
+        public static int Get_Relacja_Id(string Numer_Relacji)
         {
             using (SqlConnection connection = new(DbManager.Connection_String))
             {
@@ -41,7 +40,7 @@ namespace Konduktor_Reader
         {
             try
             {
-                Get_Relacja_Id_From_Optima(Numer_Relacji);
+                Get_Relacja_Id(Numer_Relacji);
             }
             catch
             {

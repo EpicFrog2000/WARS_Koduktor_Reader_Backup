@@ -1,7 +1,6 @@
-﻿using Excel_Data_Importer_WARS;
-using System.Text.Json;
+﻿using System.Text.Json;
 
-namespace Konduktor_Reader
+namespace Excel_Data_Importer_WARS
 {
     internal class Config
     {
@@ -11,6 +10,7 @@ namespace Konduktor_Reader
         public bool Clear_Bad_Files_On_Restart { get; set; } = false;
         public bool Clear_Processed_Files_On_Restart { get; set; } = false;
         public bool Move_Files_To_Processed_Folder { get; set; } = false;
+        private readonly JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
         public void GetConfigFromFile()
         {
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.json");
@@ -27,7 +27,7 @@ namespace Konduktor_Reader
                     Move_Files_To_Processed_Folder,
                 };
 
-                string defaultJson = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+                string defaultJson = JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions);
                 File.WriteAllText(filePath, defaultJson);
             }
 
@@ -58,7 +58,7 @@ namespace Konduktor_Reader
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
                 };
-                File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
             }
             string json = File.ReadAllText(Config_File_Path);
             Config? config = JsonSerializer.Deserialize<Config>(json);
@@ -88,7 +88,7 @@ namespace Konduktor_Reader
                     Clear_Bad_Files_On_Restart,
                     Move_Files_To_Processed_Folder,
                 };
-                File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
             }
         }
         public void Check_File(string Config_File_Path)
@@ -105,7 +105,7 @@ namespace Konduktor_Reader
                     Clear_Bad_Files_On_Restart,
                     Move_Files_To_Processed_Folder,
                 };
-                File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true }));
+                File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
             }
         }
     }

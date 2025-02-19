@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-using Konduktor_Reader;
 using Microsoft.Data.SqlClient;
-using Microsoft.Office.Interop.Excel;
-using static Konduktor_Reader.Helper;
 
 namespace Excel_Data_Importer_WARS
 {
@@ -21,7 +12,7 @@ namespace Excel_Data_Importer_WARS
             public Pracownik Pracownik  = new();
             public int Miesiac  = 0;
             public int Rok  = 0;
-            public List<Dane_Dnia> Dane_Dni  = new();
+            public List<Dane_Dnia> Dane_Dni  = [];
             public string Nazwa_Pliku = "";
             public int Nr_Zakladki = 1;
             public void Set_Miesiac(string wartosc)
@@ -96,11 +87,11 @@ namespace Excel_Data_Importer_WARS
         public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger error_Logger)
         {
             Internal_Error_Logger = error_Logger;
-            List<Current_Position> Lista_Pozycji_Grafików_Z_Zakladki = Helper.Find_Starting_Points(Zakladka, "Data");
-            List<Grafik> grafiki = new();
-            foreach (Current_Position Startpozycja in Lista_Pozycji_Grafików_Z_Zakladki)
+            List<Helper.Current_Position> Lista_Pozycji_Grafików_Z_Zakladki = Helper.Find_Starting_Points(Zakladka, "Data");
+            List<Grafik> grafiki = [];
+            foreach (Helper.Current_Position Startpozycja in Lista_Pozycji_Grafików_Z_Zakladki)
             {
-                Current_Position pozycja = Startpozycja;
+                Helper.Current_Position pozycja = Startpozycja;
                 int counter = 0;
                 while (true)
                 {
@@ -157,13 +148,13 @@ namespace Excel_Data_Importer_WARS
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
-                    grafik.Pracownik = Get_Pracownik(Zakladka, new Current_Position { Row = Startpozycja.Row, Col = Startpozycja.Col + ((counter * 3) + 1) });
+                    grafik.Pracownik = Get_Pracownik(Zakladka, new Helper.Current_Position { Row = Startpozycja.Row, Col = Startpozycja.Col + ((counter * 3) + 1) });
                     if (string.IsNullOrEmpty(grafik.Pracownik.Imie) && string.IsNullOrEmpty(grafik.Pracownik.Nazwisko) && string.IsNullOrEmpty(grafik.Pracownik.Akronim))
                     {
                         break;
                     }
 
-                    List<Dane_Dnia> dane2 = Get_Dane_Dni(Zakladka, new Current_Position { Row = Startpozycja.Row + 4, Col = Startpozycja.Col + ((counter * 3) + 1) });
+                    List<Dane_Dnia> dane2 = Get_Dane_Dni(Zakladka, new Helper.Current_Position { Row = Startpozycja.Row + 4, Col = Startpozycja.Col + ((counter * 3) + 1) });
                     foreach (Dane_Dnia d in dane2)
                     {
                         grafik.Dane_Dni.Add(d);
@@ -182,11 +173,11 @@ namespace Excel_Data_Importer_WARS
                 throw new Exception("Zły format pliku, nie znaleniono żadnych grafików z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
             }
         }
-        private static Pracownik Get_Pracownik(IXLWorksheet worksheet, Current_Position pozycja)
+        private static Pracownik Get_Pracownik(IXLWorksheet worksheet, Helper.Current_Position pozycja)
         {
-            Pracownik pracownik = new Pracownik();
-            string pole1 = "";
-            string pole2 = "";
+            Pracownik pracownik = new();
+            string pole1;
+            string pole2 = string.Empty;
             int offset = 0;
             while (true)
             {
@@ -236,7 +227,7 @@ namespace Excel_Data_Importer_WARS
                 }
                 
             }
-            if (!string.IsNullOrEmpty(pole1) && int.TryParse(pole1, out int impa))
+            if (!string.IsNullOrEmpty(pole1) && int.TryParse(pole1, out _))
             {
                 pracownik.Akronim = pole1;
                 if (!string.IsNullOrEmpty(pole2))
@@ -263,7 +254,7 @@ namespace Excel_Data_Importer_WARS
                     {
                         pracownik.Nazwisko = parts[0];
                         pracownik.Imie = parts[1];
-                        if (int.TryParse(parts[2], out int tmpint))
+                        if (int.TryParse(parts[2], out _))
                         {
                             pracownik.Akronim = parts[2];
                         }
@@ -277,19 +268,21 @@ namespace Excel_Data_Importer_WARS
             }
             return pracownik;
         }
-        private static List<Dane_Dnia> Get_Dane_Dni(IXLWorksheet worksheet, Current_Position pozycja)
+        private static List<Dane_Dnia> Get_Dane_Dni(IXLWorksheet worksheet, Helper.Current_Position pozycja)
         {
-            List<Dane_Dnia> Dane_Dni = new();
+            List<Dane_Dnia> Dane_Dni = [];
             for (int i = 0; i < 31; i++)
             {
-                string dane = "";
+                string dane;
                 string danedzien = worksheet.Cell(pozycja.Row, 1).GetFormattedString().Trim(); ;
                 if (string.IsNullOrEmpty(danedzien))
                 {
                     break;
                 }
-                Dane_Dnia dane_Dnia = new Dane_Dnia();
-                dane_Dnia.Nr_Dnia = i + 1;
+                Dane_Dnia dane_Dnia = new()
+                {
+                    Nr_Dnia = i + 1
+                };
                 dane = worksheet.Cell(pozycja.Row, pozycja.Col).GetFormattedString().Trim();
                 if (string.IsNullOrEmpty(dane))
                 {
@@ -323,7 +316,7 @@ namespace Excel_Data_Importer_WARS
         private static void Dodaj_Plany_do_Optimy(List<Grafik> grafiki)
         {
             int dodano = 0;
-            using (SqlConnection connection = new SqlConnection(DbManager.Connection_String))
+            using (SqlConnection connection = new(DbManager.Connection_String))
             {
                 connection.Open();
                 using (SqlTransaction tran = connection.BeginTransaction())
@@ -334,7 +327,7 @@ namespace Excel_Data_Importer_WARS
                         {
                             try
                             {
-                                dodano += Zrob_Insert_Plan_command(connection, tran, grafik, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
+                                dodano += Zrob_Insert_Plan_command(connection, tran, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
                             }
                             catch (SqlException ex)
                             {
@@ -364,10 +357,9 @@ namespace Excel_Data_Importer_WARS
                 }
             }
         }
-        private static int Zrob_Insert_Plan_command(SqlConnection connection, SqlTransaction transaction, Grafik grafik, Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
+        private static int Zrob_Insert_Plan_command(SqlConnection connection, SqlTransaction transaction, Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
         {
-            int IdPracownika = -1;
-            IdPracownika = pracownik.Get_PraId(connection, transaction);
+            int IdPracownika = pracownik.Get_PraId(connection, transaction);
 
             using (SqlCommand cmd = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
             {
@@ -386,8 +378,8 @@ namespace Excel_Data_Importer_WARS
                 insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
                 insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                 insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                insertCmd.Parameters.AddWithValue("@ImieMod", Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
-                insertCmd.Parameters.AddWithValue("@NazwiskoMod", Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
+                insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
+                insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                 insertCmd.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
 
                 insertCmd.ExecuteScalar();

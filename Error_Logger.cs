@@ -1,4 +1,4 @@
-﻿namespace Konduktor_Reader
+﻿namespace Excel_Data_Importer_WARS
 {
     internal class Error_Logger
     {

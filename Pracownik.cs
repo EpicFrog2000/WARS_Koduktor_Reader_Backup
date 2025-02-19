@@ -1,9 +1,7 @@
 ﻿using System.Data;
-using DocumentFormat.OpenXml.Wordprocessing;
-using Excel_Data_Importer_WARS;
 using Microsoft.Data.SqlClient;
 
-namespace Konduktor_Reader
+namespace Excel_Data_Importer_WARS
 {
     internal class Pracownik
     {

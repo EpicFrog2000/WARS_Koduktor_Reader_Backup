@@ -1,8 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using ClosedXML.Excel;
-using Microsoft.Data.SqlClient;
 
-namespace Konduktor_Reader
+namespace Excel_Data_Importer_WARS
 {
     internal static class Helper
     {
@@ -33,7 +32,8 @@ namespace Konduktor_Reader
                     if (value < 1)
                     {
                         //Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
-                        throw new ArgumentOutOfRangeException(nameof(Col), "Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
+                        ArgumentOutOfRangeException argumentOutOfRangeException = new(nameof(Row), $"Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1. Kolumna: {Col}");
+                        throw argumentOutOfRangeException;
                     }
                     row = value;
                 }
@@ -108,8 +108,8 @@ namespace Konduktor_Reader
         public static List<Current_Position> Find_Starting_Points(IXLWorksheet worksheet, string keyWord, bool CompareMode=true)
         {
             const int limit = 1000;
-            ConcurrentBag<Current_Position> positions = new();
-            IXLCell[] cells = worksheet.CellsUsed().ToArray();
+            ConcurrentBag<Current_Position> positions = [];
+            IXLCell[] cells = [.. worksheet.CellsUsed()];
 
             Parallel.ForEach(cells, (cell, state) =>
             {

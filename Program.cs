@@ -1,12 +1,14 @@
 ﻿using ClosedXML.Excel;
-using Excel_Data_Importer_WARS;
 using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
 
 // TODO better error log messages
+// TODO dodawanie komentarza z kart pracy
+// TODO Lepsze oznaczenia Absencji
 
-namespace Konduktor_Reader{
+namespace Excel_Data_Importer_WARS
+{
     static class Program
     {
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
@@ -217,7 +219,7 @@ namespace Konduktor_Reader{
 
             try
             {
-                using (FileStream fs = new FileStream(File_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (FileStream fs = new(File_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     var workbook = await Task.Run(() => new XLWorkbook(fs));
 
@@ -263,18 +265,12 @@ namespace Konduktor_Reader{
                 return;
             }
             string processedFilesFolder = string.Empty;
-            switch (option)
+            processedFilesFolder = option switch
             {
-                case 0:
-                    processedFilesFolder = error_logger.Current_Processed_Files_Folder;
-                    break;
-                case 1:
-                    processedFilesFolder = error_logger.Current_Bad_Files_Folder;
-                    break;
-                default:
-                    processedFilesFolder = error_logger.Current_Processed_Files_Folder;
-                    break;
-            }
+                0 => error_logger.Current_Processed_Files_Folder,
+                1 => error_logger.Current_Bad_Files_Folder,
+                _ => error_logger.Current_Processed_Files_Folder,
+            };
             Directory.CreateDirectory(processedFilesFolder);
             string destinationPath = Path.Combine(processedFilesFolder, Path.GetFileName(filePath));
             if (File.Exists(destinationPath))
@@ -384,7 +380,7 @@ namespace Konduktor_Reader{
             }
 
             using XLWorkbook workbook = new();
-            foreach (System.Data.DataTable table in dataSet.Tables)
+            foreach (DataTable table in dataSet.Tables)
             {
                 IXLWorksheet worksheet = workbook.Worksheets.Add(table.TableName);
                 for (int i = 0; i < table.Columns.Count; i++)

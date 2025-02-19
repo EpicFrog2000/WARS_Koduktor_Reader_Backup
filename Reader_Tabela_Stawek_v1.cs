@@ -1,11 +1,9 @@
 ﻿using System.Data;
 using System.Globalization;
-using System.Transactions;
 using ClosedXML.Excel;
-using Excel_Data_Importer_WARS;
 using Microsoft.Data.SqlClient;
 
-namespace Konduktor_Reader
+namespace Excel_Data_Importer_WARS
 {
     internal static class Reader_Tabela_Stawek_v1
     {
