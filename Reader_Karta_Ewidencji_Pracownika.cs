@@ -256,15 +256,24 @@ namespace Excel_Data_Importer_WARS
                 Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika);
             }
 
-            // JESZCZE NIE TESTOWANE
-            /*foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
+            // TY kurwa działa za pierwszym razem, pogczamp
+            foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
             {
                 string Uwaga = Get_Uwaga_Karty(Zakladka);
                 DateTime Pierwszy_Dzien_Miesiaca = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
-                Update_Opis_Karty(Pierwszy_Dzien_Miesiaca, Karta_Ewidencji_Pracownika.Pracownik, Uwaga);
-            }*/
-
-
+                if(Update_Opis_Karty(Pierwszy_Dzien_Miesiaca, Karta_Ewidencji_Pracownika.Pracownik, Uwaga))
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano uwagę z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnej uwagi");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+            }
         }
         private static void Get_Dane_Naglowka_Karty(ref Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Current_Position StartKarty, IXLWorksheet Zakladka)
         {
@@ -979,7 +988,6 @@ namespace Excel_Data_Importer_WARS
                         {
                             int rowsAffected = cmd.ExecuteNonQuery();
                             transaction.Commit();
-                            connection.Close();
                             return rowsAffected > 0;
                         }
                         catch (SqlException ex)
@@ -997,8 +1005,6 @@ namespace Excel_Data_Importer_WARS
                     }
                 }
             }
-            
         }
-
     }
 }

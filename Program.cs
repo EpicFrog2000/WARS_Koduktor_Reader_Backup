@@ -14,7 +14,7 @@ namespace Excel_Data_Importer_WARS
         public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         public static Config config = new();
         public static Stopwatch stopwatch = new();
-        public static readonly bool LOG_TO_TERMINAL = false;
+        public static readonly bool LOG_TO_TERMINAL = true;
         public static async Task<int> Main()
         {
             // Start measuring time
