@@ -415,6 +415,14 @@ BEGIN
 END
 
 SELECT @PRI_PraId;";
+        public static readonly string Update_Uwaga = @"UPDATE pdg
+SET pdg.PGR_Uwagi = @Uwaga
+FROM cdn.PracPracaDniGodz pdg
+INNER JOIN cdn.PracPracaDni ppd 
+    ON pdg.PGR_PprId = ppd.PPR_PprId
+WHERE ppd.PPR_PraId = @PracId
+AND ppd.PPR_Data = @Data;
+";
         public static bool Valid_SQLConnection_String()
         {
             try

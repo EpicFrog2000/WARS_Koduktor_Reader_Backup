@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Data.SqlClient;
 
 //Jest przekopiowane praktycznie 1 do 1 ze starego programu dlatego jest taki murzyński kod
@@ -254,6 +255,16 @@ namespace Excel_Data_Importer_WARS
             {
                 Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika);
             }
+
+            // JESZCZE NIE TESTOWANE
+            /*foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
+            {
+                string Uwaga = Get_Uwaga_Karty(Zakladka);
+                DateTime Pierwszy_Dzien_Miesiaca = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
+                Update_Opis_Karty(Pierwszy_Dzien_Miesiaca, Karta_Ewidencji_Pracownika.Pracownik, Uwaga);
+            }*/
+
+
         }
         private static void Get_Dane_Naglowka_Karty(ref Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Current_Position StartKarty, IXLWorksheet Zakladka)
         {
@@ -930,5 +941,64 @@ namespace Excel_Data_Importer_WARS
             }
             return ilosc_wpisow;
         }
+        private static string Get_Uwaga_Karty(IXLWorksheet Zakladka)
+        {
+            List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Ś", false);
+            foreach (Helper.Current_Position Pozycja in Pozycje)
+            {
+                Pozycja.Row++;
+                Pozycja.Col--;
+                string dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col).GetFormattedString().Trim().ToLower();
+                if (!string.IsNullOrEmpty(dane))
+                {
+                    string Uwaga = string.Empty;
+                    if (!Helper.Try_Get_Type_From_String<string>(dane, ref Uwaga))
+                    {
+                        Internal_Error_Logger.New_Error(dane, "Uwaga karty", Pozycja.Col, Pozycja.Row, "Błąd w trakcie wczytywania uwagi karty");
+                        throw new Exception(Internal_Error_Logger.Get_Error_String());
+                    }
+                    return Uwaga;
+                }
+            }
+            return "";
+        }
+        private static bool Update_Opis_Karty(DateTime Pierwszy_Dzien_Miesiaca, Pracownik Pracownik, string Uwaga)
+        {
+            using (SqlConnection connection = new(DbManager.Connection_String))
+            {
+                connection.Open();
+                using (SqlTransaction transaction = connection.BeginTransaction())
+                {
+                    using (SqlCommand cmd = new(DbManager.Update_Uwaga, connection, transaction))
+                    {
+                        cmd.Parameters.Add("@Uwaga", SqlDbType.NVarChar, 1024).Value = Helper.Truncate(Uwaga, 1024);
+                        cmd.Parameters.Add("@PracId", SqlDbType.Int).Value = Pracownik.Get_PraId(connection, transaction);
+                        cmd.Parameters.Add("@Data", SqlDbType.DateTime).Value = Pierwszy_Dzien_Miesiaca;
+
+                        try
+                        {
+                            int rowsAffected = cmd.ExecuteNonQuery();
+                            transaction.Commit();
+                            connection.Close();
+                            return rowsAffected > 0;
+                        }
+                        catch (SqlException ex)
+                        {
+                            Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Update_Opis_Karty): " + ex.Message);
+                            transaction.Rollback();
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Internal_Error_Logger.New_Custom_Error("Error(Update_Opis_Karty): " + ex.Message);
+                            transaction.Rollback();
+                            throw;
+                        }
+                    }
+                }
+            }
+            
+        }
+
     }
 }

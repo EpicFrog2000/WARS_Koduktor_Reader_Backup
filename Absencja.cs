@@ -86,11 +86,11 @@ namespace Excel_Data_Importer_WARS
                 }
 
                 int przyczyna = Dopasuj_TKN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
-                string nazwa_nieobecnosci = Dopasuj_TBN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
+                string nazwa_absencji = Dopasuj_TBN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
 
-                if (string.IsNullOrEmpty(nazwa_nieobecnosci))
+                if (string.IsNullOrEmpty(nazwa_absencji))
                 {
-                    Internal_Error_Logger.New_Custom_Error($"W programie brak dopasowanego kodu nieobecnosci: {ListaAbsencji[0].Rodzaj_Absencji} w dniu {new DateTime(ListaAbsencji[0].Rok, ListaAbsencji[0].Miesiac, ListaAbsencji[0].Dzien)} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki}. Absencja nie dodana.");
+                    Internal_Error_Logger.New_Custom_Error($"W programie brak dopasowanego kodu Absencji: {ListaAbsencji[0].Rodzaj_Absencji} w dniu {new DateTime(ListaAbsencji[0].Rok, ListaAbsencji[0].Miesiac, ListaAbsencji[0].Dzien)} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki}. Absencja nie dodana.");
                     Exception e = new();
                     e.Data["Kod"] = 42069;
                     throw e;
@@ -115,7 +115,7 @@ namespace Excel_Data_Importer_WARS
                 using (SqlCommand cmd = new(DbManager.Check_Duplicate_Absencje, connection, tran))
                 {
                     cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    cmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
+                    cmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
                     cmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
                     cmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
                     cmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
@@ -136,7 +136,7 @@ namespace Excel_Data_Importer_WARS
                         using (SqlCommand insertCmd = new(DbManager.Insert_Nieobecnosci, connection, tran))
                         {
                             insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                            insertCmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_nieobecnosci;
+                            insertCmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
                             insertCmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
                             insertCmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
                             insertCmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
@@ -221,7 +221,7 @@ namespace Excel_Data_Importer_WARS
                 RodzajAbsencji.ZK => 21,      // Urlop opiekuńczy
                 RodzajAbsencji.ZN => 1,       // Zwolnienie lekarskie
                 RodzajAbsencji.ZR => 3,       // Urlop rehabilitacyjny
-                RodzajAbsencji.ZZ => 1,       // Zwolnienie lekarskie
+                RodzajAbsencji.ZZ => 1,       // Zwolnienie lekarskie ciążowe
                 RodzajAbsencji.SZK => 20,     // SZ
                 _ => 9                        // Nie dotyczy dla pozostałych przypadków
             };
@@ -253,6 +253,9 @@ namespace Excel_Data_Importer_WARS
                 RodzajAbsencji.UK => "Dni wolne z tyt. krwiodawstwa",
                 RodzajAbsencji.IK => "Covid19",
                 RodzajAbsencji.SZK => "Szkolenie",
+                RodzajAbsencji.PZ => "Praca zdalna",
+                //RodzajAbsencji.ZZ => "" Kurwa niewiem POMOCY xd
+                //RodzajAbsencji.UD => "", NIE MA opieki nad dzieckiem 
                 _ => "Nieobecność (B2B)"
             };
         }
