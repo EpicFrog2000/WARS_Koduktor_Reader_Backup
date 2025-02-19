@@ -164,6 +164,7 @@ namespace Excel_Data_Importer_WARS
         public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
         {
             Internal_Error_Logger = Error_Logger;
+
             List<Karta_Ewidencji> Karty_Ewidencji = [];
             List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Dzień miesiąca");
             List<Prowizje> Prowizje = [];
@@ -186,6 +187,8 @@ namespace Excel_Data_Importer_WARS
             {
                 Dodaj_Dane_Do_Optimy(Karta_Ewidencji, Prowizje);
             }
+
+
         }
         private static void Get_Dane_Naglowka(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
         {
@@ -426,7 +429,7 @@ namespace Excel_Data_Importer_WARS
                 Row_Offset++;
             } while (true);
         }
-        private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji, SqlTransaction tran, SqlConnection connection)
+        private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji, SqlTransaction transaction, SqlConnection connection)
         {
             
             HashSet<DateTime> Pasujace_Daty = [];
@@ -443,7 +446,7 @@ namespace Excel_Data_Importer_WARS
             {
                 if (!Pasujace_Daty.Contains(dzien))
                 {
-                    Zrob_Insert_Obecnosc_Command(connection, tran, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
+                    Zrob_Insert_Obecnosc_Command(connection, transaction, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
                 }
             }
 
@@ -459,7 +462,7 @@ namespace Excel_Data_Importer_WARS
                             //Dane_Dnia.Podziel_Nadgodziny();
                             for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
                             }
                         }
                         else
@@ -479,12 +482,12 @@ namespace Excel_Data_Importer_WARS
                                 Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
                                 for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++)
                                 {
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
+                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
                                 }
                             }
                             else
                             {
-                                Zrob_Insert_Obecnosc_Command(connection, tran, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
+                                Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
                             }
                         }
                     }
@@ -511,30 +514,30 @@ namespace Excel_Data_Importer_WARS
                     throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 }
 
-                using (SqlCommand cmd = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
                 {
-                    cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                    cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                    cmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
-                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    cmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
-                    duplicate = (int)cmd.ExecuteScalar() == 1;
+                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                    command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                    command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                    command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                    duplicate = (int)command.ExecuteScalar() == 1;
                 }
 
                 if (!duplicate)
                 {
-                    using (SqlCommand insertCmd = new(DbManager.Insert_Obecnosci, connection, transaction))
+                    using (SqlCommand command = new(DbManager.Insert_Obecnosci, connection, transaction))
                     {
-                        insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                        insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                        insertCmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
-                        insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                        insertCmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
-                        insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
-                        insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
-                        insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
-                        insertCmd.Parameters.Add("@Numer_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
-                        insertCmd.ExecuteScalar();
+                        command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                        command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                        command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                        command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                        command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                        command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
+                        command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
+                        command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
+                        command.Parameters.Add("@Numer_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
+                        command.ExecuteScalar();
                     }
                     return 1;
                 }
@@ -558,9 +561,9 @@ namespace Excel_Data_Importer_WARS
             using (SqlConnection connection = new(DbManager.Connection_String))
             {
                 connection.Open();
-                using (SqlTransaction tran = connection.BeginTransaction())
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
                 {
-                    if(Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji, tran, connection) > 0)
+                    if(Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji, transaction, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Poprawnie dodano obecnosci z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
@@ -572,7 +575,7 @@ namespace Excel_Data_Importer_WARS
                         Console.WriteLine($"Nie dodano żadnych obesnosci");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
-                    if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji.Absencje, tran, connection, Karta_Ewidencji.Pracownik, Internal_Error_Logger) > 0)
+                    if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji.Absencje, transaction, connection, Karta_Ewidencji.Pracownik, Internal_Error_Logger) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Poprawnie dodano absencje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
@@ -584,7 +587,7 @@ namespace Excel_Data_Importer_WARS
                         Console.WriteLine($"Nie dodano żadnych absencji");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
-                    if (Insert_Prowizje(Prowizje, tran, connection) > 0)
+                    if (Insert_Prowizje(Prowizje, transaction, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine($"Poprawnie dodano prowizje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
@@ -596,7 +599,7 @@ namespace Excel_Data_Importer_WARS
                         Console.WriteLine($"Nie dodano żadnych prowizji");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
-                    tran.Commit();
+                    transaction.Commit();
                 }
             }
         }

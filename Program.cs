@@ -3,19 +3,24 @@ using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
 
-// TODO better error log messages
-// TODO dodawanie komentarza z kart pracy
 // TODO Lepsze oznaczenia Absencji
 
 namespace Excel_Data_Importer_WARS
 {
     static class Program
     {
-        public static Error_Logger error_logger = new(true); // true - Console write message on creating new error
-        public static Config config = new();
-        public static Stopwatch stopwatch = new();
-        public static readonly bool LOG_TO_TERMINAL = true;
+        private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
+        private static Config config = new();
+        private static Stopwatch stopwatch = new();
+        private static readonly bool LOG_TO_TERMINAL = true;
+        private static readonly bool Do_Stuff_In_loop = false;
+
         public static async Task<int> Main()
+        {
+            await Do_The_Thing();
+            return 0;
+        }
+        private static async Task Do_The_Thing()
         {
             // Start measuring time
 
@@ -26,46 +31,52 @@ namespace Excel_Data_Importer_WARS
                 Console.SetOut(TextWriter.Null);
             }
 
-            config.GetConfigFromFile();
-
-            if (!DbManager.Valid_SQLConnection_String())
+            do
             {
-                Console.WriteLine($"Invalid connection string: {DbManager.Connection_String}");
-                Console.ReadLine();
-                return -1;
-            }
+                config.GetConfigFromFile();
 
-            if (config.Files_Folders.Count < 1)
-            {
-                Console.WriteLine($"Program nie ma ustawionych folderów");
-                Console.ReadLine();
-                return 0;
-            }
-
-            foreach (string Folder_Path in config.Files_Folders)
-            {
-                if (!Directory.Exists(Folder_Path))
+                if (!DbManager.Valid_SQLConnection_String())
                 {
-                    Console.WriteLine($"Program nie znalazł folderu: {Folder_Path}");
-                    continue;
-                }
-                string[] Files_Paths = Directory.GetFiles(Folder_Path);
-                if (Files_Paths.Length < 1)
-                {
-                    Console.WriteLine($"Program nie znalazł żadnych plików w folderze: {Folder_Path}");
-                    continue;
+                    Console.WriteLine($"Invalid connection string: {DbManager.Connection_String}");
+                    Console.ReadLine();
                 }
 
-                Check_Base_Dirs(Folder_Path);
-
-                /*foreach (string filepath in Files_Paths)
+                if (config.Files_Folders.Count < 1)
                 {
-                    await Process_Files(filepath).ConfigureAwait(false);
-                }*/
+                    Console.WriteLine($"Program nie ma ustawionych folderów");
+                    Console.ReadLine();
+                }
 
-                await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)));
+                foreach (string Folder_Path in config.Files_Folders)
+                {
+                    if (!Directory.Exists(Folder_Path))
+                    {
+                        Console.WriteLine($"Program nie znalazł folderu: {Folder_Path}");
+                        continue;
+                    }
+                    string[] Files_Paths = Directory.GetFiles(Folder_Path);
+                    if (Files_Paths.Length < 1)
+                    {
+                        Console.WriteLine($"Program nie znalazł żadnych plików w folderze: {Folder_Path}");
+                        continue;
+                    }
 
-            }
+                    Check_Base_Dirs(Folder_Path);
+
+                    //foreach (string filepath in Files_Paths)
+                    //{
+                    //    await Process_Files(filepath).ConfigureAwait(false);
+                    //}
+
+                    //await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
+                    //{
+                    //    await Process_Files(filePath);
+                    //});
+
+                    await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)).ToList());
+                }
+            } while (Do_Stuff_In_loop);
+
 
             if (!LOG_TO_TERMINAL)
             {
@@ -74,7 +85,6 @@ namespace Excel_Data_Importer_WARS
             Console.WriteLine("Czas wykonania programu: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\:fff"));
             Console.WriteLine("Kliknij aby zakończyć...");
             Console.ReadLine();
-            return 0;
         }
         private static async Task Process_Files(string File_Path)
         {
@@ -104,7 +114,7 @@ namespace Excel_Data_Importer_WARS
             using var stream = File.Open(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
             using (XLWorkbook Workbook = new(stream))
             {
-                await Usun_Ukryte_Karty(Workbook);
+                await Usun_Ukryte_Karty(Workbook).ConfigureAwait(false);
                 int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
                 if (Ilosc_Zakladek_W_Workbook < 1)
                 {
@@ -145,8 +155,12 @@ namespace Excel_Data_Importer_WARS
                     }
                 }
             }
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             await MoveFile(File_Path, 0).ConfigureAwait(false);
         }
+
         private static int Get_Typ_Zakladki(IXLWorksheet Worksheet)
         {
 

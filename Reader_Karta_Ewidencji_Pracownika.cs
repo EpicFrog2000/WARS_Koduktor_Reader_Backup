@@ -250,30 +250,13 @@ namespace Excel_Data_Importer_WARS
                 Get_Dane_Dni(ref Karta_Ewidencji_Pracownika, Pozycja, Zakladka);
                 Karty_Ewidencji_Pracownika.Add(Karta_Ewidencji_Pracownika);
             }
-
+            string Uwaga = Get_Uwaga_Karty(Zakladka);
             foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
             {
-                Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika);
+                Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika, ref Uwaga);
             }
 
-            // TY kurwa działa za pierwszym razem, pogczamp
-            foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
-            {
-                string Uwaga = Get_Uwaga_Karty(Zakladka);
-                DateTime Pierwszy_Dzien_Miesiaca = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
-                if(Update_Opis_Karty(Pierwszy_Dzien_Miesiaca, Karta_Ewidencji_Pracownika.Pracownik, Uwaga))
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Poprawnie dodano uwagę z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"Nie dodano żadnej uwagi");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-            }
+
         }
         private static void Get_Dane_Naglowka_Karty(ref Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Current_Position StartKarty, IXLWorksheet Zakladka)
         {
@@ -715,12 +698,12 @@ namespace Excel_Data_Importer_WARS
                 Karta_Ewidencji_Pracownika.Dane_Karty.Add(Dane_Karty);
             }
         }
-        private static void Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika)
+        private static void Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, ref string Uwaga)
         {
             using (SqlConnection connection = new(DbManager.Connection_String))
             {
                 connection.Open();
-                using (SqlTransaction transaction = connection.BeginTransaction())
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
                 {
                     if (Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika, transaction, connection) > 0)
                     {
@@ -757,6 +740,24 @@ namespace Excel_Data_Importer_WARS
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine($"Nie dodano żadnych odbiorow nadgodzin");
                         Console.ForegroundColor = ConsoleColor.White;
+                    }
+
+                    
+                    if (!string.IsNullOrEmpty(Uwaga))
+                    {
+                        if (Update_Opis_Karty(Karta_Ewidencji_Pracownika, Uwaga, connection, transaction))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine($"Poprawnie dodano uwagę z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine($"Nie dodano żadnej uwagi");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
+                        Uwaga = string.Empty; // Dodanie tego rekordu tylko raz
                     }
                     transaction.Commit();
                 }
@@ -841,29 +842,29 @@ namespace Excel_Data_Importer_WARS
                     throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 }
 
-                using (SqlCommand cmd = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
                 {
-                    cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                    cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                    cmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
-                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    cmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
-                    duplicate = (int)cmd.ExecuteScalar() == 1;
+                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                    command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                    command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                    command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                    duplicate = (int)command.ExecuteScalar() == 1;
                 }
 
                 if (!duplicate)
                 {
-                    using (SqlCommand insertCmd = new(DbManager.Insert_Obecnosci, connection, transaction))
+                    using (SqlCommand command = new(DbManager.Insert_Obecnosci, connection, transaction))
                     {
-                        insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                        insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                        insertCmd.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
-                        insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                        insertCmd.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
-                        insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
-                        insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
-                        insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
-                        insertCmd.ExecuteScalar();
+                        command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                        command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                        command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                        command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                        command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                        command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
+                        command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
+                        command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
+                        command.ExecuteScalar();
                     }
                     return 1;
                 }
@@ -894,15 +895,15 @@ namespace Excel_Data_Importer_WARS
                     DateTime godzOdDate = DbManager.Base_Date + TimeSpan.FromHours(8);
                     DateTime godzDoDate = DbManager.Base_Date + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach);
                     bool duplicate = false;
-                    using (SqlCommand cmd = new(DbManager.Check_Duplicate_Odbior_Nadgodzin, connection, transaction))
+                    using (SqlCommand command = new(DbManager.Check_Duplicate_Odbior_Nadgodzin, connection, transaction))
                     {
-                        cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                        cmd.Parameters.AddWithValue("@TypPracy", 2);
-                        cmd.Parameters.AddWithValue("@TypNadg", 4);
-                        cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                        cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                        cmd.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
-                        if ((int)cmd.ExecuteScalar() == 1)
+                        command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                        command.Parameters.AddWithValue("@TypPracy", 2);
+                        command.Parameters.AddWithValue("@TypNadg", 4);
+                        command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                        command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                        command.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
+                        if ((int)command.ExecuteScalar() == 1)
                         {
                             duplicate = true;
                         }
@@ -914,18 +915,18 @@ namespace Excel_Data_Importer_WARS
                             if (dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach > 0)
                             {
                                 ilosc_wpisow++;
-                                using (SqlCommand insertCmd = new(DbManager.Insert_Odbior_Nadgodzin, connection, transaction))
+                                using (SqlCommand command = new(DbManager.Insert_Odbior_Nadgodzin, connection, transaction))
                                 {
-                                    insertCmd.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
-                                    insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
-                                    insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
-                                    insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                                    insertCmd.Parameters.AddWithValue("@TypPracy", 2); // podstawowy
-                                    insertCmd.Parameters.AddWithValue("@TypNadg", 4); // W.PŁ
-                                    insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
-                                    insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
-                                    insertCmd.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
-                                    insertCmd.ExecuteScalar();
+                                    command.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
+                                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                                    command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                                    command.Parameters.AddWithValue("@TypPracy", 2); // podstawowy
+                                    command.Parameters.AddWithValue("@TypNadg", 4); // W.PŁ
+                                    command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
+                                    command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
+                                    command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
+                                    command.ExecuteScalar();
                                 }
                             }
                         }
@@ -952,11 +953,10 @@ namespace Excel_Data_Importer_WARS
         }
         private static string Get_Uwaga_Karty(IXLWorksheet Zakladka)
         {
-            List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Ś", false);
+            List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Godziny nocne:", false);
             foreach (Helper.Current_Position Pozycja in Pozycje)
             {
-                Pozycja.Row++;
-                Pozycja.Col--;
+                Pozycja.Row+=6;
                 string dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col).GetFormattedString().Trim().ToLower();
                 if (!string.IsNullOrEmpty(dane))
                 {
@@ -971,40 +971,31 @@ namespace Excel_Data_Importer_WARS
             }
             return "";
         }
-        private static bool Update_Opis_Karty(DateTime Pierwszy_Dzien_Miesiaca, Pracownik Pracownik, string Uwaga)
+        private static bool Update_Opis_Karty(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, string Uwaga, SqlConnection connection, SqlTransaction transaction)
         {
-            using (SqlConnection connection = new(DbManager.Connection_String))
+            using (SqlCommand command = new(DbManager.Update_Uwaga, connection, transaction))
             {
-                connection.Open();
-                using (SqlTransaction transaction = connection.BeginTransaction())
+                command.Parameters.Add("@Uwaga", SqlDbType.NVarChar, 1024).Value = Helper.Truncate(Uwaga, 1024);
+                command.Parameters.Add("@PracId", SqlDbType.Int).Value = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId(connection, transaction);
+                command.Parameters.Add("@Data", SqlDbType.DateTime).Value = new DateTime(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
+                try
                 {
-                    using (SqlCommand cmd = new(DbManager.Update_Uwaga, connection, transaction))
-                    {
-                        cmd.Parameters.Add("@Uwaga", SqlDbType.NVarChar, 1024).Value = Helper.Truncate(Uwaga, 1024);
-                        cmd.Parameters.Add("@PracId", SqlDbType.Int).Value = Pracownik.Get_PraId(connection, transaction);
-                        cmd.Parameters.Add("@Data", SqlDbType.DateTime).Value = Pierwszy_Dzien_Miesiaca;
-
-                        try
-                        {
-                            int rowsAffected = cmd.ExecuteNonQuery();
-                            transaction.Commit();
-                            return rowsAffected > 0;
-                        }
-                        catch (SqlException ex)
-                        {
-                            Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Update_Opis_Karty): " + ex.Message);
-                            transaction.Rollback();
-                            throw;
-                        }
-                        catch (Exception ex)
-                        {
-                            Internal_Error_Logger.New_Custom_Error("Error(Update_Opis_Karty): " + ex.Message);
-                            transaction.Rollback();
-                            throw;
-                        }
-                    }
+                    int rowsAffected = command.ExecuteNonQuery();
+                    return rowsAffected > 0;
                 }
-            }
+                catch (SqlException ex)
+                {
+                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Update_Opis_Karty): " + ex.Message);
+                    transaction.Rollback();
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Internal_Error_Logger.New_Custom_Error("Error(Update_Opis_Karty): " + ex.Message);
+                    transaction.Rollback();
+                    throw;
+                }
+            }            
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Globalization;
+using System.Transactions;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 
@@ -46,52 +47,15 @@ namespace Excel_Data_Importer_WARS
             Internal_Error_Logger = Error_Logger;
             List<Helper.Current_Position> Pozcje_Tabeli_Stawek_W_Zakladce = Helper.Find_Starting_Points(Zakladka, "Tabela Stawek");
             List<Relacja> Relacje = [];
-
             foreach (Helper.Current_Position pozycja in Pozcje_Tabeli_Stawek_W_Zakladce)
             {
                 Relacja Relacja = new();
                 Get_Dane(ref Relacja, pozycja, Zakladka);
                 Relacje.Add(Relacja);
-            }
-
-            foreach (Relacja Relacja in Relacje)
-            {
-                try
-                {
-                    Relacja.Insert_Relacja_Do_Optimy();
-                }
-                catch (SqlException ex)
-                {
-                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (Insert_Relacja_Do_Optimy): " + ex.Message);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
-                }
-                catch (Exception ex)
-                {
-                    Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
-                }
                 
-                foreach (System_Obsługi_Relacji System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
-                {
-                    try
-                    {
-                        System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy();
-                    }
-                    catch (SqlException ex)
-                    {
-                        Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
-                    }
-                    catch (Exception ex)
-                    {
-                        Internal_Error_Logger.New_Custom_Error("Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
-                    }
-                }
-                Insert_Atrybuty_Do_Optimy(Relacja);
             }
+            Insert_Dane_Stawek_Do_Optimy(Relacje);
         }
-
         private static void Get_Dane(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             pozycja.Col -= 2;
@@ -114,7 +78,6 @@ namespace Excel_Data_Importer_WARS
                 pozycja.Row += offest;
             }
         }
-
         private static void Get_Relacja(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             string dane = Zakladka.Cell(pozycja.Row, pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
@@ -140,7 +103,6 @@ namespace Excel_Data_Importer_WARS
             }
             Relacja.Opis_Relacji_2 = dane;
         }
-
         private static int Get_Dane_Relacji(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
             int offset = 0;
@@ -216,8 +178,7 @@ namespace Excel_Data_Importer_WARS
             }
             return offset;
         }
-
-        private static void Insert_Atrybuty_Do_Optimy(Relacja Relacja)
+        private static void Insert_Atrybuty_Do_Optimy(Relacja Relacja, SqlConnection connection, SqlTransaction transaction)
         {
             DateTime Data_Od = DateTime.ParseExact("2025.02.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture);
             DateTime Data_Do = DateTime.ParseExact("2025.03.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture).AddDays(-1);
@@ -227,19 +188,19 @@ namespace Excel_Data_Importer_WARS
             {
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe.ToString(), "Wynagrodzenie ryczałtowe - Podstawowe", Data_Od, Data_Do);
+                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe.ToString(), "Wynagrodzenie ryczałtowe - Podstawowe", Data_Od, Data_Do, connection, transaction);
                 }
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe.ToString(), "Wynagrodzenie ryczałtowe - Nadgodziny", Data_Od, Data_Do);
+                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe.ToString(), "Wynagrodzenie ryczałtowe - Nadgodziny", Data_Od, Data_Do, connection, transaction);
                 }
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy.ToString(), "Wynagrodzenie ryczałtowe - Nocki", Data_Od, Data_Do);
+                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy.ToString(), "Wynagrodzenie ryczałtowe - Nocki", Data_Od, Data_Do, connection, transaction);
                 }
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy.ToString(), "Dodatek wyjazdowy", Data_Od, Data_Do);
+                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy.ToString(), "Dodatek wyjazdowy", Data_Od, Data_Do, connection, transaction);
                 }
             }
             if (counter > 0)
@@ -249,22 +210,79 @@ namespace Excel_Data_Importer_WARS
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
+        private static void Insert_Dane_Stawek_Do_Optimy(List<Relacja> Relacje)
+        {
+            using (SqlConnection connection = new(DbManager.Connection_String))
+            {
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
+                {
+                    try
+                    {
+                        connection.Open();
+                        foreach (Relacja Relacja in Relacje)
+                        {
+                            try
+                            {
+                                Relacja.Insert_Relacja_Do_Optimy(Internal_Error_Logger, connection, transaction);
+                            }
+                            catch (SqlException ex)
+                            {
+                                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (Insert_Relacja_Do_Optimy): " + ex.Message);
+                                throw new Exception(Internal_Error_Logger.Get_Error_String());
+                            }
+                            catch (Exception ex)
+                            {
+                                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                                throw new Exception(Internal_Error_Logger.Get_Error_String());
+                            }
 
-        private static int Insert_Command_Atrybuty(string wartosc, string Nazwa_Atrybutu, DateTime Data_Od, DateTime Data_Do)
+                            foreach (System_Obsługi_Relacji System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
+                            {
+                                try
+                                {
+                                    System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy(Internal_Error_Logger, connection, transaction);
+                                }
+                                catch (SqlException ex)
+                                {
+                                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
+                                    throw new Exception(Internal_Error_Logger.Get_Error_String());
+                                }
+                                catch (Exception ex)
+                                {
+                                    Internal_Error_Logger.New_Custom_Error("Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
+                                    throw new Exception(Internal_Error_Logger.Get_Error_String());
+                                }
+                            }
+                            Insert_Atrybuty_Do_Optimy(Relacja, connection, transaction);
+                        }
+                        transaction.Commit();
+                    }
+                    catch (SqlException ex)
+                    {
+                        transaction.Rollback();
+                        Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): " + ex.Message);
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                        throw;
+                    }
+                }
+            }
+        }
+        private static int Insert_Command_Atrybuty(string wartosc, string Nazwa_Atrybutu, DateTime Data_Od, DateTime Data_Do, SqlConnection connection, SqlTransaction transaction)
         {
             try
             {
-                using (SqlConnection connection = new(DbManager.Connection_String))
+                using (SqlCommand command = new(DbManager.Insert_Atrybuty, connection, transaction))
                 {
-                    using (SqlCommand command = new(DbManager.Insert_Atrybuty, connection))
-                    {
-                        command.Parameters.Add("@NowaWartosc", SqlDbType.NVarChar, 101).Value = wartosc;
-                        command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 100).Value = Nazwa_Atrybutu;
-                        command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
-                        command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
-                        connection.Open();
-                        command.ExecuteNonQuery();
-                    }
+                    command.Parameters.Add("@NowaWartosc", SqlDbType.NVarChar, 101).Value = wartosc;
+                    command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 100).Value = Nazwa_Atrybutu;
+                    command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
+                    command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
+                    command.ExecuteNonQuery();
                 }
                 return 1;
             }

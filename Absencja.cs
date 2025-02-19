@@ -112,17 +112,17 @@ namespace Excel_Data_Importer_WARS
                     throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 }
 
-                using (SqlCommand cmd = new(DbManager.Check_Duplicate_Absencje, connection, tran))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Absencje, connection, tran))
                 {
-                    cmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    cmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
-                    cmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
-                    cmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
-                    cmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
-                    cmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                    cmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
-                    cmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
-                    if ((int)cmd.ExecuteScalar() == 1)
+                    command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                    command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
+                    command.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
+                    command.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
+                    command.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
+                    command.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
+                    command.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
+                    command.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
+                    if ((int)command.ExecuteScalar() == 1)
                     {
                         duplicate = true;
                         return 0;
@@ -133,20 +133,20 @@ namespace Excel_Data_Importer_WARS
                 {
                     try
                     {
-                        using (SqlCommand insertCmd = new(DbManager.Insert_Nieobecnosci, connection, tran))
+                        using (SqlCommand command = new(DbManager.Insert_Nieobecnosci, connection, tran))
                         {
-                            insertCmd.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                            insertCmd.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
-                            insertCmd.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
-                            insertCmd.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
-                            insertCmd.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
-                            insertCmd.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                            insertCmd.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
-                            insertCmd.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
-                            insertCmd.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
-                            insertCmd.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Program.error_logger.Last_Mod_Osoba, 20);
-                            insertCmd.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Program.error_logger.Last_Mod_Time;
-                            insertCmd.ExecuteScalar();
+                            command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                            command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
+                            command.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
+                            command.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
+                            command.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
+                            command.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
+                            command.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
+                            command.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
+                            command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
+                            command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
+                            command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
+                            command.ExecuteScalar();
                         }
                     }
 

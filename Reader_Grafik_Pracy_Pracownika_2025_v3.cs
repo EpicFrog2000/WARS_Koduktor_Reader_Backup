@@ -126,7 +126,7 @@ namespace Excel_Data_Importer_WARS
                     grafik.Set_Miesiac(dane);
                     if (grafik.Miesiac < 1)
                     {
-                        Internal_Error_Logger.New_Error(dane, "Miesiac", pozycja.Col + 3, pozycja.Row + rowOffset, "Błędna wartość w mieisac");
+                        Internal_Error_Logger.New_Error(dane, "Miesiac", pozycja.Col + 3, pozycja.Row + rowOffset, "Błędna wartość w miesiac");
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
@@ -134,7 +134,7 @@ namespace Excel_Data_Importer_WARS
                     dane = Zakladka.Cell(pozycja.Row + rowOffset, pozycja.Col + 6).GetFormattedString().Trim();
                     if (string.IsNullOrEmpty(dane))
                     {
-                        Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 5, pozycja.Row + rowOffset, "Błędna wartość w rok");
+                        Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Brak wartości w komórce");
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
@@ -144,7 +144,7 @@ namespace Excel_Data_Importer_WARS
                     }
                     else
                     {
-                        Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 5, pozycja.Row + rowOffset, "Błędna wartość w rok");
+                        Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Błędna wartość w rok");
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
@@ -172,6 +172,7 @@ namespace Excel_Data_Importer_WARS
                 Internal_Error_Logger.New_Custom_Error("Zły format pliku, nie znaleniono żadnych grafików z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                 throw new Exception("Zły format pliku, nie znaleniono żadnych grafików z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
             }
+
         }
         private static Pracownik Get_Pracownik(IXLWorksheet worksheet, Helper.Current_Position pozycja)
         {
@@ -319,7 +320,7 @@ namespace Excel_Data_Importer_WARS
             using (SqlConnection connection = new(DbManager.Connection_String))
             {
                 connection.Open();
-                using (SqlTransaction tran = connection.BeginTransaction())
+                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
                 {
                     foreach (Grafik grafik in grafiki)
                     {
@@ -327,11 +328,11 @@ namespace Excel_Data_Importer_WARS
                         {
                             try
                             {
-                                dodano += Zrob_Insert_Plan_command(connection, tran, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
+                                dodano += Zrob_Insert_Plan_command(connection, transaction, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
                             }
                             catch (SqlException ex)
                             {
-                                tran.Rollback();
+                                transaction.Rollback();
                                 Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                                 throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                             }
@@ -341,13 +342,13 @@ namespace Excel_Data_Importer_WARS
                             }
                             catch (Exception ex)
                             {
-                                tran.Rollback();
+                                transaction.Rollback();
                                 Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                                 throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
                             }
                         }
                     }
-                    tran.Commit();
+                    transaction.Commit();
                 }
                 if (dodano > 0)
                 {
@@ -361,28 +362,28 @@ namespace Excel_Data_Importer_WARS
         {
             int IdPracownika = pracownik.Get_PraId(connection, transaction);
 
-            using (SqlCommand cmd = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
+            using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
             {
-                cmd.Parameters.AddWithValue("@DataInsert", data);
-                cmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
-                cmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
-                cmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                if ((int)cmd.ExecuteScalar() == 1)
+                command.Parameters.AddWithValue("@DataInsert", data);
+                command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
+                command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                if ((int)command.ExecuteScalar() == 1)
                 {
                     return 0;
                 }
             }
-            using (SqlCommand insertCmd = new(DbManager.Insert_Plan_Pracy, connection, transaction))
+            using (SqlCommand command = new(DbManager.Insert_Plan_Pracy, connection, transaction))
             {
-                insertCmd.Parameters.AddWithValue("@DataInsert", data);
-                insertCmd.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
-                insertCmd.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
-                insertCmd.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                insertCmd.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
-                insertCmd.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
-                insertCmd.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
+                command.Parameters.AddWithValue("@DataInsert", data);
+                command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
+                command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
+                command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
+                command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
 
-                insertCmd.ExecuteScalar();
+                command.ExecuteScalar();
             }
             return 1;
         }

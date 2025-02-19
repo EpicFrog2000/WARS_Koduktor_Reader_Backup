@@ -439,6 +439,6 @@ AND ppd.PPR_Data = @Data;
                 return false;
             }
         }
-        public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostaje z powodów historycznych xdd, tak powstało pół godzinki)
+        public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
     }
 }
