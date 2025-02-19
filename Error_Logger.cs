@@ -1,13 +1,8 @@
 ﻿namespace Excel_Data_Importer_WARS
 {
-    internal class Error_Logger
+    internal class Error_Logger(bool showmsg)
     {
-        public Error_Logger(bool showmsg)
-        {
-            ShowErrorMessageOnWrite = showmsg;
-        }
-
-        private bool ShowErrorMessageOnWrite = true;
+        private readonly bool ShowErrorMessageOnWrite = showmsg;
 
         // Plik excel na którym obecnie wykonwywane są operacje
         public string Nazwa_Pliku = "";

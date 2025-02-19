@@ -63,7 +63,8 @@ namespace Excel_Data_Importer_WARS
             ZR,     // Zwolnienie na rehabilitację (ZUS ZLA)
             ZS,     // Zwolnienie szpitalne (ZUS ZLA)
             ZY,     // Zwolnienie powypadkowe (ZUS ZLA)
-            ZZ      // Zwolnienie lek. (ciąża) (ZUS ZLA)
+            ZZ,     // Zwolnienie lek. (ciąża) (ZUS ZLA)
+            SZK     // Szkolenie
         }
         public static int Dodaj_Absencje_do_Optimy(List<Absencja> Absencje, SqlTransaction tran, SqlConnection connection, Pracownik Pracownik, Error_Logger Internal_Error_Logger)
         {
@@ -84,8 +85,8 @@ namespace Excel_Data_Importer_WARS
                     continue;
                 }
 
-                int przyczyna = Dopasuj_Przyczyne(ListaAbsencji[0].Rodzaj_Absencji);
-                string nazwa_nieobecnosci = Dopasuj_Nieobecnosc(ListaAbsencji[0].Rodzaj_Absencji);
+                int przyczyna = Dopasuj_TKN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
+                string nazwa_nieobecnosci = Dopasuj_TBN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
 
                 if (string.IsNullOrEmpty(nazwa_nieobecnosci))
                 {
@@ -198,33 +199,34 @@ namespace Excel_Data_Importer_WARS
                 return absenceDate.DayOfWeek != DayOfWeek.Saturday && absenceDate.DayOfWeek != DayOfWeek.Sunday;
             });
         }
-        private static int Dopasuj_Przyczyne(RodzajAbsencji rodzaj)
+        private static int Dopasuj_TKN_Nazwa(RodzajAbsencji rodzaj)
         {
             return rodzaj switch
             {
-                RodzajAbsencji.ZL => 1,        // Zwolnienie lekarskie
-                RodzajAbsencji.DM => 2,        // Urlop macierzyński
-                RodzajAbsencji.DR => 13,        // Urlop opiekuńczy
-                RodzajAbsencji.NB => 1,        // Zwolnienie lekarskie
-                RodzajAbsencji.NN => 5,        // Nieobecność nieusprawiedliwiona
-                RodzajAbsencji.UC => 21,       // Urlop opiekuńczy
-                RodzajAbsencji.UD => 21,       // Urlop opiekuńczy
-                RodzajAbsencji.UJ => 10,       // Służba wojskowa
-                RodzajAbsencji.UL => 10,       // Służba wojskowa
+                RodzajAbsencji.ZL => 1,       // Zwolnienie lekarskie
+                RodzajAbsencji.DM => 2,       // Urlop macierzyński
+                RodzajAbsencji.DR => 13,      // Urlop opiekuńczy
+                RodzajAbsencji.NB => 1,       // Zwolnienie lekarskie
+                RodzajAbsencji.NN => 5,       // Nieobecność nieusprawiedliwiona
+                RodzajAbsencji.UC => 21,      // Urlop opiekuńczy
+                RodzajAbsencji.UD => 21,      // Urlop opiekuńczy
+                RodzajAbsencji.UJ => 10,      // Służba wojskowa
+                RodzajAbsencji.UL => 10,      // Służba wojskowa
                 RodzajAbsencji.UM => 2,       // Urlop macierzyński
                 RodzajAbsencji.UO => 4,       // Urlop okolicznościowy
                 RodzajAbsencji.UN => 3,       // Urlop rehabilitacyjny
                 RodzajAbsencji.UR => 3,       // Urlop rehabilitacyjny
-                RodzajAbsencji.ZC => 21,       // Urlop opiekuńczy
-                RodzajAbsencji.ZD => 21,       // Urlop opiekuńczy
-                RodzajAbsencji.ZK => 21,       // Urlop opiekuńczy
+                RodzajAbsencji.ZC => 21,      // Urlop opiekuńczy
+                RodzajAbsencji.ZD => 21,      // Urlop opiekuńczy
+                RodzajAbsencji.ZK => 21,      // Urlop opiekuńczy
                 RodzajAbsencji.ZN => 1,       // Zwolnienie lekarskie
                 RodzajAbsencji.ZR => 3,       // Urlop rehabilitacyjny
                 RodzajAbsencji.ZZ => 1,       // Zwolnienie lekarskie
-                _ => 9                             // Nie dotyczy dla pozostałych przypadków
+                RodzajAbsencji.SZK => 20,     // SZ
+                _ => 9                        // Nie dotyczy dla pozostałych przypadków
             };
         }
-        private static string Dopasuj_Nieobecnosc(RodzajAbsencji rodzaj)
+        private static string Dopasuj_TBN_Nazwa(RodzajAbsencji rodzaj)
         {
             return rodzaj switch
             {
@@ -250,6 +252,7 @@ namespace Excel_Data_Importer_WARS
                 RodzajAbsencji.PP => "Dni wolne na poszukiwanie pracy",
                 RodzajAbsencji.UK => "Dni wolne z tyt. krwiodawstwa",
                 RodzajAbsencji.IK => "Covid19",
+                RodzajAbsencji.SZK => "Szkolenie",
                 _ => "Nieobecność (B2B)"
             };
         }
