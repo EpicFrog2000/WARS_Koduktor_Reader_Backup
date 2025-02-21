@@ -4,7 +4,7 @@ namespace Excel_Data_Importer_WARS
 {
     internal static class DbManager
     {
-        public static string Connection_String = "";
+        public static string Connection_String = string.Empty;
         public static readonly string Insert_Odbior_Nadgodzin = @"
     DECLARE @PRA_PraId INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @PRI_PraId);
     DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRA_PraId and PPR_Data = @DataInsert)

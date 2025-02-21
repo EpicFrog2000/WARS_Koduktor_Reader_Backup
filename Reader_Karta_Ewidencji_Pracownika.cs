@@ -40,111 +40,21 @@ namespace Excel_Data_Importer_WARS
                 }
                 return 0;
             }
-            public void Set_Miesiac(string nazwa)
+
+            public void Set_Miesiac(string value)
             {
-                if (!string.IsNullOrEmpty(nazwa))
+                if (string.IsNullOrEmpty(value))
                 {
-                    if (nazwa.Equals("styczeń", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 1;
-                    }
-                    else if (nazwa.Equals("i", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 1;
-                    }
-                    else if (nazwa.Equals("luty", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 2;
-                    }
-                    else if (nazwa.Equals("ii", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 2;
-                    }
-                    else if (nazwa.Equals("marzec", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 3;
-                    }
-                    else if (nazwa.Equals("iii", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 3;
-                    }
-                    else if (nazwa.Equals("kwiecień", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 4;
-                    }
-                    else if (nazwa.Equals("iv", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 4;
-                    }
-                    else if (nazwa.Equals("maj", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 5;
-                    }
-                    else if (nazwa.Equals("v", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 5;
-                    }
-                    else if (nazwa.Equals("czerwiec", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 6;
-                    }
-                    else if (nazwa.Equals("vi", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 6;
-                    }
-                    else if (nazwa.Equals("lipiec", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 7;
-                    }
-                    else if (nazwa.Equals("vii", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 7;
-                    }
-                    else if (nazwa.Equals("sierpień", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 8;
-                    }
-                    else if (nazwa.Equals("viii", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 8;
-                    }
-                    else if (nazwa.Equals("wrzesień", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 9;
-                    }
-                    else if (nazwa.Equals("ix", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 9;
-                    }
-                    else if (nazwa.Equals("październik", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 10;
-                    }
-                    else if (nazwa.Equals("x", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 10;
-                    }
-                    else if (nazwa.Equals("listopad", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 11;
-                    }
-                    else if (nazwa.Equals("xi", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 11;
-                    }
-                    else if (nazwa.Equals("grudzień", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 12;
-                    }
-                    else if (nazwa.Equals("xii", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        Miesiac = 12;
-                    }
-                    else
-                    {
-                        Miesiac = 0;
-                    }
+                    return;
                 }
+                value = value.ToLower().Trim();
+                Dictionary<string, int> months = new()
+                {
+                    {"styczeń", 1}, {"i", 1}, {"luty", 2}, {"ii", 2}, {"marzec", 3}, {"iii", 3}, {"kwiecień", 4}, {"iv", 4},
+                    {"maj", 5}, {"v", 5}, {"czerwiec", 6}, {"vi", 6}, {"lipiec", 7}, {"vii", 7}, {"sierpień", 8}, {"viii", 8},
+                    {"wrzesień", 9}, {"ix", 9}, {"październik", 10}, {"x", 10}, {"listopad", 11}, {"xi", 11}, {"grudzień", 12}, {"xii", 12}
+                };
+                Miesiac = months.FirstOrDefault(kvp => value.Contains(kvp.Key)).Value;
             }
         }
         private class Dane_Karty
@@ -361,7 +271,7 @@ namespace Excel_Data_Importer_WARS
                 throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
 
-            dane = "";
+            dane = string.Empty;
             //wczytaj nazwisko i imie
             try
             {
@@ -445,6 +355,9 @@ namespace Excel_Data_Importer_WARS
             Pracownik pracownik = new();
             switch (sposob)
             {
+                // case 5:
+                // KARTA  PRACY: NAZWISKO IMIĘ ||| Imie | NAzwisko, akronim ;
+
                 case 0: // Karta pracy: Nazwisko Imie #lub# Karta pracy: Nazwisko Imie akronim #lub# Karta pracy: akronim Nazwisko Imie
                     dane = Zakladka.Cell(StartKarty.Row - 2, StartKarty.Col).GetFormattedString().Trim().Replace("  ", " ");
                     if (!string.IsNullOrEmpty(dane))
@@ -708,7 +621,7 @@ namespace Excel_Data_Importer_WARS
                     if (Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika, transaction, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -720,7 +633,7 @@ namespace Excel_Data_Importer_WARS
                     if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji_Pracownika.Absencje, transaction, connection, Karta_Ewidencji_Pracownika.Pracownik, Internal_Error_Logger) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano absencje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano absencje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -732,7 +645,7 @@ namespace Excel_Data_Importer_WARS
                     if (Dodaj_Godz_Odbior_Do_Optimy(Karta_Ewidencji_Pracownika, transaction, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano odbiory nadgodzin z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano odbiory nadgodzin z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -748,7 +661,7 @@ namespace Excel_Data_Importer_WARS
                         if (Update_Opis_Karty(Karta_Ewidencji_Pracownika, Uwaga, connection, transaction))
                         {
                             Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"Poprawnie dodano uwagę z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                            Console.WriteLine($"Poprawnie dodano uwagę z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             Console.ForegroundColor = ConsoleColor.White;
                         }
                         else
@@ -838,8 +751,8 @@ namespace Excel_Data_Importer_WARS
                 catch (Exception ex)
                 {
                     connection.Close();
-                    Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                    throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
@@ -871,13 +784,13 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
                 transaction.Rollback();
                 throw;
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 transaction.Rollback();
                 throw;
             }
@@ -933,9 +846,10 @@ namespace Excel_Data_Importer_WARS
                         catch (SqlException ex)
                         {
                             transaction.Rollback();
-                            Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                            throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                        }
+
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                                }
                         catch (FormatException)
                         {
                             continue;
@@ -943,8 +857,8 @@ namespace Excel_Data_Importer_WARS
                         catch (Exception ex)
                         {
                             transaction.Rollback();
-                            Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                            throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                     }
                 }
@@ -985,13 +899,13 @@ namespace Excel_Data_Importer_WARS
                 }
                 catch (SqlException ex)
                 {
-                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Update_Opis_Karty): " + ex.Message);
+                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}");
                     transaction.Rollback();
                     throw;
                 }
                 catch (Exception ex)
                 {
-                    Internal_Error_Logger.New_Custom_Error("Error(Update_Opis_Karty): " + ex.Message);
+                    Internal_Error_Logger.New_Custom_Error($"Error(Update_Opis_Karty): {ex.Message}");
                     transaction.Rollback();
                     throw;
                 }

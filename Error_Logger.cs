@@ -1,25 +1,25 @@
 ﻿namespace Excel_Data_Importer_WARS
 {
-    internal class Error_Logger(bool showmsg)
+    internal class Error_Logger
     {
-        private readonly bool ShowErrorMessageOnWrite = showmsg;
+        private readonly bool ShowErrorMessageOnWrite;
 
         // Plik excel na którym obecnie wykonwywane są operacje
-        public string Nazwa_Pliku = "";
+        public string Nazwa_Pliku = string.Empty;
 
         // Zakładka na której wystąpił błąd
         public int Nr_Zakladki = 0;
 
-        public string Nazwa_Zakladki = "";
+        public string Nazwa_Zakladki = string.Empty;
 
         // Obecna wartość pola z błędem
-        private string Wartosc_Pola = "";
+        private string Wartosc_Pola = string.Empty;
 
         // Nazwa tego co powinno znaleźć się w tym polu
-        private string Poprawna_Wartosc_Pola = "";
+        private string Poprawna_Wartosc_Pola = string.Empty;
 
         // Scierzka do pliku w którym maja być zapisywane błędy
-        public string ErrorFilePath = "";
+        public string ErrorFilePath = string.Empty;
 
         // Kolumna w której wystąpił błąd
         public int Kolumna = -1;
@@ -28,17 +28,24 @@
         public int Rzad = -1;
 
         // Dodatkowa wiadomośc na koncu errora w pliku
-        private string OptionalMsg = "";
+        private string OptionalMsg = string.Empty;
 
         // Osoba która ostatnio zedytowała dane
-        public string Last_Mod_Osoba = "";
+        public string Last_Mod_Osoba = string.Empty;
 
         public DateTime Last_Mod_Time = DateTime.Now;
 
         // Nazwa obecnie przetwarzanych plików
-        public string Current_Processed_Files_Folder = "";
+        public string Current_Processed_Files_Folder = string.Empty;
 
-        public string Current_Bad_Files_Folder = "";
+        public string Current_Bad_Files_Folder = string.Empty;
+
+        public string Good_Files_Folder = string.Empty;
+
+        public Error_Logger(bool showmsg)
+        {
+            ShowErrorMessageOnWrite = showmsg;
+        }
 
         /// <summary>
         /// Tworzy wiadomość z podanych parametrów i dodaje wiadomość o błędzie do pliku z errorami.
@@ -66,31 +73,31 @@
             string Wiadomosc = "-------------------------------------------------------------------------------";
             if (!string.IsNullOrEmpty(Nazwa_Pliku))
             {
-                Wiadomosc += Environment.NewLine + "Plik: " + System.IO.Path.GetFileName(Nazwa_Pliku);
+                Wiadomosc += $"{Environment.NewLine}Plik: {System.IO.Path.GetFileName(Nazwa_Pliku)}";
             }
-            Wiadomosc += Environment.NewLine + "Nazwa zakladki: " + Nazwa_Zakladki;
+            Wiadomosc += $"{Environment.NewLine}Nazwa zakladki: {Nazwa_Zakladki}";
             if (Nr_Zakladki != 0)
             {
-                Wiadomosc += Environment.NewLine + "Nr Zakladki: " + Nr_Zakladki;
+                Wiadomosc += $"{Environment.NewLine}Nr Zakladki: {Nr_Zakladki}";
             }
             if (Kolumna != -1)
             {
-                Wiadomosc += Environment.NewLine + "Kolumna: " + Kolumna;
+                Wiadomosc += $"{Environment.NewLine}Kolumna: {Kolumna}";
             }
             if (Rzad != -1)
             {
-                Wiadomosc += Environment.NewLine + "Rzad: " + Rzad;
+                Wiadomosc += $"{Environment.NewLine}Rzad: {Rzad}";
             }
-            Wiadomosc += Environment.NewLine + "Wartość w komórce: '" + Wartosc_Pola + "'";
+            Wiadomosc += $"{Environment.NewLine}Wartość w komórce: '{Wartosc_Pola}'";
             if (!string.IsNullOrEmpty(Poprawna_Wartosc_Pola))
             {
-                Wiadomosc += Environment.NewLine + "Poprawna wartość jaka powinna być: " + Poprawna_Wartosc_Pola;
+                Wiadomosc += $"{Environment.NewLine}Poprawna wartość jaka powinna być: {Poprawna_Wartosc_Pola}";
             }
             if (!string.IsNullOrEmpty(OptionalMsg))
             {
-                Wiadomosc += Environment.NewLine + "Dodatkowa wiadomość: " + OptionalMsg;
+                Wiadomosc += $"{Environment.NewLine}Dodatkowa wiadomość: {OptionalMsg}";
             }
-            Wiadomosc += Environment.NewLine + "-------------------------------------------------------------------------------" + Environment.NewLine;
+            Wiadomosc += $"{Environment.NewLine}-------------------------------------------------------------------------------{Environment.NewLine}";
             return Wiadomosc;
         }
 
@@ -99,7 +106,7 @@
         /// </summary>
         public void New_Custom_Error(string Error_Msg)
         {
-            Error_Msg = "-------------------------------------------------------------------------------" + Environment.NewLine + Error_Msg + Environment.NewLine + "-------------------------------------------------------------------------------" + Environment.NewLine;
+            Error_Msg = $"-------------------------------------------------------------------------------{Environment.NewLine}{Error_Msg}{Environment.NewLine}-------------------------------------------------------------------------------{Environment.NewLine}";
             Append_Error_To_File(Error_Msg);
             if (ShowErrorMessageOnWrite)
             {

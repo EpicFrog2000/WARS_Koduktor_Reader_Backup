@@ -3,28 +3,34 @@ using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
 
-// TODO Lepsze oznaczenia Absencji
-
 namespace Excel_Data_Importer_WARS
 {
     static class Program
     {
         private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static Config config = new();
-        private static Stopwatch stopwatch = new();
         private static readonly bool LOG_TO_TERMINAL = true;
         private static readonly bool Do_Stuff_In_loop = false;
 
         public static async Task<int> Main()
         {
             await Do_The_Thing();
+            Console.WriteLine($"Pomiar.Avg_Get_Typ_Zakladki: {Pomiar.Avg_Get_Typ_Zakladki}");
+            Console.WriteLine($"Pomiar.Avg_Get_Metadane_Pliku: {Pomiar.Avg_Get_Metadane_Pliku}");
+            Console.WriteLine($"Pomiar.Avg_Open_Workbook: {Pomiar.Avg_Open_Workbook}");
+            Console.WriteLine($"Pomiar.Avg_Process_Files: {Pomiar.Avg_Process_Files}");
+            Console.WriteLine($"Pomiar.Avg_MoveFile: {Pomiar.Avg_MoveFile}");
+            Console.WriteLine($"Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder: {Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder}");
+            Console.WriteLine($"Pomiar.Avg_Usun_Ukryte_Karty: {Pomiar.Avg_Usun_Ukryte_Karty}");
+            Console.ReadLine();
             return 0;
         }
         private static async Task Do_The_Thing()
         {
             // Start measuring time
-
+            Stopwatch stopwatch = new();
             stopwatch.Start();
+
             TextWriter originalOut = Console.Out;
             if (!LOG_TO_TERMINAL)
             {
@@ -65,15 +71,15 @@ namespace Excel_Data_Importer_WARS
 
                     //foreach (string filepath in Files_Paths)
                     //{
-                    //    await Process_Files(filepath).ConfigureAwait(false);
+                    //    await Process_Files(filepath);
                     //}
 
-                    //await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
-                    //{
-                    //    await Process_Files(filePath);
-                    //});
+                    await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
+                    {
+                        await Task.Run(() => Process_Files(filePath));
+                    });
 
-                    await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)).ToList());
+                    //await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)).ToList());
                 }
             } while (Do_Stuff_In_loop);
 
@@ -86,111 +92,142 @@ namespace Excel_Data_Importer_WARS
             Console.WriteLine("Kliknij aby zakończyć...");
             Console.ReadLine();
         }
-        private static async Task Process_Files(string File_Path)
+        private static void Process_Files(string File_Path)
         {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
             Console.ForegroundColor = ConsoleColor.White;
-            if (!Is_File_Valid(File_Path))
+            (XLWorkbook? Workbook, FileStream? Stream) = Open_Workbook(File_Path);
+            if (Workbook == null)
             {
+                if (Stream != null)
+                {
+                    Stream!.Close();
+                }
+                Move_File(File_Path, 0);
+                Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 return;
             }
+
+            _ = Task.Run(() => Usun_Ukryte_Karty(Workbook));
+
             Error_Logger Internal_Error_Logger = new(true)
             {
+                Good_Files_Folder = error_logger.Good_Files_Folder,
                 Current_Processed_Files_Folder = error_logger.Current_Processed_Files_Folder,
                 Current_Bad_Files_Folder = error_logger.Current_Bad_Files_Folder,
                 ErrorFilePath = error_logger.ErrorFilePath,
                 Nazwa_Pliku = File_Path
             };
 
-            (Internal_Error_Logger.Last_Mod_Osoba, Internal_Error_Logger.Last_Mod_Time) = await Get_Metadane_Pliku(File_Path).ConfigureAwait(false);
-
+            (Internal_Error_Logger.Last_Mod_Osoba, Internal_Error_Logger.Last_Mod_Time) = Get_Metadane_Pliku(Workbook, File_Path);
             error_logger.Nazwa_Pliku = Internal_Error_Logger.Nazwa_Pliku;
             error_logger.Last_Mod_Osoba = Internal_Error_Logger.Last_Mod_Osoba;
             error_logger.Last_Mod_Time = Internal_Error_Logger.Last_Mod_Time;
 
-
-
-            using var stream = File.Open(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-            using (XLWorkbook Workbook = new(stream))
+            int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
+            if (Ilosc_Zakladek_W_Workbook < 1)
             {
-                await Usun_Ukryte_Karty(Workbook).ConfigureAwait(false);
-                int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
-                if (Ilosc_Zakladek_W_Workbook < 1)
+                Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
+                Workbook!.Dispose();
+                Stream!.Close();
+                return;
+            }
+            bool Contains_Any_Bad_Data = false;
+            for (int Obecny_Numer_Zakladki = 1; Obecny_Numer_Zakladki <= Ilosc_Zakladek_W_Workbook; Obecny_Numer_Zakladki++)
+            {
+                Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
+                IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
+                Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
+                int Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
+                try
                 {
-                    return;
+                    switch (Typ_Zakladki)
+                    {
+                        case 2:
+                            Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            break;
+                        case 3:
+                            Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
+                            Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            break;
+                        case 4:
+                            Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            break;
+                        case 5:
+                            Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            break;
+                        default:
+                            _ = Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path);
+                            Workbook!.Dispose();
+                            Stream!.Close();
+                            Move_File(File_Path, 2);
+                            error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
+                            Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
+                            return;
+                    }
                 }
-                for (int Obecny_Numer_Zakladki = 1; Obecny_Numer_Zakladki <= Ilosc_Zakladek_W_Workbook; Obecny_Numer_Zakladki++)
+                catch
                 {
-                    Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
-                    IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
-                    Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
-                    int Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
-                    try
-                    {
-                        switch (Typ_Zakladki)
-                        {
-                            case 2:
-                                Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                                break;
-                            case 3:
-                                Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
-                                Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                                break;
-                            case 4:
-                                Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                                break;
-                            case 5:
-                                Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
-                                break;
-                            default:
-                                await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                                error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
-                                return;
-                        }
-                    }
-                    catch
-                    {
-                        await Copy_Bad_Sheet_To_Files_Folder(File_Path, Obecny_Numer_Zakladki).ConfigureAwait(false);
-                    }
+                    _ = Task.Run(() => Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path));
+                    Contains_Any_Bad_Data = true;
+                }
+                finally
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 }
             }
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            await MoveFile(File_Path, 0).ConfigureAwait(false);
+            Workbook!.Dispose();
+            Stream!.Close();
+            if (!Contains_Any_Bad_Data)
+            {
+                Move_File(File_Path, 1);
+            }
+            else
+            {
+                Move_File(File_Path, 2);
+            }
         }
-
         private static int Get_Typ_Zakladki(IXLWorksheet Worksheet)
         {
-
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             string Cell_Value = Worksheet.Cell(3, 5).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("Harmonogram pracy"))
             {
+                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return 1;
             }
 
             Cell_Value = Worksheet.Cell(1, 3).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("Tabela Stawek"))
             {
+                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return 2;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("KARTA EWIDENCJI CZASU PRACY"))
             {
+                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return 3;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).Value.ToString();
             if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
             {
+                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return 5;
             }
 
             Cell_Value = Worksheet.Cell(1, 2).Value.ToString();
             if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
             {
+                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return 5;
             }
 
@@ -200,133 +237,124 @@ namespace Excel_Data_Importer_WARS
                 {
                     if (cell.GetString().Trim() == "Dzień")
                     {
+                        Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                         return 4;
                     }
                 }
                 catch { }
             }
-
+            Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
             return 0;
         }
-        private static async Task Usun_Ukryte_Karty(XLWorkbook workbook)
+        private static Task Usun_Ukryte_Karty(XLWorkbook workbook)
         {
-            await Task.Run(() =>
+            _ = Task.Run(() =>
             {
-                List<IXLWorksheet> hiddenSheets = [];
-                foreach (IXLWorksheet sheet in workbook.Worksheets)
-                {
-                    if (sheet.Visibility == XLWorksheetVisibility.Hidden)
-                    {
-                        hiddenSheets.Add(sheet);
-                    }
-                }
-                foreach (IXLWorksheet sheet in hiddenSheets)
+                Stopwatch PomiaryStopWatch = Stopwatch.StartNew();
+                var sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
+                foreach (var sheet in sheetsToRemove)
                 {
                     workbook.Worksheets.Delete(sheet.Name);
                 }
                 workbook.Save();
+                Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
             });
+            return Task.CompletedTask;
         }
-        private static async Task<(string, DateTime)> Get_Metadane_Pliku(string File_Path)
+        private static (string, DateTime) Get_Metadane_Pliku(XLWorkbook Workbook, string File_Path)
         {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             DateTime lastWriteTime = File.GetLastWriteTime(File_Path);
-
+            string lastModifiedBy = Workbook.Properties.LastModifiedBy ?? "";
+            Pomiar.Avg_Get_Metadane_Pliku = PomiaryStopWatch.Elapsed;
+            return (lastModifiedBy, lastWriteTime);
+        }
+        private static (XLWorkbook?, FileStream?) Open_Workbook(string File_Path)
+        {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
+            XLWorkbook Workbook;
             try
             {
-                using (FileStream fs = new(File_Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    var workbook = await Task.Run(() => new XLWorkbook(fs));
-
-                    string lastModifiedBy = workbook.Properties.LastModifiedBy ?? "";
-                    return (lastModifiedBy, lastWriteTime);
-                }
+                FileStream stream = new(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, bufferSize: 8192);
+                Workbook = new(stream);
+                Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
+                return (Workbook, stream);
             }
             catch
             {
-                return ("", lastWriteTime);
-            }
-        }
-        private static bool Is_File_Valid(string File_Path)
-        {
-            try
-            {
-                XLWorkbook Workbook = new(File_Path);
-            }
-            catch
-            {
-                MoveFile(File_Path, 1).ConfigureAwait(false);
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
                 Console.ForegroundColor = ConsoleColor.White;
-                return false;
+                Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
+                return (null, null);
             }
-            string[] validExtensions = [".xlsx", ".xls"];
-            string fileExtension = Path.GetExtension(File_Path).ToLowerInvariant();
-            if (!validExtensions.Contains(fileExtension))
-            {
-                MoveFile(File_Path, 1).ConfigureAwait(false);
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
-                Console.ForegroundColor = ConsoleColor.White;
-                return false;
-            }
-            return true;
         }
-        private static async Task MoveFile(string filePath, int option)
+        private static void Move_File(string filePath, int opcja)
         {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             if (!config.Move_Files_To_Processed_Folder)
+            {
+                Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                return;
+            }
+            string destinationPath = string.Empty;
+            if (opcja == 0)
+            {
+                destinationPath = Path.Combine(error_logger.Current_Bad_Files_Folder, Path.GetFileName(filePath));
+            }
+            else if (opcja == 1)
+            {
+                destinationPath = Path.Combine(error_logger.Good_Files_Folder, Path.GetFileName(filePath));
+            }
+            else if (opcja == 2)
+            {
+                destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
+                if (File.Exists(destinationPath))
+                {
+                    File.Delete(destinationPath);
+                }
+                File.Move(filePath, destinationPath);
+                Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                return;
+            }
+            else
             {
                 return;
             }
-            string processedFilesFolder = string.Empty;
-            processedFilesFolder = option switch
-            {
-                0 => error_logger.Current_Processed_Files_Folder,
-                1 => error_logger.Current_Bad_Files_Folder,
-                _ => error_logger.Current_Processed_Files_Folder,
-            };
-            Directory.CreateDirectory(processedFilesFolder);
-            string destinationPath = Path.Combine(processedFilesFolder, Path.GetFileName(filePath));
+            
             if (File.Exists(destinationPath))
             {
                 File.Delete(destinationPath);
             }
-            await Task.Run(() => File.Move(filePath, destinationPath));
+            File.Copy(filePath, destinationPath);
+            destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
+            if (File.Exists(destinationPath))
+            {
+                File.Delete(destinationPath);
+            }
+            File.Move(filePath, destinationPath);
+            Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
         }
-        private static async Task Copy_Bad_Sheet_To_Files_Folder(string filePath, int sheetIndex)
+        private static async Task Copy_Bad_Sheet_To_Files_Folder(XLWorkbookProperties op, IXLWorksheet sheetToCopy, string filePath)
         {
-            string newFilePath = Path.Combine(error_logger.Current_Bad_Files_Folder, "DO_POPRAWY_" + Path.GetFileName(filePath));
-            try
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
+            string newFilePath = Path.Combine(error_logger.Current_Bad_Files_Folder, $"DO_POPRAWY_{Path.GetFileName(filePath)}");
+            string newSheetName = sheetToCopy.Name.Length > 31 ? sheetToCopy.Name[..31] : sheetToCopy.Name;
+            using (XLWorkbook workbook = File.Exists(newFilePath) ? new(newFilePath) : new())
             {
-                await Task.Run(() =>
+                if (!workbook.Worksheets.Contains(newSheetName))
                 {
-                    using (XLWorkbook originalwb = new(filePath))
-                    {
-                        IXLWorksheet sheetToCopy = originalwb.Worksheet(sheetIndex);
-                        string newSheetName = sheetToCopy.Name;
-                        if (newSheetName.Length > 31)
-                        {
-                            newSheetName = newSheetName[..31];
-                        }
-
-                        using (XLWorkbook workbook = File.Exists(newFilePath) ? new XLWorkbook(newFilePath) : new XLWorkbook())
-                        {
-                            if (workbook.Worksheets.Contains(newSheetName))
-                            {
-                                return;
-                            }
-                            sheetToCopy.CopyTo(workbook, newSheetName);
-                            XLWorkbookProperties properties = originalwb.Properties;
-                            properties.Author = "Copied by program";
-                            properties.Modified = DateTime.Now;
-                            workbook.SaveAs(newFilePath);
-                        }
-                    }
-                });
+                    sheetToCopy.CopyTo(workbook, newSheetName);
+                    op.Author = "Kopia wykonana przez importer";
+                    op.Modified = DateTime.Now;
+                    await Task.Run(() => workbook.SaveAs(newFilePath));
+                }
             }
-            catch
-            {
-            }
+            Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder = PomiaryStopWatch.Elapsed;
         }
         private static void Check_Base_Dirs(string path)
         {
@@ -334,12 +362,14 @@ namespace Excel_Data_Importer_WARS
             [
                 Path.Combine(path, "Errors"),
                 Path.Combine(path, "Bad_Files"),
-                Path.Combine(path, "Processed_Files")
+                Path.Combine(path, "Processed_Files"),
+                Path.Combine(path, "Good_Files")
             ];
             string errorFilePath = Path.Combine(directories[0], "Errors.txt");
             error_logger.Current_Processed_Files_Folder = directories[2];
             error_logger.Current_Bad_Files_Folder = directories[1];
             error_logger.Set_Error_File_Path(directories[0]);
+            error_logger.Good_Files_Folder = directories[3];
             foreach (var dir in directories)
             {
                 if (!Directory.Exists(dir))
@@ -369,13 +399,20 @@ namespace Excel_Data_Importer_WARS
                     File.Delete(file);
                 }
             }
+            if (config.Clear_Good_Files_On_Restart)
+            {
+                foreach (string file in Directory.GetFiles(directories[3]))
+                {
+                    File.Delete(file);
+                }
+            }
 
             if (!File.Exists(errorFilePath))
             {
                 File.Create(errorFilePath);
             }
         }
-        public static async Task Convert_To_Xlsx(string inputFilePath, string outputFilePath)
+        public static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
         {
             // nwm dlaczego textwrap jest zawsze true. Jebać to jest wystarczająco dobre.
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -418,11 +455,114 @@ namespace Excel_Data_Importer_WARS
                 }
             }
             workbook.SaveAs(outputFilePath);
-            (string o, DateTime d) = await Get_Metadane_Pliku(inputFilePath).ConfigureAwait(false);
-            workbook.Properties.LastModifiedBy = o;
-            workbook.Properties.Modified = d;
+            //(string o, DateTime d) = Get_Metadane_Pliku(inputFilePath);
+            //workbook.Properties.LastModifiedBy = o;
+            //workbook.Properties.Modified = d;
             workbook.SaveAs(outputFilePath);
         }
     }
+    static class Pomiar
+    {
+        private static TimeSpan avg_Get_Metadane_Pliku = TimeSpan.Zero;
+        private static TimeSpan avg_Process_Files = TimeSpan.Zero;
+        private static TimeSpan avg_MoveFile = TimeSpan.Zero;
+        private static TimeSpan avg_Copy_Bad_Sheet_To_Files_Folder = TimeSpan.Zero;
+        private static TimeSpan avg_Open_Workbook = TimeSpan.Zero;
+        private static TimeSpan avg_Get_Typ_Zakladki = TimeSpan.Zero;
+        private static TimeSpan avg_Usun_Ukryte_Karty = TimeSpan.Zero;
+        //TODO get typ zakladki
+        public static TimeSpan Avg_Get_Metadane_Pliku
+        {
+            get => avg_Get_Metadane_Pliku;
+            set
+            {
+                if (avg_Get_Metadane_Pliku == TimeSpan.Zero)
+                {
+                    avg_Get_Metadane_Pliku = value;
+                    return;
+                }
+                avg_Get_Metadane_Pliku = (value + avg_Get_Metadane_Pliku) / 2;
+            }
+        }
+        public static TimeSpan Avg_Process_Files
+        {
+            get => avg_Process_Files;
+            set
+            {
+                if (avg_Process_Files == TimeSpan.Zero)
+                {
+                    avg_Process_Files = value;
+                    return;
+                }
+                avg_Process_Files = (value + avg_Process_Files) / 2;
+            }
+        }
+        public static TimeSpan Avg_MoveFile
+        {
+            get => avg_MoveFile;
+            set
+            {
+                if (avg_MoveFile == TimeSpan.Zero)
+                {
+                    avg_MoveFile = value;
+                    return;
+                }
+                avg_MoveFile = (value + avg_MoveFile) / 2;
+            }
+        }
+        public static TimeSpan Avg_Copy_Bad_Sheet_To_Files_Folder
+        {
+            get => avg_Copy_Bad_Sheet_To_Files_Folder;
+            set
+            {
+                if (avg_Copy_Bad_Sheet_To_Files_Folder == TimeSpan.Zero)
+                {
+                    avg_Copy_Bad_Sheet_To_Files_Folder = value;
+                    return;
+                }
+                avg_Copy_Bad_Sheet_To_Files_Folder = (value + avg_Copy_Bad_Sheet_To_Files_Folder) / 2;
+            }
+        }
+        public static TimeSpan Avg_Open_Workbook
+        {
+            get => avg_Open_Workbook;
+            set
+            {
+                if (avg_Open_Workbook == TimeSpan.Zero)
+                {
+                    avg_Open_Workbook = value;
+                    return;
+                }
+                avg_Open_Workbook = (value + avg_Open_Workbook) / 2;
+            }
+        }
+        public static TimeSpan Avg_Get_Typ_Zakladki
+        {
+            get => avg_Get_Typ_Zakladki;
+            set
+            {
+                if (avg_Get_Typ_Zakladki == TimeSpan.Zero)
+                {
+                    avg_Get_Typ_Zakladki = value;
+                    return;
+                }
+                avg_Get_Typ_Zakladki = (value + avg_Get_Typ_Zakladki) / 2;
+            }
+        }
+        public static TimeSpan Avg_Usun_Ukryte_Karty
+        {
+            get => avg_Usun_Ukryte_Karty;
+            set
+            {
+                if (avg_Usun_Ukryte_Karty == TimeSpan.Zero)
+                {
+                    avg_Usun_Ukryte_Karty = value;
+                    return;
+                }
+                avg_Usun_Ukryte_Karty = (value + avg_Usun_Ukryte_Karty) / 2;
+            }
+        }
+    }
+
 }
 

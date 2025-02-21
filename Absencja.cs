@@ -62,7 +62,7 @@ namespace Excel_Data_Importer_WARS
             ZP,     // Kwarantanna sanepid
             ZR,     // Zwolnienie na rehabilitację (ZUS ZLA)
             ZS,     // Zwolnienie szpitalne (ZUS ZLA)
-            ZY,     // Zwolnienie powypadkowe (ZUS ZLA)
+            ZY,     // Zwolnienie powypadkoe (ZUS ZLA)
             ZZ,     // Zwolnienie lek. (ciąża) (ZUS ZLA)
             SZK     // Szkolenie
         }
@@ -108,8 +108,8 @@ namespace Excel_Data_Importer_WARS
                 catch (Exception ex)
                 {
                     connection.Close();
-                    Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                    throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Absencje, connection, tran))

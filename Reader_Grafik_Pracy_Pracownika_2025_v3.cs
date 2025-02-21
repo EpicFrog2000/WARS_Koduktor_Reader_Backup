@@ -13,68 +13,22 @@ namespace Excel_Data_Importer_WARS
             public int Miesiac  = 0;
             public int Rok  = 0;
             public List<Dane_Dnia> Dane_Dni  = [];
-            public string Nazwa_Pliku = "";
+            public string Nazwa_Pliku = string.Empty;
             public int Nr_Zakladki = 1;
-            public void Set_Miesiac(string wartosc)
+            public void Set_Miesiac(string value)
             {
-                if (string.IsNullOrEmpty(wartosc))
+                if (string.IsNullOrEmpty(value))
                 {
-                    Miesiac = -1;
                     return;
                 }
-                wartosc = wartosc.Trim().ToLower();
-                if (wartosc.Contains("styczeń"))
+                value = value.ToLower().Trim();
+                Dictionary<int, string> months = new()
                 {
-                    Miesiac = 1;
-                }
-                else if (wartosc.Contains("luty"))
-                {
-                    Miesiac = 2;
-                }
-                else if (wartosc.Contains("marzec"))
-                {
-                    Miesiac = 3;
-                }
-                else if (wartosc.Contains("kwiecień"))
-                {
-                    Miesiac = 4;
-                }
-                else if (wartosc.Contains("maj"))
-                {
-                    Miesiac = 5;
-                }
-                else if (wartosc.Contains("czerwiec"))
-                {
-                    Miesiac = 6;
-                }
-                else if (wartosc.Contains("lipiec"))
-                {
-                    Miesiac = 7;
-                }
-                else if (wartosc.Contains("sierpień"))
-                {
-                    Miesiac = 8;
-                }
-                else if (wartosc.Contains("wrzesień"))
-                {
-                    Miesiac = 9;
-                }
-                else if (wartosc.Contains("październik"))
-                {
-                    Miesiac = 10;
-                }
-                else if (wartosc.Contains("listopad"))
-                {
-                    Miesiac = 11;
-                }
-                else if (wartosc.Contains("grudzień"))
-                {
-                    Miesiac = 12;
-                }
-                else
-                {
-                    Miesiac = 0;
-                }
+                    {1, "styczeń"}, {2, "luty"}, {3, "marzec"}, {4, "kwiecień"},
+                    {5, "maj"}, {6, "czerwiec"}, {7, "lipiec"}, {8, "sierpień"},
+                    {9, "wrzesień"}, {10, "październik"}, {11, "listopad"}, {12, "grudzień"}
+                };
+                Miesiac = months.FirstOrDefault(kvp => value.Contains(kvp.Value)).Key;
             }
         }
         private class Dane_Dnia
@@ -96,7 +50,7 @@ namespace Excel_Data_Importer_WARS
                 while (true)
                 {
                     int rowOffset = -5;
-                    string dane = "";
+                    string dane = string.Empty;
                     Grafik grafik = new();
                     try
                     {
@@ -169,8 +123,8 @@ namespace Excel_Data_Importer_WARS
             }
             else
             {
-                Internal_Error_Logger.New_Custom_Error("Zły format pliku, nie znaleniono żadnych grafików z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                throw new Exception("Zły format pliku, nie znaleniono żadnych grafików z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                Internal_Error_Logger.New_Custom_Error($"Zły format pliku, nie znaleniono żadnych grafików z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                throw new Exception($"Zły format pliku, nie znaleniono żadnych grafików z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
 
         }
@@ -333,8 +287,8 @@ namespace Excel_Data_Importer_WARS
                             catch (SqlException ex)
                             {
                                 transaction.Rollback();
-                                Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                                throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
                             catch (FormatException)
                             {
@@ -343,8 +297,8 @@ namespace Excel_Data_Importer_WARS
                             catch (Exception ex)
                             {
                                 transaction.Rollback();
-                                Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                                throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
                         }
                     }

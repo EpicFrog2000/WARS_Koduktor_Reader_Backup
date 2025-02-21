@@ -206,7 +206,7 @@ namespace Excel_Data_Importer_WARS
             if (counter > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"Poprawnie dodano dane z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                Console.WriteLine($"Poprawnie dodano dane z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
@@ -227,12 +227,12 @@ namespace Excel_Data_Importer_WARS
                             }
                             catch (SqlException ex)
                             {
-                                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (Insert_Relacja_Do_Optimy): " + ex.Message);
+                                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie (Insert_Relacja_Do_Optimy): {ex.Message}");
                                 throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                             catch (Exception ex)
                             {
-                                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                                 throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
 
@@ -244,12 +244,12 @@ namespace Excel_Data_Importer_WARS
                                 }
                                 catch (SqlException ex)
                                 {
-                                    Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
+                                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): {ex.Message}");
                                     throw new Exception(Internal_Error_Logger.Get_Error_String());
                                 }
                                 catch (Exception ex)
                                 {
-                                    Internal_Error_Logger.New_Custom_Error("Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): " + ex.Message);
+                                    Internal_Error_Logger.New_Custom_Error($"Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): {ex.Message}");
                                     throw new Exception(Internal_Error_Logger.Get_Error_String());
                                 }
                             }
@@ -260,13 +260,13 @@ namespace Excel_Data_Importer_WARS
                     catch (SqlException ex)
                     {
                         transaction.Rollback();
-                        Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): " + ex.Message);
+                        Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): {ex.Message}");
                         throw;
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                        Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                         throw;
                     }
                 }
@@ -288,12 +288,12 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Command_Atrybuty): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Command_Atrybuty): {ex.Message}");
                 throw;
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 throw;
             }
         }

@@ -10,6 +10,15 @@ namespace Excel_Data_Importer_WARS
             private int col = 1;
             private int row = 1;
 
+            public Current_Position()
+            {
+            }
+            public Current_Position(int new_col, int new_row)
+            {
+                Col = new_col;
+                Row = new_row;
+            }
+
             public int Col
             {
                 get => col;
@@ -31,7 +40,6 @@ namespace Excel_Data_Importer_WARS
                 {
                     if (value < 1)
                     {
-                        //Program.error_logger.New_Custom_Error("Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1");
                         ArgumentOutOfRangeException argumentOutOfRangeException = new(nameof(Row), $"Błąd w programie, próba czytania komórki w rzędzie mniejszym niż 1. Kolumna: {Col}");
                         throw argumentOutOfRangeException;
                     }

@@ -510,8 +510,8 @@ namespace Excel_Data_Importer_WARS
                 catch (Exception ex)
                 {
                     connection.Close();
-                    Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                    throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
@@ -544,13 +544,13 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
                 transaction.Rollback();
                 throw;
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 transaction.Rollback();
                 throw;
             }
@@ -566,7 +566,7 @@ namespace Excel_Data_Importer_WARS
                     if(Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji, transaction, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -578,7 +578,7 @@ namespace Excel_Data_Importer_WARS
                     if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji.Absencje, transaction, connection, Karta_Ewidencji.Pracownik, Internal_Error_Logger) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano absencje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano absencje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -590,7 +590,7 @@ namespace Excel_Data_Importer_WARS
                     if (Insert_Prowizje(Prowizje, transaction, connection) > 0)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano prowizje z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Console.WriteLine($"Poprawnie dodano prowizje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
                     else
@@ -664,8 +664,8 @@ namespace Excel_Data_Importer_WARS
                     catch (Exception ex)
                     {
                         connection.Close();
-                        Internal_Error_Logger.New_Custom_Error(ex.Message + " z pliku: " + Internal_Error_Logger.Nazwa_Pliku + " z zakladki: " + Internal_Error_Logger.Nr_Zakladki + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
-                        throw new Exception(ex.Message + $" w pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}" + " nazwa zakladki: " + Internal_Error_Logger.Nazwa_Zakladki);
+                        Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
 
                     if(Prowizja.Suma_Liczba_Napojow_Awaryjnych > 0)
@@ -697,13 +697,13 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error podczas operacji w bazie(Insert_Prowizje): " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Prowizje): {ex.Message}");
                 transaction.Rollback();
                 throw;
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error("Error: " + ex.Message);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 transaction.Rollback();
                 throw;
             }
