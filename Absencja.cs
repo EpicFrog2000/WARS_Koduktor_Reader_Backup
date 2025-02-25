@@ -1,5 +1,7 @@
 ﻿using System.Data;
+using System.Transactions;
 using Microsoft.Data.SqlClient;
+using Microsoft.Office.Interop.Excel;
 
 namespace Excel_Data_Importer_WARS
 {
@@ -12,9 +14,11 @@ namespace Excel_Data_Importer_WARS
         public int Rok = 0;
         public string Nazwa = string.Empty;
         public decimal Liczba_Godzin_Absencji = 0;
-        public RodzajAbsencji Rodzaj_Absencji = 0;
+        public RodzajAbsencji Rodzaj_Absencji = RodzajAbsencji.DEFAULT;
+        public decimal Liczba_Godzin_Przepracowanych = 0;
         public enum RodzajAbsencji
         {
+            DEFAULT = -1,
             DE,     // Delegacja
             DM,     // Dodatkowy urlop macierzyński
             DR,     // Urlop rodzicielski
@@ -64,14 +68,81 @@ namespace Excel_Data_Importer_WARS
             ZS,     // Zwolnienie szpitalne (ZUS ZLA)
             ZY,     // Zwolnienie powypadkoe (ZUS ZLA)
             ZZ,     // Zwolnienie lek. (ciąża) (ZUS ZLA)
-            SZK     // Szkolenie
+            SZK,    // Szkolenie
         }
-        public static int Dodaj_Absencje_do_Optimy(List<Absencja> Absencje, SqlTransaction tran, SqlConnection connection, Pracownik Pracownik, Error_Logger Internal_Error_Logger)
+        public static int Dodaj_Absencje_do_Optimy(List<Absencja> Absencje, SqlTransaction transaction, SqlConnection connection, Pracownik Pracownik, Error_Logger Internal_Error_Logger)
         {
             int ilosc_wpisow = 0;
+
+            foreach(Absencja absencja in Absencje)
+            {
+                if (absencja.Rodzaj_Absencji == RodzajAbsencji.DE)
+                {
+
+                    int IdPrac = -1;
+                    try
+                    {
+                        IdPrac = Pracownik.Get_PraId(connection, transaction);
+                    }
+                    catch (Exception ex)
+                    {
+                        connection.Close();
+                        Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    }
+
+                    //get id dni
+                    List<int> Lista_Dni_Godz_Pracy = [];
+                    using (SqlCommand command = new(DbManager.Get_Id_Dni_Godz_Pracy, connection, transaction))
+                    {
+                        command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = new DateTime(absencja.Rok, absencja.Miesiac, absencja.Dzien);
+                        command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPrac;
+                        object result = command.ExecuteScalar();
+                        if (result != null && result != DBNull.Value)
+                        {
+                            if (result is int singleValue)
+                            {
+                                Lista_Dni_Godz_Pracy.Add(singleValue);
+                            }
+                            else if (result is int[] array)
+                            {
+                                Lista_Dni_Godz_Pracy.AddRange(array);
+                            }
+                        }
+                    }
+                    foreach (int Dzien_Godz in Lista_Dni_Godz_Pracy)
+                    {
+                        //update strefe dnia na delegacje
+                        try
+                        {
+                            using (SqlCommand command = new(DbManager.Update_Dzien_Pracy_Strefa, connection, transaction))
+                            {
+                                command.Parameters.Add("@NowaStrefa", SqlDbType.Int).Value = 15; //delegacja
+                                command.Parameters.Add("@IdDniaGodz", SqlDbType.Int).Value = Dzien_Godz;
+                                command.Parameters.Add("@NewOdGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8);
+                                command.Parameters.Add("@NewDoGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)absencja.Liczba_Godzin_Przepracowanych);
+                                command.ExecuteScalar();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
+                        }
+                    }
+                }
+            }
+
+
+
+
             List<List<Absencja>> ListyAbsencji = Podziel_Absencje_Na_Osobne(Absencje);
             foreach (List<Absencja> ListaAbsencji in ListyAbsencji)
             {
+                if (ListaAbsencji[0].Rodzaj_Absencji == RodzajAbsencji.DEFAULT)
+                {
+                    continue;
+                }
+
                 DateTime Data_Absencji_Start;
                 DateTime Data_Absencji_End;
 
@@ -84,6 +155,19 @@ namespace Excel_Data_Importer_WARS
                 {
                     continue;
                 }
+
+                if (ListaAbsencji[0].Rodzaj_Absencji == RodzajAbsencji.ON)
+                {
+                    continue;
+                }
+
+                if (ListaAbsencji[0].Rodzaj_Absencji == RodzajAbsencji.DE)
+                {
+                    continue;
+                }
+
+
+
 
                 int przyczyna = Dopasuj_TKN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
                 string nazwa_absencji = Dopasuj_TBN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
@@ -103,7 +187,7 @@ namespace Excel_Data_Importer_WARS
                 int IdPracownika = -1;
                 try
                 {
-                    IdPracownika = Pracownik.Get_PraId(connection, tran);
+                    IdPracownika = Pracownik.Get_PraId(connection, transaction);
                 }
                 catch (Exception ex)
                 {
@@ -112,7 +196,7 @@ namespace Excel_Data_Importer_WARS
                     throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
-                using (SqlCommand command = new(DbManager.Check_Duplicate_Absencje, connection, tran))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Absencje, connection, transaction))
                 {
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                     command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
@@ -133,7 +217,7 @@ namespace Excel_Data_Importer_WARS
                 {
                     try
                     {
-                        using (SqlCommand command = new(DbManager.Insert_Nieobecnosci, connection, tran))
+                        using (SqlCommand command = new(DbManager.Insert_Nieobecnosci, connection, transaction))
                         {
                             command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                             command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
@@ -152,13 +236,14 @@ namespace Excel_Data_Importer_WARS
 
                     catch (FormatException ex)
                     {
-                        Internal_Error_Logger.New_Custom_Error($"{ex.Message}");
 
-                        continue;
+                        transaction.Rollback();
+                        Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
                     catch
                     {
-                        tran.Rollback();
+                        transaction.Rollback();
                         throw;
                     }
                     ilosc_wpisow++;
@@ -173,7 +258,8 @@ namespace Excel_Data_Importer_WARS
 
             foreach (Absencja Absencja in Absencje)
             {
-                if (currentGroup.Count == 0 || Absencja.Dzien == currentGroup[^1].Dzien + 1)
+                if (currentGroup.Count == 0 ||
+                    (Absencja.Dzien == currentGroup[^1].Dzien + 1 && Absencja.Rodzaj_Absencji == currentGroup[^1].Rodzaj_Absencji))
                 {
                     currentGroup.Add(Absencja);
                 }

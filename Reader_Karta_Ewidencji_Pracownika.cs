@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Data.SqlClient;
 
@@ -566,6 +567,15 @@ namespace Excel_Data_Importer_WARS
                         throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
+                    dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col + 7).GetFormattedString().Trim().Replace("  ", " ");
+                    
+                    if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Absencja.Liczba_Godzin_Przepracowanych))
+                    {
+                        //Internal_Error_Logger.New_Error(dane, "Liczba godz Absencji", Pozycja.Col + 18, Pozycja.Row + Row_Offset, "Zły format lub bark Liczba godz Absencji");
+                        //throw new Exception(Internal_Error_Logger.Get_Error_String());
+                    }
+
+
                     dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Absencja.Liczba_Godzin_Absencji))
                     {
@@ -678,7 +688,6 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, SqlTransaction transaction, SqlConnection connection)
         {
-
             HashSet<DateTime> Pasujace_Daty = [];
             foreach (Dane_Karty daneKarty in Karta_Ewidencji_Pracownika.Dane_Karty)
             {
@@ -694,7 +703,6 @@ namespace Excel_Data_Importer_WARS
                 }
             }
 
-
             int ilosc_wpisow = 0;
             foreach (Dane_Karty Dane_Karty in Karta_Ewidencji_Pracownika.Dane_Karty)
             {
@@ -702,11 +710,13 @@ namespace Excel_Data_Importer_WARS
                 {
                     if (Dane_Karty.Godziny_Rozpoczecia_Pracy.Count >= 1)
                     {
-                        //Dane_Karty.Podziel_Nadgodziny();
-                        
+                        //Dane_Karty.Podziel_Nadgodziny();                      
                         for (int j = 0; j < Dane_Karty.Godziny_Rozpoczecia_Pracy.Count; j++)
                         {
-                            ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[j], Dane_Karty.Godziny_Zakonczenia_Pracy[j], Karta_Ewidencji_Pracownika, 2);
+                            if (Dane_Karty.Godziny_Rozpoczecia_Pracy[j] != Dane_Karty.Godziny_Zakonczenia_Pracy[j])
+                            {
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[j], Dane_Karty.Godziny_Zakonczenia_Pracy[j], Karta_Ewidencji_Pracownika, 2);
+                            }
                         }
                     }
                     else
@@ -718,7 +728,10 @@ namespace Excel_Data_Importer_WARS
                             Dane_Karty.Godziny_Zakonczenia_Pracy.Add(baseTime + TimeSpan.FromHours((double)(Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 + Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100)));
                             for (int k = 0; k < Dane_Karty.Godziny_Rozpoczecia_Pracy.Count; k++)
                             {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[k], Dane_Karty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, 2);
+                                if (Dane_Karty.Godziny_Rozpoczecia_Pracy[k] != Dane_Karty.Godziny_Zakonczenia_Pracy[k])
+                                {
+                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[k], Dane_Karty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, 2);
+                                }
                             }
                         }
                         else
@@ -733,11 +746,6 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, int Typ_Pracy)
         {
-            if (startPodstawowy == endPodstawowy && startPodstawowy != TimeSpan.Zero)
-            {
-                return 0;
-            }
-
             try
             {
                 DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
@@ -850,9 +858,11 @@ namespace Excel_Data_Importer_WARS
                             Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                                                 }
-                        catch (FormatException)
+                        catch (FormatException ex)
                         {
-                            continue;
+                            transaction.Rollback();
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                         catch (Exception ex)
                         {

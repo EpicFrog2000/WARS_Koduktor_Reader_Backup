@@ -69,15 +69,15 @@ namespace Excel_Data_Importer_WARS
 
                     Check_Base_Dirs(Folder_Path);
 
-                    //foreach (string filepath in Files_Paths)
-                    //{
-                    //    await Process_Files(filepath);
-                    //}
-
-                    await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
+                    foreach (string filepath in Files_Paths)
                     {
-                        await Task.Run(() => Process_Files(filePath));
-                    });
+                        Process_Files(filepath);
+                    }
+
+                    //await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
+                    //{
+                    //    await Task.Run(() => Process_Files(filePath));
+                    //});
 
                     //await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)).ToList());
                 }

@@ -422,6 +422,13 @@ namespace Excel_Data_Importer_WARS
                     //Internal_Error_Logger.New_Error(dane, "Liczba godz Absencji", Pozycja.Col + 18, Pozycja.Row + Row_Offset, "Zły format lub bark Liczba godz Absencji");
                     //throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
+
+
+
+
+
+
+
                 Absencja.Rok = Karta_Ewidencji.Rok;
                 Absencja.Miesiac = Karta_Ewidencji.Miesiac;
                 

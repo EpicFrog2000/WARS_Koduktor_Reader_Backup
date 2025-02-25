@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Globalization;
+using System.IO;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 
@@ -94,6 +95,11 @@ namespace Excel_Data_Importer_WARS
 
                     if (int.TryParse(dane, out int tmprok))
                     {
+                        if (tmprok < 1900)
+                        {
+                            Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Błędna wartość w rok");
+                            throw new Exception(Internal_Error_Logger.Get_Error_String());
+                        }
                         grafik.Rok = tmprok;
                     }
                     else
@@ -278,6 +284,47 @@ namespace Excel_Data_Importer_WARS
                 {
                     foreach (Grafik grafik in grafiki)
                     {
+                        if(grafik.Dane_Dni.Count <= 0)
+                        {
+                            continue;
+                        }
+                        HashSet<DateTime> Pasujace_Daty = [];
+                        foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
+                        {
+                            Pasujace_Daty.Add(new DateTime(grafik.Rok, grafik.Miesiac, dane_DniA.Nr_Dnia));
+                        }
+                        DateTime startDate = new(grafik.Rok, grafik.Miesiac, 1);
+                        DateTime endDate = new(grafik.Rok, grafik.Miesiac, DateTime.DaysInMonth(grafik.Rok, grafik.Miesiac));
+                        for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
+                        {
+                            if (!Pasujace_Daty.Contains(dzien))
+                            {
+                                try
+                                {
+                                    dodano += Zrob_Insert_Plan_command(connection, transaction, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                                }
+                                catch (SqlException ex)
+                                {
+                                    transaction.Rollback();
+                                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                }
+                                catch (FormatException ex)
+                                {
+                                    transaction.Rollback();
+                                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    transaction.Rollback();
+                                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                }
+
+                            }
+                        }
+
                         foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
                         {
                             try
@@ -290,9 +337,12 @@ namespace Excel_Data_Importer_WARS
                                 Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                                 throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
-                            catch (FormatException)
+                            catch (FormatException ex) 
                             {
-                                continue;
+
+                                transaction.Rollback();
+                                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
                             catch (Exception ex)
                             {
@@ -304,39 +354,51 @@ namespace Excel_Data_Importer_WARS
                     }
                     transaction.Commit();
                 }
-                if (dodano > 0)
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine($"Poprawnie dodawno plan z pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
+            }
+            if (dodano > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"Poprawnie dodawno plan z pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}");
+                Console.ForegroundColor = ConsoleColor.White;
             }
         }
         private static int Zrob_Insert_Plan_command(SqlConnection connection, SqlTransaction transaction, Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
         {
             int IdPracownika = pracownik.Get_PraId(connection, transaction);
-
-            using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
+            if (startGodz!=TimeSpan.Zero && endGodz != TimeSpan.Zero)
             {
-                command.Parameters.AddWithValue("@DataInsert", data);
-                command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
-                command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
-                command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                if ((int)command.ExecuteScalar() == 1)
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
                 {
-                    return 0;
+                    command.Parameters.AddWithValue("@DataInsert", data + TimeSpan.FromSeconds(0));
+                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
+                    command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                    if ((int)command.ExecuteScalar() == 1)
+                    {
+                        return 0;
+                    }
                 }
             }
+            
             using (SqlCommand command = new(DbManager.Insert_Plan_Pracy, connection, transaction))
             {
                 command.Parameters.AddWithValue("@DataInsert", data);
                 command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
                 command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                 command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                if (startGodz == TimeSpan.Zero && endGodz == startGodz)
+                {
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = 1;
+
+                }
+                else
+                {
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = 2;
+
+                }
                 command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                 command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                 command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
-
                 command.ExecuteScalar();
             }
             return 1;

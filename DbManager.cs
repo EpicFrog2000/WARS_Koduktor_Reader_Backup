@@ -327,7 +327,7 @@ INSERT INTO CDN.PracPlanDniGodz
 	        1,
 	        @GodzOdDate,
 	        @GodzDoDate,
-	        2,
+	        @Strefa,
 	        1,
 	        1,
 	        '');";
@@ -422,6 +422,28 @@ INNER JOIN cdn.PracPracaDni ppd
     ON pdg.PGR_PprId = ppd.PPR_PprId
 WHERE ppd.PPR_PraId = @PracId
 AND ppd.PPR_Data = @Data;
+";
+        public static readonly string Get_Id_Dni_Godz_Pracy = @"select PGR_PgrId from cdn.PracPracaDniGodz where PGR_PprId in (select PPR_PprId from cdn.PracPracaDni where PPR_Data = @DataInsert and PPR_PraId = @PRI_PraId);";
+        public static readonly string Update_Dzien_Pracy_Strefa = @"IF EXISTS (
+    SELECT 1 
+    FROM cdn.PracPracaDniGodz 
+    WHERE PGR_PgrId = @IdDniaGodz 
+    AND PGR_OdGodziny = '1899-12-30 00:00:00' 
+    AND PGR_DoGodziny = '1899-12-30 00:00:00'
+)
+BEGIN
+    UPDATE cdn.PracPracaDniGodz 
+    SET PGR_Strefa = @NowaStrefa,
+	PGR_OdGodziny = @NewOdGodz,
+	PGR_DoGodziny = @NewDoGodz
+    WHERE PGR_PgrId = @IdDniaGodz;
+END
+ELSE
+BEGIN
+    UPDATE cdn.PracPracaDniGodz 
+    SET PGR_Strefa = @NowaStrefa
+    WHERE PGR_PgrId = @IdDniaGodz;
+END
 ";
         public static bool Valid_SQLConnection_String()
         {
