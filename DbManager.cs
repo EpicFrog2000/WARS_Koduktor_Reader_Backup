@@ -1,4 +1,7 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Vml;
+using System.Threading;
+using Microsoft.Data.SqlClient;
 
 namespace Excel_Data_Importer_WARS
 {
@@ -464,3 +467,15 @@ END
         public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
     }
 }
+Program nie znalazł żadnych plików w folderze: C: \Users\piotr.brysiak\Desktop\Importer_Konduktorzy\Arkusze konduktorzy\Wynagrodzenia1\
+Czytanie: Bargański W. 25.02.2025 14:55:52
+Program nie może odczytać pliku C:\Users\piotr.brysiak\Desktop\Importer_Konduktorzy\Arkusze konduktorzy\Ewidencja 2\Bargański W..xlsx
+Unhandled exception. System.IO.IOException: The process cannot access the file because it is being used by another process.
+   at System.IO.FileSystem.MoveFile(String sourceFullPath, String destFullPath, Boolean overwrite)
+   at Excel_Data_Importer_WARS.Program.Move_File(String filePath, Int32 opcja) in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 338
+   at Excel_Data_Importer_WARS.Program.Process_Files(String File_Path) in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 109
+   at Excel_Data_Importer_WARS.Program.Do_The_Thing() in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 72
+   at Excel_Data_Importer_WARS.Program.Main() in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 17
+   at Excel_Data_Importer_WARS.Program.<Main>()
+
+

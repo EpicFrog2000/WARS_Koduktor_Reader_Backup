@@ -117,7 +117,7 @@ namespace Excel_Data_Importer_WARS
                         {
                             using (SqlCommand command = new(DbManager.Update_Dzien_Pracy_Strefa, connection, transaction))
                             {
-                                command.Parameters.Add("@NowaStrefa", SqlDbType.Int).Value = 15; //delegacja
+                                command.Parameters.Add("@NowaStrefa", SqlDbType.Int).Value = 10; //delegacja
                                 command.Parameters.Add("@IdDniaGodz", SqlDbType.Int).Value = Dzien_Godz;
                                 command.Parameters.Add("@NewOdGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8);
                                 command.Parameters.Add("@NewDoGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)absencja.Liczba_Godzin_Przepracowanych);
@@ -317,11 +317,11 @@ namespace Excel_Data_Importer_WARS
             return rodzaj switch
             {
                 RodzajAbsencji.UO => "Urlop okolicznościowy",
-                RodzajAbsencji.ZL => "Zwolnienie chorobowe/F",
-                RodzajAbsencji.ZY => "Zwolnienie chorobowe/wyp.w drodze/F",
-                RodzajAbsencji.ZS => "Zwolnienie chorobowe/wyp.przy pracy/F",
-                RodzajAbsencji.ZN => "Zwolnienie chorobowe/bez prawa do zas.",
-                RodzajAbsencji.ZP => "Zwolnienie chorobowe/pozbawiony prawa",
+                RodzajAbsencji.ZL => "Zwolnienie chorobowe",
+                RodzajAbsencji.ZY => "Zwolnienie chorobowe",
+                RodzajAbsencji.ZS => "Zwolnienie chorobowe",
+                RodzajAbsencji.ZN => "Zwolnienie chorobowe.",
+                RodzajAbsencji.ZP => "Zwolnienie chorobowe",
                 RodzajAbsencji.UR => "Urlop rehabilitacyjny",
                 RodzajAbsencji.ZR => "Urlop rehabilitacyjny/wypadek w drodze..",
                 RodzajAbsencji.ZD => "Urlop rehabilitacyjny/wypadek przy pracy",

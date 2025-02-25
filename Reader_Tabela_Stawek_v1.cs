@@ -54,6 +54,8 @@ namespace Excel_Data_Importer_WARS
                 Relacje.Add(Relacja);
                 
             }
+
+
             Insert_Dane_Stawek_Do_Optimy(Relacje);
         }
         private static void Get_Dane(ref Relacja Relacja, Helper.Current_Position pozycja, IXLWorksheet Zakladka)
@@ -209,16 +211,22 @@ namespace Excel_Data_Importer_WARS
                 Console.WriteLine($"Poprawnie dodano dane z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 Console.ForegroundColor = ConsoleColor.White;
             }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Nie dodano żadnych danych pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
         }
         private static void Insert_Dane_Stawek_Do_Optimy(List<Relacja> Relacje)
         {
             using (SqlConnection connection = new(DbManager.Connection_String))
             {
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
+                connection.Open();
+                using (SqlTransaction transaction = connection.BeginTransaction())
                 {
                     try
                     {
-                        connection.Open();
                         foreach (Relacja Relacja in Relacje)
                         {
                             try

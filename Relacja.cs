@@ -19,7 +19,6 @@ namespace Excel_Data_Importer_WARS
             {
                 command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                 command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = DBNull.Value;
-                connection.Open();
                 object result = command.ExecuteScalar();
                 if (result != null)
                 {
@@ -49,7 +48,6 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = DbManager.Base_Date + Godzina_Rozpoczecia_Relacji;
                     command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
                     command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
-                    connection.Open();
                     command.ExecuteNonQuery();
                 }
             }
