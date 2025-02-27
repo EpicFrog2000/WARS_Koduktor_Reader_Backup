@@ -1,8 +1,24 @@
 # Excel Data Importer WARS
+Program służy do importowania danych z plików Excel do bazy danych
+
 
 ### Użytkowanie
 Plik konfiguracyjny `Config.json` znajduje się w tej samej lokalizacji co program. W tym pliku można skonfigurować działanie aplikacji poprzez ustawienie odpowiednich parametrów:
 
+Przykładowy plik konfiguracyjny:
+```
+{
+  "Files_Folders": [
+    "C:\\Users\\norbert.tasarz\\Desktop\\pojedyncze pliki\\"
+  ],
+  "Optima_Conection_String": "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;",
+  "Clear_Logs_On_Program_Restart": true,
+  "Clear_Processed_Files_On_Restart": true,
+  "Clear_Bad_Files_On_Restart": true,
+  "Move_Files_To_Processed_Folder": false,
+  "Clear_Good_Files_On_Restart": true
+}
+```
 ## Konfiguracja katalogów
 - **`Files_Folders`** - lista folderów, z których program importuje pliki Excel.
 
@@ -92,6 +108,23 @@ Poprawione pliki można następnie przekopiować do folderów określonych w pli
 - `private static async Task Copy_Bad_Sheet_To_Files_Folder(XLWorkbookProperties op, IXLWorksheet sheetToCopy, string filePath)`: Tworzy kopię przekazanej zakładki, która zawiera błąd, tę kopię dodaje do folderu Bad_Files\.
 - `private static void Check_Base_Dirs(string path)`: Tworzy odpowiednie podfoldery jeśli nie instnieją i/lub czyści ich zawarość jeśli taka opcja została przekazana programowi.
 
+Działanie programu: 
+
+  0. Zmienna `LOG_TO_TERMINAL` mówi o tym czy w terminalu mają się pojawiać logi ale w końcowej fazie i tak program będzi ebez żądnego interfejsu wiec JD
+  1. Wczytywane są opcje z pliku konfiguracyjnego: `config.GetConfigFromFile();`
+  2. Testowane jest połączenie z bazą `DbManager.Valid_SQLConnection_String()`
+  3. Tworzone są odpowiednie foldery w katalogach ustawionych z pliku konfiguracyjnego: `Check_Base_Dirs(Folder_Path)`
+  4. Dla każdego pliku następuje `Process_Files(string File_Path)` w którym to:
+  - Otwierany jest Arkusz
+  - Usuwane są poukrywane zakładki: `Usun_Ukryte_Karty(Workbook)`
+  - Tworzony jest error logger do wczytywania zakładek
+  - Sprawdzany jest typ zakładki `Get_Typ_Zakladki(Zakladka)`
+  - W zależności od typu zakładki wykonuje się odpowiedni proces wczytywania danych z arkusza: `Process_Zakladka()`
+  - Plik i/lub odpowiednia zakładka jest przenoszona do odowiednich folderów w zależności od jej poprawności: `Move_File()`, `Copy_Bad_Sheet_To_Files_Folder()` 
+  - Arkusz jes zamykany
+  5. Operacje te wykonywane są w pętli z wależności od zmiennej `Do_Stuff_In_loop`
+
+     
 ### Error_Logger.cs
 - `public Error_Logger(bool showmsg)`: przy tworzeniu obiektu parametr showmsg określa czy w trakcie wykrycia nowego błędu program ma wypisać go w terminalu.
 - `public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "")`: Tworzy i zapisuje nowy błąd do pliku Errors.txt wg przekazanych parametrów.
@@ -127,10 +160,11 @@ Poprawione pliki można następnie przekopiować do folderów określonych w pli
 - 'public void Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger, SqlConnection connection, SqlTransaction transaction)' Jeśli takier relacji nie ma w bazie to taka się wpierdoli do bazy.
 
 ### Reader_*.cs
-- Wczytują dane z plików Excel i dodają dane do bazy, operacje w tych plikach wyglądają w miare podobnie ale i tak murzyńsko. Nie chce mi się tego opisywać.
-  1. Każdy plik ma własny error logger który inicjuje się po wywołaniu funkcji `Process_Zakladka()` i z niego należy kożystać w tym pliku (w razie potrzeby na wielowątkowe przetwarzanie).
-  2. Najpierw znajdywane są wszystkie punkty odniesienia do kart pracy/grafików itp. za pomocą metody `Find_Starting_Points()` a następnie dla każedo z tych punktów wykonywane są operacje wczytywania danych odnoszące się do owych punktów startowch.
+- Wczytują dane z plików Excel i dodają dane do bazy, operacje w tych plikach wyglądają w miare podobnie ale i tak murzyńsko bo te Arkusze od WARSu są zjebane. Nie chce mi się tego opisywać.
+  
+  1. Każdy plik ma własny error logger `Internal_Error_Logger` który inicjuje się po wywołaniu funkcji `Process_Zakladka()` i z niego należy kożystać w tym pliku (w razie potrzeby na wielowątkowe przetwarzanie).
+  2. Najpierw znajdywane są wszystkie punkty odniesienia do kart pracy/grafików itp. za pomocą metody `Find_Starting_Points()` a następnie dla każego z tych punktów wykonywane są operacjeszykania i wczytywania danych odnoszące się do owych punktów startowch.
   3. Po zebraniu danych metody `Dodaj_*_Do_Optimy()` robią inserty itp.  
 
 ## Autorzy
-- **ITEGER** - 25.02.2025
+- **ITEGER** - 27.02.2025

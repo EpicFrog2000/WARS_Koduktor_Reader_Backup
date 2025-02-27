@@ -81,7 +81,6 @@ namespace Excel_Data_Importer_WARS
         SELECT 1
         FROM [CDN].[PracNieobec] PNB
         WHERE PNB.PNB_PraId = @PRI_PraId
-        AND PNB.PNB_TnbId = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @NazwaNieobecnosci)
         AND PNB.PNB_OkresOd = @DataOd
         AND PNB.PNB_OkresDo = @DataDo
     ) THEN 1

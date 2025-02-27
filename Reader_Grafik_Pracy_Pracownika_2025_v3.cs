@@ -365,6 +365,7 @@ namespace Excel_Data_Importer_WARS
         private static int Zrob_Insert_Plan_command(SqlConnection connection, SqlTransaction transaction, Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
         {
             int IdPracownika = pracownik.Get_PraId(connection, transaction);
+
             if (startGodz!=TimeSpan.Zero && endGodz != TimeSpan.Zero)
             {
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))

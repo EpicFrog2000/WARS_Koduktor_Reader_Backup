@@ -210,12 +210,7 @@ namespace Excel_Data_Importer_WARS
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Nieobecnosci, connection, transaction))
                 {
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
-                    command.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
-                    command.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
-                    command.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
                     command.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
-                    command.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
                     command.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;
                     if ((int)command.ExecuteScalar() == 1)
                     {
