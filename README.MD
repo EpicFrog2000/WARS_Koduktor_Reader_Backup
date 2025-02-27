@@ -85,6 +85,18 @@ Poprawione pliki można następnie przekopiować do folderów określonych w pli
   
   Zawartość zakładki nie jest zgodna z przewidzianym standardem.
 # Kod
+
+# Testowanie
+
+Zalecam skompilowanie programu, a następnie przejście do folderu, w którym znajduje się skompilowana wersja. Uruchom program na 5 sekund, aby automatycznie wygenerował plik konfiguracyjny.
+
+Następnie edytuj plik konfiguracyjny zgodnie z własnymi potrzebami, korzystając z powyższych wskazówek.
+
+Do folderów określonych w polu `Files_Folders` dodaj odpowiednie pliki Excel.
+
+I gotowe – maszyna w ruchu! Można odpalić program.
+
+
 ## Struktura Projektu
 - `Program.cs`: Główny plik uruchamiający aplikację.
 - `Config.cs`: Plik z klasą pobierającą i ustawiającą sposób działania programu zgodnie z plikiem konfiguracyjnym Config.json.
