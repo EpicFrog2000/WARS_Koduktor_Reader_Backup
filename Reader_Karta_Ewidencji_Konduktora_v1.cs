@@ -406,7 +406,7 @@ namespace Excel_Data_Importer_WARS
                     Internal_Error_Logger.New_Error(dzien, "Dzien Absencji", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia absencji");
                     throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
-                if (!Helper.Try_Get_Type_From_String<string>(dane, ref Absencja.Nazwa))
+                if (!Helper.Try_Get_Type_From_String<string>(dane.ToUpper(), ref Absencja.Nazwa))
                 {
                     Internal_Error_Logger.New_Error(dane, "Nazwa Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Zły format Nazwy absencji");
                     throw new Exception(Internal_Error_Logger.Get_Error_String());

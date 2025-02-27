@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Transactions;
+using DocumentFormat.OpenXml.Bibliography;
 using Microsoft.Data.SqlClient;
 using Microsoft.Office.Interop.Excel;
 
@@ -57,6 +58,7 @@ namespace Excel_Data_Importer_WARS
             UW,     // Urlop wypoczynkowy
             UY,     // Urlop wychowawczy
             UZ,     // Urlop na żądanie
+            UŻ,     // Urlop na żądanie
             WY,     // Wypoczynek skazanego
             ZC,     // Opieka nad członkiem rodziny (ZLA)
             ZD,     // Opieka nad dzieckiem (ZUS ZLA)
@@ -90,6 +92,11 @@ namespace Excel_Data_Importer_WARS
                         Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
+
+                    //sprawdz czy jest juz delegacja w tym dniu
+
+
+
 
                     //get id dni
                     List<int> Lista_Dni_Godz_Pracy = [];
@@ -166,12 +173,16 @@ namespace Excel_Data_Importer_WARS
                     continue;
                 }
 
+                
 
 
 
-                int przyczyna = Dopasuj_TKN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
+                // Pierdole to, w zależnpści od nazwy absencji są rozne przyczyny które nie są opisane w dokumentacji, nie mam sposobu na wgl zrobienie tego w 
+                //  sposób który nie zmiażdży mi jąder :(.
+                //int przyczyna = Dopasuj_TKN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
+                int przyczyna = 1; // Nie dotyczy
+
                 string nazwa_absencji = Dopasuj_TBN_Nazwa(ListaAbsencji[0].Rodzaj_Absencji);
-
                 if (string.IsNullOrEmpty(nazwa_absencji))
                 {
                     Internal_Error_Logger.New_Custom_Error($"W programie brak dopasowanego kodu Absencji: {ListaAbsencji[0].Rodzaj_Absencji} w dniu {new DateTime(ListaAbsencji[0].Rok, ListaAbsencji[0].Miesiac, ListaAbsencji[0].Dzien)} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki}. Absencja nie dodana.");
@@ -196,7 +207,7 @@ namespace Excel_Data_Importer_WARS
                     throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
-                using (SqlCommand command = new(DbManager.Check_Duplicate_Absencje, connection, transaction))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Nieobecnosci, connection, transaction))
                 {
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
                     command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
@@ -287,29 +298,39 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dopasuj_TKN_Nazwa(RodzajAbsencji rodzaj)
         {
+            //1 – Nie dotyczy
+            //2 – Zwolnienie lekarskie
+            //3 – Wypadek w pracy / choroba zawodowa
+            //4 – Wypadek w drodze do/ z pracy
+            //5 – Zwolnienie w okresie ciąży
+            //6 – Zwolnienie spowodowane gruźlicą
+            //7 – Nadużycie alkoholu
+            //8 – Przestępstwa / wykroczenie
+            //9 – Opieka nad dzieckiem do lat 14
+            //10 – Opieka nad inną osobą
+            //11 – Leczenie szpitalne
+            //12 - Badanie dawcy / pobranie organów
             return rodzaj switch
             {
-                RodzajAbsencji.ZL => 1,       // Zwolnienie lekarskie
-                RodzajAbsencji.DM => 2,       // Urlop macierzyński
-                RodzajAbsencji.DR => 13,      // Urlop opiekuńczy
-                RodzajAbsencji.NB => 1,       // Zwolnienie lekarskie
-                RodzajAbsencji.NN => 5,       // Nieobecność nieusprawiedliwiona
-                RodzajAbsencji.UC => 21,      // Urlop opiekuńczy
-                RodzajAbsencji.UD => 21,      // Urlop opiekuńczy
-                RodzajAbsencji.UJ => 10,      // Służba wojskowa
-                RodzajAbsencji.UL => 10,      // Służba wojskowa
-                RodzajAbsencji.UM => 2,       // Urlop macierzyński
-                RodzajAbsencji.UO => 4,       // Urlop okolicznościowy
-                RodzajAbsencji.UN => 3,       // Urlop rehabilitacyjny
-                RodzajAbsencji.UR => 3,       // Urlop rehabilitacyjny
-                RodzajAbsencji.ZC => 21,      // Urlop opiekuńczy
-                RodzajAbsencji.ZD => 21,      // Urlop opiekuńczy
-                RodzajAbsencji.ZK => 21,      // Urlop opiekuńczy
-                RodzajAbsencji.ZN => 1,       // Zwolnienie lekarskie
-                RodzajAbsencji.ZR => 3,       // Urlop rehabilitacyjny
-                RodzajAbsencji.ZZ => 1,       // Zwolnienie lekarskie ciążowe
-                RodzajAbsencji.SZK => 20,     // SZ
-                _ => 9                        // Nie dotyczy dla pozostałych przypadków
+                RodzajAbsencji.DM => 9,
+                RodzajAbsencji.DR => 9,
+                RodzajAbsencji.NB => 2,
+                RodzajAbsencji.NR => 2,
+                RodzajAbsencji.U9 => 9,
+                RodzajAbsencji.UC => 9,
+                RodzajAbsencji.UD => 9,
+                RodzajAbsencji.UK => 12,
+                RodzajAbsencji.UM => 9,
+                RodzajAbsencji.UR => 11,
+                RodzajAbsencji.ZC => 10,
+                RodzajAbsencji.ZD => 9,
+                RodzajAbsencji.ZK => 9,
+                RodzajAbsencji.ZL => 2,
+                RodzajAbsencji.ZN => 2,
+                RodzajAbsencji.ZR => 11,
+                RodzajAbsencji.ZS => 11,
+                RodzajAbsencji.ZZ => 5,
+                _ => 1
             };
         }
         private static string Dopasuj_TBN_Nazwa(RodzajAbsencji rodzaj)
@@ -340,6 +361,8 @@ namespace Excel_Data_Importer_WARS
                 RodzajAbsencji.IK => "Covid19",
                 RodzajAbsencji.SZK => "Szkolenie",
                 RodzajAbsencji.PZ => "Praca zdalna",
+                RodzajAbsencji.UZ => "Urlop inny",
+                RodzajAbsencji.UŻ => "Urlop inny",
                 //RodzajAbsencji.ZZ => "" Kurwa niewiem POMOCY xd
                 //RodzajAbsencji.UD => "", NIE MA opieki nad dzieckiem 
                 _ => "Nieobecność (B2B)"

@@ -76,29 +76,17 @@ namespace Excel_Data_Importer_WARS
         WHEN @EXISTSDZIEN > 0 AND @EXISTSDATA > 0 THEN 1
         ELSE 0
     END;";
-        public static readonly string Check_Duplicate_Absencje = @"IF EXISTS (
-SELECT 1 
-FROM CDN.PracNieobec
-WHERE [PNB_PraId] = @PRI_PraId
-    AND [PNB_TnbId] = (
-        SELECT TNB_TnbId 
-        FROM cdn.TypNieobec 
-        WHERE TNB_Nazwa = @NazwaNieobecnosci
-    )
-    AND [PNB_OkresOd] = @DataOd
-    AND [PNB_OkresDo] = @DataDo
-    AND [PNB_RozliczData] = @BaseDate
-    AND [PNB_Przyczyna] = @Przyczyna
-    AND [PNB_DniPracy] = @DniPracy
-    AND [PNB_DniKalend] = @DniKalendarzowe
-)
-BEGIN
-SELECT 1
-END
-ELSE 
-BEGIN
-SELECT 0
-END
+        public static readonly string Check_Duplicate_Nieobecnosci = @"SELECT CASE 
+    WHEN EXISTS (
+        SELECT 1
+        FROM [CDN].[PracNieobec] PNB
+        WHERE PNB.PNB_PraId = @PRI_PraId
+        AND PNB.PNB_TnbId = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @NazwaNieobecnosci)
+        AND PNB.PNB_OkresOd = @DataOd
+        AND PNB.PNB_OkresDo = @DataDo
+    ) THEN 1
+    ELSE 0
+END AS ExistsFlag;
 ";
         public static readonly string Insert_Nieobecnosci = @$"
 DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @NazwaNieobecnosci);
@@ -467,15 +455,3 @@ END
         public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
     }
 }
-Program nie znalazł żadnych plików w folderze: C: \Users\piotr.brysiak\Desktop\Importer_Konduktorzy\Arkusze konduktorzy\Wynagrodzenia1\
-Czytanie: Bargański W. 25.02.2025 14:55:52
-Program nie może odczytać pliku C:\Users\piotr.brysiak\Desktop\Importer_Konduktorzy\Arkusze konduktorzy\Ewidencja 2\Bargański W..xlsx
-Unhandled exception. System.IO.IOException: The process cannot access the file because it is being used by another process.
-   at System.IO.FileSystem.MoveFile(String sourceFullPath, String destFullPath, Boolean overwrite)
-   at Excel_Data_Importer_WARS.Program.Move_File(String filePath, Int32 opcja) in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 338
-   at Excel_Data_Importer_WARS.Program.Process_Files(String File_Path) in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 109
-   at Excel_Data_Importer_WARS.Program.Do_The_Thing() in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 72
-   at Excel_Data_Importer_WARS.Program.Main() in E:\ITEGER\Praca\KonduktorReader\Program.cs:line 17
-   at Excel_Data_Importer_WARS.Program.<Main>()
-
-

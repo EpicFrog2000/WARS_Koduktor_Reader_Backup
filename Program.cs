@@ -10,11 +10,20 @@ namespace Excel_Data_Importer_WARS
         private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static Config config = new();
         private static readonly bool LOG_TO_TERMINAL = true;
+        
         private static readonly bool Do_Stuff_In_loop = false;
-
-        public static async Task<int> Main()
+        public static int Main()
         {
-            await Do_The_Thing();
+            try
+            {
+                Do_The_Thing();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                Console.ReadLine();
+            }
+            
             Console.WriteLine($"Pomiar.Avg_Get_Typ_Zakladki: {Pomiar.Avg_Get_Typ_Zakladki}");
             Console.WriteLine($"Pomiar.Avg_Get_Metadane_Pliku: {Pomiar.Avg_Get_Metadane_Pliku}");
             Console.WriteLine($"Pomiar.Avg_Open_Workbook: {Pomiar.Avg_Open_Workbook}");
@@ -25,7 +34,7 @@ namespace Excel_Data_Importer_WARS
             Console.ReadLine();
             return 0;
         }
-        private static async Task Do_The_Thing()
+        private static void Do_The_Thing()
         {
             // Start measuring time
             Stopwatch stopwatch = new();
@@ -111,7 +120,7 @@ namespace Excel_Data_Importer_WARS
                 return;
             }
 
-            _ = Task.Run(() => Usun_Ukryte_Karty(Workbook));
+            Usun_Ukryte_Karty(Workbook);
 
             Error_Logger Internal_Error_Logger = new(true)
             {
@@ -171,7 +180,7 @@ namespace Excel_Data_Importer_WARS
                 }
                 catch
                 {
-                    _ = Task.Run(() => Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path));
+                    _ = Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path);
                     Contains_Any_Bad_Data = true;
                 }
                 finally
@@ -246,20 +255,16 @@ namespace Excel_Data_Importer_WARS
             Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
             return 0;
         }
-        private static Task Usun_Ukryte_Karty(XLWorkbook workbook)
+        private static void Usun_Ukryte_Karty(XLWorkbook workbook)
         {
-            _ = Task.Run(() =>
+            Stopwatch PomiaryStopWatch = Stopwatch.StartNew();
+            var sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
+            foreach (var sheet in sheetsToRemove)
             {
-                Stopwatch PomiaryStopWatch = Stopwatch.StartNew();
-                var sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
-                foreach (var sheet in sheetsToRemove)
-                {
-                    workbook.Worksheets.Delete(sheet.Name);
-                }
-                workbook.Save();
-                Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
-            });
-            return Task.CompletedTask;
+                workbook.Worksheets.Delete(sheet.Name);
+            }
+            workbook.Save();
+            Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
         }
         private static (string, DateTime) Get_Metadane_Pliku(XLWorkbook Workbook, string File_Path)
         {
@@ -300,43 +305,54 @@ namespace Excel_Data_Importer_WARS
                 Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
                 return;
             }
-            string destinationPath = string.Empty;
-            if (opcja == 0)
+            try
             {
-                destinationPath = Path.Combine(error_logger.Current_Bad_Files_Folder, Path.GetFileName(filePath));
-            }
-            else if (opcja == 1)
-            {
-                destinationPath = Path.Combine(error_logger.Good_Files_Folder, Path.GetFileName(filePath));
-            }
-            else if (opcja == 2)
-            {
+
+                string destinationPath = string.Empty;
+                if (opcja == 0)
+                {
+                    destinationPath = Path.Combine(error_logger.Current_Bad_Files_Folder, Path.GetFileName(filePath));
+                }
+                else if (opcja == 1)
+                {
+                    destinationPath = Path.Combine(error_logger.Good_Files_Folder, Path.GetFileName(filePath));
+                }
+                else if (opcja == 2)
+                {
+                    destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
+                    if (File.Exists(destinationPath))
+                    {
+                        File.Delete(destinationPath);
+                    }
+                    File.Move(filePath, destinationPath);
+                    Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+
+                if (File.Exists(destinationPath))
+                {
+                    File.Delete(destinationPath);
+                }
+                File.Copy(filePath, destinationPath);
                 destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
                 if (File.Exists(destinationPath))
                 {
                     File.Delete(destinationPath);
                 }
                 File.Move(filePath, destinationPath);
+            }
+            catch
+            {
+                error_logger.New_Custom_Error($"Nie udało się przenieść pliku: {filePath}");
+            }
+            finally
+            {
                 Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
-                return;
             }
-            else
-            {
-                return;
-            }
-            
-            if (File.Exists(destinationPath))
-            {
-                File.Delete(destinationPath);
-            }
-            File.Copy(filePath, destinationPath);
-            destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
-            if (File.Exists(destinationPath))
-            {
-                File.Delete(destinationPath);
-            }
-            File.Move(filePath, destinationPath);
-            Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
         }
         private static async Task Copy_Bad_Sheet_To_Files_Folder(XLWorkbookProperties op, IXLWorksheet sheetToCopy, string filePath)
         {
@@ -459,7 +475,7 @@ namespace Excel_Data_Importer_WARS
             //workbook.Properties.LastModifiedBy = o;
             //workbook.Properties.Modified = d;
             workbook.SaveAs(outputFilePath);
-        }
+        } //Kiedyś używane do konwertowania plików xls na xlsx ale w sumie to wyjebane (pora umierać)
     }
     static class Pomiar
     {

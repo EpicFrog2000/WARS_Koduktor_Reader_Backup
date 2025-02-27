@@ -301,7 +301,7 @@ namespace Excel_Data_Importer_WARS
                             {
                                 try
                                 {
-                                    dodano += Zrob_Insert_Plan_command(connection, transaction, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                                    Zrob_Insert_Plan_command(connection, transaction, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
                                 }
                                 catch (SqlException ex)
                                 {
