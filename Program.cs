@@ -486,7 +486,6 @@ namespace Excel_Data_Importer_WARS
         private static TimeSpan avg_Open_Workbook = TimeSpan.Zero;
         private static TimeSpan avg_Get_Typ_Zakladki = TimeSpan.Zero;
         private static TimeSpan avg_Usun_Ukryte_Karty = TimeSpan.Zero;
-        //TODO get typ zakladki
         public static TimeSpan Avg_Get_Metadane_Pliku
         {
             get => avg_Get_Metadane_Pliku;
