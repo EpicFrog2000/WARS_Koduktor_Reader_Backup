@@ -1,8 +1,33 @@
 # Excel Data Importer WARS
-Program służy do importowania danych z plików Excel do bazy danych
+#### Do czego służy?
+Program służy do automatycznego importowania danych z plików Excel do bazy danych. Jego zadaniem jest odczytanie danych z plików Excel umieszczonych w wyznaczonym folderze, zweryfikowanie ich poprawności oraz zapisanie ich w bazie danych lub obsłużenie ewentualnych błędów, które mogą wystąpić podczas przetwarzania plików. Program obsługuje różne typy dokumentów związanych z ewidencją czasu pracy i wynagrodzeniami pracowników. Dzięki niemu nie trzeba ręcznie przepisywać danych – wystarczy umieścić plik w odpowiednim folderze, a program zajmie się resztą.
+
+#### Jakie dane przetwarza?
+
+Grafiki pracy pracowników – harmonogramy pracy, w tym zaplanowane zmiany i dyżury.
+
+Karty ewidencji czasu pracy – rzeczywiste godziny pracy pracowników i konduktorów, w tym nadgodziny, absencje oraz inne elementy związane z czasem pracy.
+
+Tabele stawek wynagrodzeń – stawki płacowe obowiązujące dla różnych grup pracowników i okresów rozliczeniowych.
+
+#### Funkcjonalności:
+
+✅ Automatyczne wykrywanie nowych plików Excel w określonym folderze
+
+✅ Obsługa różnych formatów arkuszy
+
+✅ Sprawdza poprawność danych przed ich zapisaniem
+
+✅ Integracja z bazą danych
+
+✅ Rejestruje błędy, jeśli plik zawiera nieprawidłowe informacje
+
+✅ Segregacja przetworzonych plików
+
+✅ Łatwa zmiana opcji programu poprzez edycję pliku .json
 
 
-### Użytkowanie
+## Użytkowanie
 Plik konfiguracyjny `Config.json` znajduje się w tej samej lokalizacji co program. W tym pliku można skonfigurować działanie aplikacji poprzez ustawienie odpowiednich parametrów:
 
 Przykładowy plik konfiguracyjny:
@@ -19,20 +44,20 @@ Przykładowy plik konfiguracyjny:
   "Clear_Good_Files_On_Restart": true
 }
 ```
-## Konfiguracja katalogów
+### Konfiguracja katalogów
 - **`Files_Folders`** - lista folderów, z których program importuje pliki Excel.
 
-## Połączenie z bazą danych
+### Połączenie z bazą danych
 - **`Optima_Conection_String`** - ciąg połączeniowy do bazy danych.
 
-## Zarządzanie plikami i logami
+### Zarządzanie plikami i logami
 - **`Clear_Logs_On_Program_Restart`** - określa, czy logi z błędami powinny być kasowane po restarcie programu.
 - **`Clear_Processed_Files_On_Restart`** - określa, czy przetworzone pliki powinny być kasowane po restarcie programu.
 - **`Clear_Bad_Files_On_Restart`** - określa, czy niepoprawne pliki powinny być usuwane po restarcie programu.
 - **`Clear_Good_Files_On_Restart`** - określa, czy poprawnie przetworzone pliki powinny być usuwane po restarcie programu.
 - **`Move_Files_To_Processed_Folder`** - określa, czy pliki powinny być przenoszone do dedykowanego folderu po ich przetworzeniu.
 
-## Obsługa błędów
+### Obsługa błędów
 Pliki do importu należy przekopiować do folderów, które zostały określone w pliku konfiguracyjnym (**`Files_Folders`**). 
 Po uruchomieniu program utworzy nowe katalogi, np. `Errors\` i `Bad_Files\`.
 - W folderze `Errors\` będzie znajdował się plik `Errors.txt` z opisanymi błędami, które wystąpiły w trakcie importu plików.
@@ -84,9 +109,16 @@ Poprawione pliki można następnie przekopiować do folderów określonych w pli
   Oznacza to że:
   
   Zawartość zakładki nie jest zgodna z przewidzianym standardem.
+
+
+
+
+
+
+  
 # Kod
 
-# Testowanie
+## Testowanie
 
 Zalecam skompilowanie programu, a następnie przejście do folderu, w którym znajduje się skompilowana wersja. Uruchom program na 5 sekund, aby automatycznie wygenerował plik konfiguracyjny.
 
@@ -105,7 +137,7 @@ I gotowe – maszyna w ruchu! Można odpalić program.
 - `Helper.cs`: Klasa Helper zawiera metody pomocnicze do pracy z arkuszami Excel itp.
 - `Reader_*.cs`: Klasy czytające pliki Excel oraz wkładające te dane do bazy.
 
-## Dokumentacja Plików z kodem
+# Dokumentacja Plików z kodem
 ### Program.cs
 - `private static readonly bool LOG_TO_TERMINAL`: Określa czy w trakcie działania programu mają się pojawiać komunikaty w konsoli.
 - `private static readonly bool Do_Stuff_In_loop`: Określa czy program ma wykonywać swoje założenia nieprzerwanie.
