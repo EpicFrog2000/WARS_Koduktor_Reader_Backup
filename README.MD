@@ -1,12 +1,12 @@
 # Excel Data Importer WARS
 #### Do czego służy?
-Program służy do automatycznego importowania danych z plików Excel do bazy danych. Jego zadaniem jest odczytanie danych z plików Excel umieszczonych w wyznaczonym folderze, zweryfikowanie ich poprawności oraz zapisanie ich w bazie danych lub obsłużenie ewentualnych błędów, które mogą wystąpić podczas przetwarzania plików. Program obsługuje różne typy dokumentów związanych z ewidencją czasu pracy i wynagrodzeniami pracowników. Dzięki niemu nie trzeba ręcznie przepisywać danych – wystarczy umieścić plik w odpowiednim folderze, a program zajmie się resztą.
+Program służy do automatycznego importowania danych z plików Excel do bazy danych. Dzięki niemu nie trzeba ręcznie przepisywać danych – wystarczy umieścić plik w odpowiednim folderze, a program zajmie się resztą. Jego zadaniem jest odczytanie danych z plików Excel umieszczonych w wyznaczonym folderze, zweryfikowanie ich poprawności oraz zapisanie ich w bazie danych lub obsłużenie ewentualnych błędów, które mogą wystąpić podczas przetwarzania plików. Jeśli napotka błędy, rejestruje je, aby można było je łatwo poprawić. Program obsługuje różne typy dokumentów związanych z ewidencją czasu pracy i wynagrodzeniami pracowników. 
 
 #### Jakie dane przetwarza?
 
-Grafiki pracy pracowników – harmonogramy pracy, w tym zaplanowane zmiany i dyżury.
+Grafiki pracy pracowników – harmonogramy pracy, w tym zaplanowane absencje.
 
-Karty ewidencji czasu pracy – rzeczywiste godziny pracy pracowników i konduktorów, w tym nadgodziny, absencje oraz inne elementy związane z czasem pracy.
+Karty ewidencji czasu pracy – rzeczywiste godziny pracy pracowników i konduktorów, w tym nadgodziny, niobecności oraz inne elementy związane z czasem pracy.
 
 Tabele stawek wynagrodzeń – stawki płacowe obowiązujące dla różnych grup pracowników i okresów rozliczeniowych.
 
