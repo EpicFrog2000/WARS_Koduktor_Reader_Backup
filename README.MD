@@ -3,7 +3,8 @@
 Program służy do automatycznego importowania danych z plików Excel do bazy danych. Dzięki niemu nie trzeba ręcznie przepisywać danych – wystarczy umieścić plik w odpowiednim folderze, a program zajmie się resztą. Jego zadaniem jest odczytanie danych z plików Excel umieszczonych w wyznaczonym folderze, zweryfikowanie ich poprawności oraz zapisanie ich w bazie danych lub obsłużenie ewentualnych błędów, które mogą wystąpić podczas przetwarzania plików. Jeśli napotka błędy, rejestruje je, aby można było je łatwo poprawić. Program obsługuje różne typy dokumentów związanych z ewidencją czasu pracy i wynagrodzeniami pracowników. 
 
 #### Jakie są wyniki programu?
-![Opis](Dokumentacja.docx)
+[Zobacz dokument](Dokumentacja.docx)
+
 
 #### Jakie dane przetwarza?
 
