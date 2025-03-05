@@ -19,6 +19,7 @@ namespace Excel_Data_Importer_WARS
             Karta_Ewidencji_Pracownika = 2,
             Grafik_Pracy_Pracownika = 3
         }
+
         public static int Main()
         {
             try
@@ -28,17 +29,13 @@ namespace Excel_Data_Importer_WARS
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+            }
+            finally
+            {
+                Pomiar.Display_Times();
                 Console.ReadLine();
             }
-            
-            Console.WriteLine($"Pomiar.Avg_Get_Typ_Zakladki: {Pomiar.Avg_Get_Typ_Zakladki}");
-            Console.WriteLine($"Pomiar.Avg_Get_Metadane_Pliku: {Pomiar.Avg_Get_Metadane_Pliku}");
-            Console.WriteLine($"Pomiar.Avg_Open_Workbook: {Pomiar.Avg_Open_Workbook}");
-            Console.WriteLine($"Pomiar.Avg_Process_Files: {Pomiar.Avg_Process_Files}");
-            Console.WriteLine($"Pomiar.Avg_MoveFile: {Pomiar.Avg_MoveFile}");
-            Console.WriteLine($"Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder: {Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder}");
-            Console.WriteLine($"Pomiar.Avg_Usun_Ukryte_Karty: {Pomiar.Avg_Usun_Ukryte_Karty}");
-            Console.ReadLine();
+
             return 0;
         }
         private static void Do_The_Thing()
@@ -265,8 +262,8 @@ namespace Excel_Data_Importer_WARS
         private static void Usun_Ukryte_Karty(XLWorkbook workbook)
         {
             Stopwatch PomiaryStopWatch = Stopwatch.StartNew();
-            var sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
-            foreach (var sheet in sheetsToRemove)
+            IXLWorksheet[] sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
+            foreach (IXLWorksheet sheet in sheetsToRemove)
             {
                 workbook.Worksheets.Delete(sheet.Name);
             }
@@ -583,6 +580,16 @@ namespace Excel_Data_Importer_WARS
                 }
                 avg_Usun_Ukryte_Karty = (value + avg_Usun_Ukryte_Karty) / 2;
             }
+        }
+        public static void Display_Times()
+        {
+            Console.WriteLine($"Pomiar.Avg_Get_Typ_Zakladki: {Avg_Get_Typ_Zakladki}");
+            Console.WriteLine($"Pomiar.Avg_Get_Metadane_Pliku: {Avg_Get_Metadane_Pliku}");
+            Console.WriteLine($"Pomiar.Avg_Open_Workbook: {Avg_Open_Workbook}");
+            Console.WriteLine($"Pomiar.Avg_Process_Files: {Avg_Process_Files}");
+            Console.WriteLine($"Pomiar.Avg_MoveFile: {Avg_MoveFile}");
+            Console.WriteLine($"Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder: {Avg_Copy_Bad_Sheet_To_Files_Folder}");
+            Console.WriteLine($"Pomiar.Avg_Usun_Ukryte_Karty: {Avg_Usun_Ukryte_Karty}");
         }
     }
 

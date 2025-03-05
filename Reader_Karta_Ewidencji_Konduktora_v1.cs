@@ -453,7 +453,7 @@ namespace Excel_Data_Importer_WARS
             {
                 if (!Pasujace_Daty.Contains(dzien))
                 {
-                    Zrob_Insert_Obecnosc_Command(connection, transaction, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
+                    Zrob_Insert_Obecnosc_Command(connection, transaction, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                 }
             }
 
@@ -469,7 +469,7 @@ namespace Excel_Data_Importer_WARS
                             //Dane_Dnia.Podziel_Nadgodziny();
                             for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
                             }
                         }
                         else
@@ -489,12 +489,12 @@ namespace Excel_Data_Importer_WARS
                                 Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
                                 for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++)
                                 {
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, 2, Dane_Karty.Relacja.Numer_Relacji);
+                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
                                 }
                             }
                             else
                             {
-                                Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, 1, ""); // 1 - pusta strefa
+                                Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                             }
                         }
                     }
@@ -502,7 +502,7 @@ namespace Excel_Data_Importer_WARS
             }
             return ilosc_wpisow;
         }
-        private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, int Typ_Pracy, string Numer_Relacji)
+        private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, Helper.Strefa Strefa, string Numer_Relacji)
         {
             try
             {
@@ -527,7 +527,7 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                     command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                    command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Strefa;
                     duplicate = (int)command.ExecuteScalar() == 1;
                 }
 
@@ -539,7 +539,7 @@ namespace Excel_Data_Importer_WARS
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                         command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                         command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                        command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Typ_Pracy;
+                        command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Strefa;
                         command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
                         command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
                         command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
