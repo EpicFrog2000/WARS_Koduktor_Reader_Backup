@@ -314,7 +314,7 @@ namespace Excel_Data_Importer_WARS
             XLWorkbook Workbook;
             try
             {
-                FileStream stream = new(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, bufferSize: 8192);
+                FileStream stream = new(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, bufferSize: 8192);
                 Workbook = new(stream);
                 Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
                 return (Workbook, stream);
