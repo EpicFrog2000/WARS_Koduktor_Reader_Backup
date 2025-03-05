@@ -13,10 +13,10 @@ namespace Excel_Data_Importer_WARS
         public bool Clear_Good_Files_On_Restart { get; set; } = false;
 
         private readonly JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
-        public void GetConfigFromFile()
+        public bool GetConfigFromFile()
         {
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.json");
-            Check_File(filePath);
+            bool existed = Check_File(filePath);
             if (!File.Exists(filePath))
             {
                 var defaultConfig = new
@@ -44,10 +44,11 @@ namespace Excel_Data_Importer_WARS
             Clear_Processed_Files_On_Restart = new_config.Clear_Processed_Files_On_Restart;
             Move_Files_To_Processed_Folder = new_config.Move_Files_To_Processed_Folder;
             Clear_Good_Files_On_Restart = new_config.Clear_Good_Files_On_Restart;
+            return existed;
         }
-        public void GetConfigFromFile(string Config_File_Path)
+        public bool GetConfigFromFile(string Config_File_Path)
         {
-            Check_File(Config_File_Path);
+            bool existed = Check_File(Config_File_Path);
             if (!File.Exists(Config_File_Path))
             {
                 File.Create(Config_File_Path).Dispose();
@@ -75,8 +76,9 @@ namespace Excel_Data_Importer_WARS
                 Clear_Good_Files_On_Restart = config.Clear_Good_Files_On_Restart;
             }
             DbManager.Connection_String = Optima_Conection_String;
+            return existed;
         }
-        public void Check_File()
+        public bool Check_File()
         {
             string Config_File_Path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config.json");
             if (!File.Exists(Config_File_Path))
@@ -93,9 +95,11 @@ namespace Excel_Data_Importer_WARS
                     Clear_Good_Files_On_Restart
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
+                return false;
             }
+            return true;
         }
-        public void Check_File(string Config_File_Path)
+        public bool Check_File(string Config_File_Path)
         {
             if (!File.Exists(Config_File_Path))
             {
@@ -111,7 +115,9 @@ namespace Excel_Data_Importer_WARS
                     Clear_Good_Files_On_Restart
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
+                return false;
             }
+            return true;
         }
     }
 }

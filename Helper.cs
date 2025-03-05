@@ -47,6 +47,20 @@ namespace Excel_Data_Importer_WARS
                 }
             }
         }
+        public enum Strefa
+        {
+            undefined = 1,
+            Czas_Pracy_Podstawowy = 2,
+            Czas_Przestoju_Płatny_60 = 3,
+            Czas_Przerwy = 4,
+            Czas_Pracy_W_Akordzie = 5,
+            Czas_Przestoju_Płatny_100 = 6,
+            Czas_Pracy_Wykonywanej_Zdalnie = 7,
+            Czas_Przestoju_Płatny_50 = 8,
+            Czas_Pracy_Wykonywanej_Zdalnie_Okazjonalnie = 9,
+            Czas_Pracy_W_Delegacji = 10,
+            Czas_PracyObsługiRelacji = 11
+        }
 
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)
         {

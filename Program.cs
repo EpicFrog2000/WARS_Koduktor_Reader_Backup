@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Wordprocessing;
 using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
@@ -52,7 +53,11 @@ namespace Excel_Data_Importer_WARS
 
             do
             {
-                config.GetConfigFromFile();
+                if (!config.GetConfigFromFile()) // zwraca czy plik konfiguracyjny był utowrzony
+                {
+                    // Zakończ pracy aby użytkownik mógł zmienić konfigurację
+                    return;
+                }
 
                 if (!DbManager.Valid_SQLConnection_String())
                 {
@@ -390,7 +395,7 @@ namespace Excel_Data_Importer_WARS
             error_logger.Current_Bad_Files_Folder = directories[1];
             error_logger.Set_Error_File_Path(directories[0]);
             error_logger.Good_Files_Folder = directories[3];
-            foreach (var dir in directories)
+            foreach (string dir in directories)
             {
                 if (!Directory.Exists(dir))
                 {
