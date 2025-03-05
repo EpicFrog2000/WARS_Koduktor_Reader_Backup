@@ -11,7 +11,6 @@ namespace Excel_Data_Importer_WARS
         private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static Config config = new();
         private static readonly bool LOG_TO_TERMINAL = true;
-        private static readonly bool Do_Stuff_In_loop = false;
         private enum Typ_Zakladki
         {
             Nierozopznana = -1,
@@ -122,7 +121,7 @@ namespace Excel_Data_Importer_WARS
 
                     //await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)).ToList());
                 }
-            } while (Do_Stuff_In_loop);
+            } while (config.Tryb_Zapetlony);
 
 
             if (!LOG_TO_TERMINAL)

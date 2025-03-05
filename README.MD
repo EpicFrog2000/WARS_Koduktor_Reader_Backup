@@ -45,7 +45,8 @@ Przykładowy plik konfiguracyjny:
   "Clear_Processed_Files_On_Restart": true,
   "Clear_Bad_Files_On_Restart": true,
   "Move_Files_To_Processed_Folder": false,
-  "Clear_Good_Files_On_Restart": true
+  "Clear_Good_Files_On_Restart": true,
+  "Tryb_Zapetlony": false
 }
 ```
 ### Konfiguracja katalogów
@@ -60,6 +61,7 @@ Przykładowy plik konfiguracyjny:
 - **`Clear_Bad_Files_On_Restart`** - określa, czy niepoprawne pliki powinny być usuwane po restarcie programu.
 - **`Clear_Good_Files_On_Restart`** - określa, czy poprawnie przetworzone pliki powinny być usuwane po restarcie programu.
 - **`Move_Files_To_Processed_Folder`** - określa, czy pliki powinny być przenoszone do dedykowanego folderu po ich przetworzeniu.
+- **`Tryb_Zapetlony`** - określa, czy program ma sprawdzać pliki w nieskończonej pętli, czy trylko raz i zakończyć pracę.
 
 ### Obsługa błędów
 Pliki do importu należy przekopiować do folderów, które zostały określone w pliku konfiguracyjnym (**`Files_Folders`**). 

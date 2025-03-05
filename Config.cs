@@ -11,6 +11,7 @@ namespace Excel_Data_Importer_WARS
         public bool Clear_Processed_Files_On_Restart { get; set; } = false;
         public bool Move_Files_To_Processed_Folder { get; set; } = false;
         public bool Clear_Good_Files_On_Restart { get; set; } = false;
+        public bool Tryb_Zapetlony { get; set; } = false;
 
         private readonly JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
         public bool GetConfigFromFile()
@@ -27,7 +28,8 @@ namespace Excel_Data_Importer_WARS
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
-                    Clear_Good_Files_On_Restart
+                    Clear_Good_Files_On_Restart,
+                    Tryb_Zapetlony
                 };
 
                 string defaultJson = JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions);
@@ -44,6 +46,7 @@ namespace Excel_Data_Importer_WARS
             Clear_Processed_Files_On_Restart = new_config.Clear_Processed_Files_On_Restart;
             Move_Files_To_Processed_Folder = new_config.Move_Files_To_Processed_Folder;
             Clear_Good_Files_On_Restart = new_config.Clear_Good_Files_On_Restart;
+            Tryb_Zapetlony = new_config.Tryb_Zapetlony;
             return existed;
         }
         public bool GetConfigFromFile(string Config_File_Path)
@@ -59,7 +62,8 @@ namespace Excel_Data_Importer_WARS
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
                     Move_Files_To_Processed_Folder,
-                    Clear_Good_Files_On_Restart
+                    Clear_Good_Files_On_Restart,
+                    Tryb_Zapetlony
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
             }
@@ -74,6 +78,7 @@ namespace Excel_Data_Importer_WARS
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
                 Move_Files_To_Processed_Folder = config.Move_Files_To_Processed_Folder;
                 Clear_Good_Files_On_Restart = config.Clear_Good_Files_On_Restart;
+                Tryb_Zapetlony = config.Tryb_Zapetlony;
             }
             DbManager.Connection_String = Optima_Conection_String;
             return existed;
@@ -92,7 +97,8 @@ namespace Excel_Data_Importer_WARS
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Move_Files_To_Processed_Folder,
-                    Clear_Good_Files_On_Restart
+                    Clear_Good_Files_On_Restart,
+                    Tryb_Zapetlony
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
                 return false;
@@ -112,7 +118,8 @@ namespace Excel_Data_Importer_WARS
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Move_Files_To_Processed_Folder,
-                    Clear_Good_Files_On_Restart
+                    Clear_Good_Files_On_Restart,
+                    Tryb_Zapetlony
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
                 return false;
