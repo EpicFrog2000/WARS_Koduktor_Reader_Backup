@@ -54,11 +54,11 @@ namespace Excel_Data_Importer_WARS
 		    1,
 		    DATEADD(MINUTE, 0, @GodzOdDate),
 		    DATEADD(MINUTE, 0, @GodzDoDate),
-		    @TypPracy,
+		    @Strefa,
 		    1,
 		    1,
 		    '',
-		    @TypNadg);";
+		    @Odb_Nadg);";
         public static readonly string Check_Duplicate_Odbior_Nadgodzin = @"
     DECLARE @EXISTSDZIEN INT;
     DECLARE @EXISTSDATA INT;
@@ -158,7 +158,7 @@ DECLARE @TNBID INT = (SELECT TNB_TnbId FROM cdn.TypNieobec WHERE TNB_Nazwa = @Na
               AND P.PPR_Data = @DataInsert
               AND G.PGR_OdGodziny = @GodzOdDate
               AND G.PGR_DoGodziny = @GodzDoDate
-              AND G.PGR_Strefa = @TypPracy
+              AND G.PGR_Strefa = @Strefa
         )
         BEGIN
             SELECT 1;
@@ -212,7 +212,7 @@ INSERT INTO CDN.PracPracaDniGodz
 		1,
 		@GodzOdDate,
 		@GodzDoDate,
-		@TypPracy,
+		@Strefa,
 		1,
 		1,
 		'',

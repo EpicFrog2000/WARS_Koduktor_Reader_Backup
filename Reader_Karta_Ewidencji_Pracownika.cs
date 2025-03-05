@@ -769,7 +769,7 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                     command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Strefa;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
                     duplicate = (int)command.ExecuteScalar() == 1;
                 }
 
@@ -781,7 +781,7 @@ namespace Excel_Data_Importer_WARS
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                         command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                         command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                        command.Parameters.Add("@TypPracy", SqlDbType.Int).Value = Strefa;
+                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
                         command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
                         command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
                         command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
@@ -819,8 +819,8 @@ namespace Excel_Data_Importer_WARS
                     using (SqlCommand command = new(DbManager.Check_Duplicate_Odbior_Nadgodzin, connection, transaction))
                     {
                         command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                        command.Parameters.AddWithValue("@TypPracy", 2);
-                        command.Parameters.AddWithValue("@TypNadg", 4);
+                        command.Parameters.AddWithValue("@Strefa", Helper.Strefa.Czas_Pracy_Podstawowy);
+                        command.Parameters.AddWithValue("@Odb_Nadg", Helper.Odb_Nadg.W_PŁ);
                         command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                         command.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
@@ -842,8 +842,8 @@ namespace Excel_Data_Importer_WARS
                                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                                     command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                                    command.Parameters.AddWithValue("@TypPracy", 2); // podstawowy
-                                    command.Parameters.AddWithValue("@TypNadg", 4); // W.PŁ
+                                    command.Parameters.AddWithValue("@Strefa", Helper.Strefa.Czas_Pracy_Podstawowy); 
+                                    command.Parameters.AddWithValue("@Odb_Nadg", Helper.Odb_Nadg.W_PŁ);
                                     command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                                     command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                                     command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);

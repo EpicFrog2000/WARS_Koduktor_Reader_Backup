@@ -61,6 +61,15 @@ namespace Excel_Data_Importer_WARS
             Czas_Pracy_W_Delegacji = 10,
             Czas_PracyObsługiRelacji = 11
         }
+        public enum Odb_Nadg
+        {
+            DEFAULT = 1,
+            O_BM = 2,
+            O_NM = 3,
+            W_PŁ = 4,
+            W_NP = 5
+
+        }
 
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)
         {

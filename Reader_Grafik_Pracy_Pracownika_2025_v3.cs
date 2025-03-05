@@ -389,12 +389,12 @@ namespace Excel_Data_Importer_WARS
                 command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
                 if (startGodz == TimeSpan.Zero && endGodz == startGodz)
                 {
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = 1;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
 
                 }
                 else
                 {
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = 2;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_Podstawowy;
 
                 }
                 command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
