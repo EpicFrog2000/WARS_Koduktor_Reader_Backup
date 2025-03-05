@@ -251,7 +251,7 @@ INSERT INTO CDN.PracPracaDniGodz
             ,@Godz_Rozpoczecia
             ,@Data_Mod
             ,@Os_Mod)";
-        public static readonly string Get_Relacja = @"select R_Id from cdn.Relacje where  R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
+        public static readonly string Get_Relacja = @"select R_Id from cdn.Relacje where R_Nazwa = @R_Nazwa AND R_Typ = @R_Typ;";
         public static readonly string Insert_Prowizje = @"WITH CTE AS (
     SELECT OAT_OatId 
             FROM cdn.OAtrybuty 

@@ -70,6 +70,14 @@ namespace Excel_Data_Importer_WARS
             W_NP = 5
 
         }
+        public enum Typ_Zakladki
+        {
+            Nierozopznana = -1,
+            Tabela_Stawek = 0,
+            Karta_Ewidencji_Konduktora = 1,
+            Karta_Ewidencji_Pracownika = 2,
+            Grafik_Pracy_Pracownika = 3
+        }
 
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)
         {

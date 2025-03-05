@@ -18,7 +18,7 @@ namespace Excel_Data_Importer_WARS
             using (SqlCommand command = new(DbManager.Get_Relacja, connection, transaction))
             {
                 command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
-                command.Parameters.Add("@R_Typ", SqlDbType.Int, 20).Value = DBNull.Value;
+                command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = DBNull.Value;
                 object result = command.ExecuteScalar();
                 if (result != null)
                 {
@@ -45,8 +45,8 @@ namespace Excel_Data_Importer_WARS
                     //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = null;
                     command.Parameters.Add("@Opis_1", SqlDbType.NVarChar, 200).Value = Opis_Relacji_1;
                     command.Parameters.Add("@Opis_2", SqlDbType.NVarChar, 200).Value = Opis_Relacji_2;
-                    command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime, 20).Value = DbManager.Base_Date + Godzina_Rozpoczecia_Relacji;
-                    command.Parameters.Add("@Data_Mod", SqlDbType.DateTime, 20).Value = DateTime.Now;
+                    command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime).Value = DbManager.Base_Date + Godzina_Rozpoczecia_Relacji;
+                    command.Parameters.Add("@Data_Mod", SqlDbType.DateTime).Value = DateTime.Now;
                     command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
                     command.ExecuteNonQuery();
                 }
