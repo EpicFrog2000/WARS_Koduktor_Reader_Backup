@@ -1,8 +1,8 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Wordprocessing;
 using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Excel_Data_Importer_WARS
 {
@@ -21,8 +21,33 @@ namespace Excel_Data_Importer_WARS
             Grafik_Pracy_Pracownika = 3
         }
 
-        public static int Main()
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+
+        [STAThread]
+        public static void Main()
         {
+            // Jeśli jest utuchomiona już jedna instancja to zakończ program
+            // Jeśli jest w trakie procesowania pliku możę być on uszkodzony jeśli program zostanie zakończony ale musiał bym się bawić w mutexy i to jest za dużo roboty -_-
+            var processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+            if (processes.Length > 1)
+            {
+                IntPtr hWnd = (IntPtr)MessageBox(IntPtr.Zero, "Program jest już uruchomiony. Następi jego zamknięcie", "Informacja", 0);
+                SetWindowPos(hWnd, new IntPtr(-1), 0, 0, 0, 0, 0x0002 | 0x0001);
+                foreach (var process in processes) // Strzeli też samobója chyba
+                {
+                    process.Kill();
+                }
+                Environment.Exit(0);
+            }
+
+
+
+
+
             try
             {
                 Do_The_Thing();
@@ -36,8 +61,6 @@ namespace Excel_Data_Importer_WARS
                 Pomiar.Display_Times();
                 Console.ReadLine();
             }
-
-            return 0;
         }
         private static void Do_The_Thing()
         {
