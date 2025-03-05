@@ -124,7 +124,7 @@ namespace Excel_Data_Importer_WARS
                         {
                             using (SqlCommand command = new(DbManager.Update_Dzien_Pracy_Strefa, connection, transaction))
                             {
-                                command.Parameters.Add("@NowaStrefa", SqlDbType.Int).Value = 10; //delegacja
+                                command.Parameters.Add("@NowaStrefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_W_Delegacji;
                                 command.Parameters.Add("@IdDniaGodz", SqlDbType.Int).Value = Dzien_Godz;
                                 command.Parameters.Add("@NewOdGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8);
                                 command.Parameters.Add("@NewDoGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)absencja.Liczba_Godzin_Przepracowanych);

@@ -116,12 +116,6 @@ Poprawione pliki można następnie przekopiować do folderów określonych w pli
   
   Zawartość zakładki nie jest zgodna z przewidzianym standardem.
 
-
-
-
-
-
-  
 # Kod
 
 ## Testowanie
@@ -150,7 +144,7 @@ I gotowe – maszyna w ruchu! Można odpalić program.
 - `static class Pomiar`: Klasa do badania optymalizacji i wydajności czasowej programu. (Można usunąć)
 - `Main()`: Główna metoda uruchamiająca aplikację.
 - `Do_The_Thing()`: Metoda wykonująca główne operacje.
-- `private static int Get_Typ_Zakladki(IXLWorksheet Worksheet)`: Zwraca typ zakładki. Każdy typ zakładki jest reprezentowany przez unikalny numer. Zakładka tzn. który typ danych jest w tem skoroszycie np. Grafiki pracy lub karty ewidencji konduktorów.
+- `private static Typ_Zakladki Get_Typ_Zakladki(IXLWorksheet Worksheet)`: Zwraca typ zakładki. Każdy typ zakładki jest reprezentowany przez unikalny numer. Zakładka tzn. który typ danych jest w tem skoroszycie np. Grafiki pracy lub karty ewidencji konduktorów.
 - `private static Task Usun_Ukryte_Karty(XLWorkbook workbook)`: Usuwa z pliku Excel zakładki które zostały ukryte przez użytkownika gdyż najprawdopodobniej nie mają one być importowane skoro ma ich nie widać xd. (Chce się zajebać)
 - `private static (string, DateTime) Get_Metadane_Pliku(XLWorkbook Workbook, string File_Path)`: Zwraca ostatni czas oraz osobę modyfikacji danego pliku.
 - `private static (XLWorkbook?, FileStream?) Open_Workbook(string File_Path)` otwiera plik Excel przez FileStream i zwraca handle na FileStream oraz XLWorkbook, które to należy zamknąć na koniec. (Zrobione jest to tak aby zoptymalizować użycie zasobów)
@@ -207,7 +201,7 @@ Działanie programu:
 
 ### Relacja.cs
 - `public static int Get_Relacja_Id(string Numer_Relacji, SqlConnection connection, SqlTransaction transaction)`: Zwraca Id Relacji lub throwuje błąd żenie znaleziono relacji o takim numerze.
-- 'public void Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger, SqlConnection connection, SqlTransaction transaction)' Jeśli takier relacji nie ma w bazie to taka się wpierdoli do bazy.
+- `public void Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger, SqlConnection connection, SqlTransaction transaction)` Jeśli takier relacji nie ma w bazie to taka się wpierdoli do bazy.
 
 ### Reader_*.cs
 - Wczytują dane z plików Excel i dodają dane do bazy, operacje w tych plikach wyglądają w miare podobnie ale i tak murzyńsko bo te Arkusze od WARSu są zjebane. Nie chce mi się tego opisywać.
@@ -217,4 +211,4 @@ Działanie programu:
   3. Po zebraniu danych metody `Dodaj_*_Do_Optimy()` robią inserty itp.  
 
 ## Autorzy
-- **ITEGER** - 27.02.2025
+- **ITEGER** - 05.03.2025

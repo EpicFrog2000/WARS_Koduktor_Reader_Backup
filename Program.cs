@@ -11,25 +11,16 @@ namespace Excel_Data_Importer_WARS
         private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static Config config = new();
         private static readonly bool LOG_TO_TERMINAL = true;
-        private enum Typ_Zakladki
-        {
-            Nierozopznana = -1,
-            Tabela_Stawek = 0,
-            Karta_Ewidencji_Konduktora = 1,
-            Karta_Ewidencji_Pracownika = 2,
-            Grafik_Pracy_Pracownika = 3
-        }
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
-
         [STAThread]
         public static void Main()
         {
-            // Jeśli jest utuchomiona już jedna instancja to zakończ program
+            // Jeśli jest uruchomiona już jedna instancja to zakończ program
             // Jeśli jest w trakie procesowania pliku możę być on uszkodzony jeśli program zostanie zakończony ale musiał bym się bawić w mutexy i to jest za dużo roboty -_-
             var processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
             if (processes.Length > 1)
@@ -42,10 +33,6 @@ namespace Excel_Data_Importer_WARS
                 }
                 Environment.Exit(0);
             }
-
-
-
-
 
             try
             {
@@ -181,25 +168,25 @@ namespace Excel_Data_Importer_WARS
                 Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
                 IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
                 Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
-                Typ_Zakladki Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
+                Helper.Typ_Zakladki Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
                 try
                 {
                     switch (Typ_Zakladki)
                     {
-                        case Typ_Zakladki.Tabela_Stawek:
+                        case Helper.Typ_Zakladki.Tabela_Stawek:
                             Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
-                        case Typ_Zakladki.Karta_Ewidencji_Konduktora:
+                        case Helper.Typ_Zakladki.Karta_Ewidencji_Konduktora:
                             Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
                             Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
-                        case Typ_Zakladki.Karta_Ewidencji_Pracownika:
+                        case Helper.Typ_Zakladki.Karta_Ewidencji_Pracownika:
                             Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
-                        case Typ_Zakladki.Grafik_Pracy_Pracownika:
+                        case Helper.Typ_Zakladki.Grafik_Pracy_Pracownika:
                             Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
-                        case Typ_Zakladki.Nierozopznana:
+                        case Helper.Typ_Zakladki.Nierozopznana:
                             _ = Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path);
                             Workbook!.Dispose();
                             Stream!.Close();
@@ -232,7 +219,7 @@ namespace Excel_Data_Importer_WARS
                 Move_File(File_Path, 2);
             }
         }
-        private static Typ_Zakladki Get_Typ_Zakladki(IXLWorksheet Worksheet)
+        private static Helper.Typ_Zakladki Get_Typ_Zakladki(IXLWorksheet Worksheet)
         {
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
@@ -240,35 +227,35 @@ namespace Excel_Data_Importer_WARS
             if (Cell_Value.Contains("Harmonogram pracy"))
             {
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                return Typ_Zakladki.Grafik_Pracy_Pracownika;
+                return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
             Cell_Value = Worksheet.Cell(1, 3).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("Tabela Stawek"))
             {
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                return Typ_Zakladki.Tabela_Stawek;
+                return Helper.Typ_Zakladki.Tabela_Stawek;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("KARTA EWIDENCJI CZASU PRACY"))
             {
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                return Typ_Zakladki.Karta_Ewidencji_Konduktora;
+                return Helper.Typ_Zakladki.Karta_Ewidencji_Konduktora;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).Value.ToString();
             if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
             {
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                return Typ_Zakladki.Grafik_Pracy_Pracownika;
+                return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
             Cell_Value = Worksheet.Cell(1, 2).Value.ToString();
             if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
             {
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                return Typ_Zakladki.Grafik_Pracy_Pracownika;
+                return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
             foreach (IXLCell cell in Worksheet.CellsUsed()) // karta pracy NIE konduktora
@@ -278,13 +265,13 @@ namespace Excel_Data_Importer_WARS
                     if (cell.GetString().Trim() == "Dzień")
                     {
                         Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                        return Typ_Zakladki.Karta_Ewidencji_Pracownika;
+                        return Helper.Typ_Zakladki.Karta_Ewidencji_Pracownika;
                     }
                 }
                 catch { }
             }
             Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-            return Typ_Zakladki.Nierozopznana;
+            return Helper.Typ_Zakladki.Nierozopznana;
         }
         private static void Usun_Ukryte_Karty(XLWorkbook workbook)
         {
