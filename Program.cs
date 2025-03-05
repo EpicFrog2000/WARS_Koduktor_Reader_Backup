@@ -230,7 +230,7 @@ namespace Excel_Data_Importer_WARS
             if (Cell_Value.Contains("KARTA EWIDENCJI CZASU PRACY"))
             {
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
-                return Typ_Zakladki.Grafik_Pracy_Konduktora;
+                return Typ_Zakladki.Karta_Ewidencji_Konduktora;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).Value.ToString();
