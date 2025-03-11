@@ -124,6 +124,9 @@ namespace Excel_Data_Importer_WARS
                         {
                             using (SqlCommand command = new(DbManager.Update_Dzien_Pracy_Strefa, connection, transaction))
                             {
+                                
+
+
                                 command.Parameters.Add("@NowaStrefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_W_Delegacji;
                                 command.Parameters.Add("@IdDniaGodz", SqlDbType.Int).Value = Dzien_Godz;
                                 command.Parameters.Add("@NewOdGodz", SqlDbType.DateTime).Value = DbManager.Base_Date + TimeSpan.FromHours(8);
@@ -226,10 +229,10 @@ namespace Excel_Data_Importer_WARS
                         using (SqlCommand command = new(DbManager.Insert_Nieobecnosci, connection, transaction))
                         {
                             command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                            command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 50).Value = nazwa_absencji;
+                            command.Parameters.Add("@NazwaNieobecnosci", SqlDbType.NVarChar, 40).Value = nazwa_absencji;
                             command.Parameters.Add("@DniPracy", SqlDbType.Int).Value = dni_robocze;
                             command.Parameters.Add("@DniKalendarzowe", SqlDbType.Int).Value = dni_calosc;
-                            command.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna;
+                            command.Parameters.Add("@Przyczyna", SqlDbType.NVarChar, 50).Value = przyczyna; // todo zmiana na int
                             command.Parameters.Add("@DataOd", SqlDbType.DateTime).Value = Data_Absencji_Start;
                             command.Parameters.Add("@BaseDate", SqlDbType.DateTime).Value = DbManager.Base_Date;
                             command.Parameters.Add("@DataDo", SqlDbType.DateTime).Value = Data_Absencji_End;

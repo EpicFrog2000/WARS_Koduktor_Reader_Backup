@@ -5,6 +5,8 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel_Data_Importer_WARS", "Excel_Data_Importer_WARS.csproj", "{8389A1BA-4529-4393-AF7A-7815A43B6676}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel_Date_Imporeter_Update", "..\Excel_Date_Imporeter_Update\Excel_Date_Imporeter_Update.csproj", "{14F6A878-64BD-4828-B135-A596AA4A182A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{8389A1BA-4529-4393-AF7A-7815A43B6676}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8389A1BA-4529-4393-AF7A-7815A43B6676}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8389A1BA-4529-4393-AF7A-7815A43B6676}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14F6A878-64BD-4828-B135-A596AA4A182A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14F6A878-64BD-4828-B135-A596AA4A182A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14F6A878-64BD-4828-B135-A596AA4A182A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14F6A878-64BD-4828-B135-A596AA4A182A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

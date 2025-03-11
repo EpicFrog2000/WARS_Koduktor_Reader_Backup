@@ -59,6 +59,17 @@ namespace Excel_Data_Importer_WARS
             public int Dzien = 0;
             public List<TimeSpan> Godziny_Pracy_Od = [];
             public List<TimeSpan> Godziny_Pracy_Do = [];
+
+            // Ja jebe ten WARS to jest jebany syf 
+            // KURWA, dostałem plik bez nagłowka, a zmieniła się szerokość karty i nie wiem czy coś zmieniło to w nagłówku więc pierdole, zrobię później bo to szybkie do przerobienia jest
+            // Te godz ponizej zamiast tych Godz_PRacy_Od i Do
+            // TODO: Dodać wczytytwanie z pliku
+            // TODO: Dodać zapisywanie do bazy danych
+            public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Od = []; 
+            public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Do = []; 
+            public List<TimeSpan> Godziny_Pracy_Inne_Czynnosci_Od = [];
+            public List<TimeSpan> Godziny_Pracy_Inne_Czynnosci_Do = [];
+
             public List<TimeSpan> Godziny_Odpoczynku_Od = [];
             public List<TimeSpan> Godziny_Odpoczynku_Do = [];
             public decimal Liczba_Godzin_Nadliczbowych_50 = 0;
@@ -187,8 +198,6 @@ namespace Excel_Data_Importer_WARS
             {
                 Dodaj_Dane_Do_Optimy(Karta_Ewidencji, Prowizje);
             }
-
-
         }
         private static void Get_Dane_Naglowka(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
         {
@@ -264,7 +273,7 @@ namespace Excel_Data_Importer_WARS
 
                 do // exit na brak nr dnia
                 {
-                    // todo nr dnia
+                    // nr dnia
                     Dane_Dnia Dane_Dnia = new();
                     dzien = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
                     if (!Helper.Try_Get_Type_From_String<int>(dzien, ref Dane_Dnia.Dzien))
@@ -681,7 +690,7 @@ namespace Excel_Data_Importer_WARS
                         {
                             command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Liczba_Napojow_Awaryjnych;
-                            command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 50).Value = "Prowizja za wydane napoje awaryjne";
+                            command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 41).Value = "Prowizja za wydane napoje awaryjne";
                             command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
                             command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                             count += command.ExecuteNonQuery();
@@ -693,7 +702,7 @@ namespace Excel_Data_Importer_WARS
                         {
                             command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Wartosc_Towarow;
-                            command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 50).Value = "Prowizja za towar";
+                            command.Parameters.Add("@NazwaAtrybutu", SqlDbType.NVarChar, 41).Value = "Prowizja za towar";
                             command.Parameters.Add("@ATHDataOd", SqlDbType.DateTime).Value = Data_Od;
                             command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                             count += command.ExecuteNonQuery();

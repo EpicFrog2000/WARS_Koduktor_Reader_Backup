@@ -59,7 +59,11 @@ namespace Excel_Data_Importer_WARS
             Czas_Przestoju_Płatny_50 = 8,
             Czas_Pracy_Wykonywanej_Zdalnie_Okazjonalnie = 9,
             Czas_Pracy_W_Delegacji = 10,
-            Czas_PracyObsługiRelacji = 11
+            Czas_Pracy_Obsługi_Relacji = 11,
+            Czas_Pracy_Poza_Relacją = 12,
+            Czas_Odpoczynku_Nie_Wliczany_Do_CP = 13,
+            Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP = 14,
+            Czas_Wyjścia_Prywatnego = 15
         }
         public enum Odb_Nadg
         {
@@ -68,7 +72,6 @@ namespace Excel_Data_Importer_WARS
             O_NM = 3,
             W_PŁ = 4,
             W_NP = 5
-
         }
         public enum Typ_Zakladki
         {
@@ -76,7 +79,8 @@ namespace Excel_Data_Importer_WARS
             Tabela_Stawek = 0,
             Karta_Ewidencji_Konduktora = 1,
             Karta_Ewidencji_Pracownika = 2,
-            Grafik_Pracy_Pracownika = 3
+            Grafik_Pracy_Pracownika = 3,
+            Harmonogram_Pracy_Konduktora = 4
         }
 
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)

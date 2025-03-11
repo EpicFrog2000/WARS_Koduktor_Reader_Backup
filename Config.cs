@@ -103,6 +103,30 @@ namespace Excel_Data_Importer_WARS
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
                 return false;
             }
+            else
+            {
+                string configFileContent = File.ReadAllText(Config_File_Path);
+                Dictionary<string, object> currentConfig = JsonSerializer.Deserialize<Dictionary<string, object>>(configFileContent) ?? [];
+                Dictionary<string, object> defaultConfig = new()
+                {
+                    { "Files_Folders", new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files") } },
+                    { "Optima_Conection_String", Optima_Conection_String },
+                    { "Clear_Logs_On_Program_Restart", Clear_Logs_On_Program_Restart },
+                    { "Clear_Processed_Files_On_Restart", Clear_Processed_Files_On_Restart },
+                    { "Clear_Bad_Files_On_Restart", Clear_Bad_Files_On_Restart },
+                    { "Move_Files_To_Processed_Folder", Move_Files_To_Processed_Folder },
+                    { "Clear_Good_Files_On_Restart", Clear_Good_Files_On_Restart },
+                    { "Tryb_Zapetlony", Tryb_Zapetlony }
+                };
+
+                foreach (var key in defaultConfig.Keys)
+                {
+                    if (!currentConfig.ContainsKey(key))
+                    {
+                        currentConfig[key] = defaultConfig[key];
+                    }
+                }
+            }
             return true;
         }
         public bool Check_File(string Config_File_Path)
@@ -123,6 +147,30 @@ namespace Excel_Data_Importer_WARS
                 };
                 File.WriteAllText(Config_File_Path, JsonSerializer.Serialize(defaultConfig, JsonSerializerOptions));
                 return false;
+            }
+            else
+            {
+                string configFileContent = File.ReadAllText(Config_File_Path);
+                Dictionary<string, object> currentConfig = JsonSerializer.Deserialize<Dictionary<string, object>>(configFileContent) ?? [];
+                Dictionary<string, object> defaultConfig = new()
+                {
+                    { "Files_Folders", new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files") } },
+                    { "Optima_Conection_String", Optima_Conection_String },
+                    { "Clear_Logs_On_Program_Restart", Clear_Logs_On_Program_Restart },
+                    { "Clear_Processed_Files_On_Restart", Clear_Processed_Files_On_Restart },
+                    { "Clear_Bad_Files_On_Restart", Clear_Bad_Files_On_Restart },
+                    { "Move_Files_To_Processed_Folder", Move_Files_To_Processed_Folder },
+                    { "Clear_Good_Files_On_Restart", Clear_Good_Files_On_Restart },
+                    { "Tryb_Zapetlony", Tryb_Zapetlony }
+                };
+
+                foreach (var key in defaultConfig.Keys)
+                {
+                    if (!currentConfig.ContainsKey(key))
+                    {
+                        currentConfig[key] = defaultConfig[key];
+                    }
+                }
             }
             return true;
         }

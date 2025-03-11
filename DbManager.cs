@@ -2,6 +2,10 @@
 using DocumentFormat.OpenXml.Vml;
 using System.Threading;
 using Microsoft.Data.SqlClient;
+using System.Runtime.InteropServices;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
+using System.Data;
+using System.Transactions;
 
 namespace Excel_Data_Importer_WARS
 {
@@ -321,6 +325,61 @@ INSERT INTO CDN.PracPlanDniGodz
 	        1,
 	        1,
 	        '');";
+        public static readonly string Insert_Plan_Pracy_Z_Relacja = @"
+DECLARE @id int;
+DECLARE @EXISTSDZIEN INT = (SELECT COUNT([CDN].[PracPlanDni].[PPL_Data]) FROM cdn.PracPlanDni WHERE cdn.PracPlanDni.PPL_PraId = @PRI_PraId and [CDN].[PracPlanDni].[PPL_Data] = @DataInsert)
+IF @EXISTSDZIEN = 0
+BEGIN
+BEGIN TRY
+INSERT INTO [CDN].[PracPlanDni]
+        ([PPL_PraId]
+        ,[PPL_Data]
+        ,[PPL_TS_Zal]
+        ,[PPL_TS_Mod]
+        ,[PPL_OpeModKod]
+        ,[PPL_OpeModNazwisko]
+        ,[PPL_OpeZalKod]
+        ,[PPL_OpeZalNazwisko]
+        ,[PPL_Zrodlo]
+        ,[PPL_TypDnia]
+        ,[PPL_Relacja])
+VALUES
+        (@PRI_PraId
+        ,@DataInsert
+        ,@DataMod
+        ,@DataMod
+        ,@ImieMod
+        ,@NazwiskoMod
+        ,@ImieMod
+        ,@NazwiskoMod
+        ,0
+        ,ISNULL((SELECT TOP 1 KAD_TypDnia FROM cdn.KalendDni WHERE KAD_Data = @DataInsert), 1)
+        ,@NumerRelacji)
+END TRY
+BEGIN CATCH
+END CATCH
+END
+
+SET @id = (select [cdn].[PracPlanDni].[PPL_PplId] from [cdn].[PracPlanDni] where [cdn].[PracPlanDni].[PPL_Data] = @DataInsert and [cdn].[PracPlanDni].[PPL_PraId] = @PRI_PraId);
+INSERT INTO CDN.PracPlanDniGodz
+	        (PGL_PplId,
+	        PGL_Lp,
+	        PGL_OdGodziny,
+	        PGL_DoGodziny,
+	        PGL_Strefa,
+	        PGL_DzlId,
+	        PGL_PrjId,
+	        PGL_UwagiPlanu)
+        VALUES
+	        (@id,
+	        1,
+	        @GodzOdDate,
+	        @GodzDoDate,
+	        @Strefa,
+	        1,
+	        1,
+	        '');";
+
         public static readonly string Check_Duplicate_Plan_Pracy = @"
 IF EXISTS (
 SELECT 1 
@@ -393,7 +452,6 @@ BEGIN
             + ISNULL(CAST(@PracownikNazwiskoInsert AS NVARCHAR(MAX)), N'') + N' '  
             + ISNULL(CAST(@PracownikImieInsert AS NVARCHAR(MAX)), N'') + N' '  
             + ISNULL(CAST(@Akronim AS NVARCHAR(MAX)), N'');
-
         THROW 50003, @ErrorMessage, 1;
     END
 END

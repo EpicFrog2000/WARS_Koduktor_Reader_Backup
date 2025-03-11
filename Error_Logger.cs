@@ -1,5 +1,6 @@
 ﻿namespace Excel_Data_Importer_WARS
 {
+    // TODO dać opcję do throw w trakcie tworzenia błędu
     internal class Error_Logger
     {
         private readonly bool ShowErrorMessageOnWrite;

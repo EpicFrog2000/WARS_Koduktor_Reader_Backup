@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
@@ -12,27 +13,15 @@ namespace Excel_Data_Importer_WARS
         private static Config config = new();
         private static readonly bool LOG_TO_TERMINAL = true;
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        [DllImportAttribute("user32.dll", CharSet = CharSet.Unicode)]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
         [STAThread]
         public static void Main()
         {
-            // Jeśli jest uruchomiona już jedna instancja to zakończ program
-            // Jeśli jest w trakie procesowania pliku możę być on uszkodzony jeśli program zostanie zakończony ale musiał bym się bawić w mutexy i to jest za dużo roboty -_-
-            var processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
-            if (processes.Length > 1)
-            {
-                IntPtr hWnd = (IntPtr)MessageBox(IntPtr.Zero, "Program jest już uruchomiony. Następi jego zamknięcie", "Informacja", 0);
-                SetWindowPos(hWnd, new IntPtr(-1), 0, 0, 0, 0, 0x0002 | 0x0001);
-                foreach (var process in processes) // Strzeli też samobója chyba
-                {
-                    process.Kill();
-                }
-                Environment.Exit(0);
-            }
+            Tylko_Jedna_Instancja();
 
             try
             {
@@ -123,9 +112,11 @@ namespace Excel_Data_Importer_WARS
         {
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
+            
             Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
             Console.ForegroundColor = ConsoleColor.White;
+            
             (XLWorkbook? Workbook, FileStream? Stream) = Open_Workbook(File_Path);
             if (Workbook == null)
             {
@@ -186,14 +177,14 @@ namespace Excel_Data_Importer_WARS
                         case Helper.Typ_Zakladki.Grafik_Pracy_Pracownika:
                             Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
+                        case Helper.Typ_Zakladki.Harmonogram_Pracy_Konduktora:
+                            Reader_Harmonogram_Pracy_Konduktora.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            break;
                         case Helper.Typ_Zakladki.Nierozopznana:
-                            _ = Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path);
-                            Workbook!.Dispose();
-                            Stream!.Close();
-                            Move_File(File_Path, 2);
                             error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
-                            Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
-                            return;
+                            Contains_Any_Bad_Data = true;
+                            _ = Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path);
+                            break;
                     }
                 }
                 catch
@@ -226,6 +217,18 @@ namespace Excel_Data_Importer_WARS
             string Cell_Value = Worksheet.Cell(3, 5).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("Harmonogram pracy"))
             {
+                foreach (IXLCell cell in Worksheet.CellsUsed())
+                {
+                    try
+                    {
+                        if (cell.GetString().Trim() == "Czas odpoczynku (wliczany do CP)")
+                        {
+                            Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                            return Helper.Typ_Zakladki.Harmonogram_Pracy_Konduktora;
+                        }
+                    }
+                    catch { }
+                }
                 Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
@@ -258,11 +261,11 @@ namespace Excel_Data_Importer_WARS
                 return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
-            foreach (IXLCell cell in Worksheet.CellsUsed()) // karta pracy NIE konduktora
+            foreach (IXLCell cell in Worksheet.CellsUsed()) 
             {
                 try
                 {
-                    if (cell.GetString().Trim() == "Dzień")
+                     if (cell.GetString().Trim() == "Dzień") // karta pracy NIE konduktora
                     {
                         Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                         return Helper.Typ_Zakladki.Karta_Ewidencji_Pracownika;
@@ -446,7 +449,7 @@ namespace Excel_Data_Importer_WARS
                 File.Create(errorFilePath);
             }
         }
-        public static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
+        private static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
         {
             // nwm dlaczego textwrap jest zawsze true. Jebać to jest wystarczająco dobre.
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -494,6 +497,24 @@ namespace Excel_Data_Importer_WARS
             //workbook.Properties.Modified = d;
             workbook.SaveAs(outputFilePath);
         } //Kiedyś używane do konwertowania plików xls na xlsx ale w sumie to wyjebane (pora umierać)
+        private static void Tylko_Jedna_Instancja()
+        {
+            // Jeśli jest uruchomiona już jedna instancja to zakończ program
+            // Jeśli jest w trakie procesowania pliku możę być on uszkodzony jeśli program zostanie zakończony ale musiał bym się bawić w mutexy i to jest za dużo roboty -_-
+            Process[] processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+            if (processes.Length > 1)
+            {
+                IntPtr hWnd = (IntPtr)MessageBox(IntPtr.Zero, "Program jest już uruchomiony. Następi jego zamknięcie", "Informacja", 0);
+                SetWindowPos(hWnd, new IntPtr(-1), 0, 0, 0, 0, 0x0002 | 0x0001);
+                foreach (Process process in processes) // Strzeli też samobója chyba
+                {
+                    process.Kill();
+                }
+                Environment.Exit(0);
+            }
+        }
+
+
     }
     static class Pomiar
     {
@@ -606,6 +627,5 @@ namespace Excel_Data_Importer_WARS
             Console.WriteLine($"Pomiar.Avg_Usun_Ukryte_Karty: {Avg_Usun_Ukryte_Karty}");
         }
     }
-
 }
 
