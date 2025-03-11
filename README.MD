@@ -171,9 +171,9 @@ Działanie programu:
      
 ### Error_Logger.cs
 - `public Error_Logger(bool showmsg)`: przy tworzeniu obiektu parametr showmsg określa czy w trakcie wykrycia nowego błędu program ma wypisać go w terminalu.
-- `public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "")`: Tworzy i zapisuje nowy błąd do pliku Errors.txt wg przekazanych parametrów.
+- `public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "",  bool throwError = true)`: Tworzy i zapisuje nowy błąd do pliku Errors.txt wg przekazanych parametrów i rzuca wyjątek.
 - `public string Get_Error_String()`: Zwraca Wiadomość błędu utworzoną przez ostatnie użycie metody New_Error().
-- `public void New_Custom_Error(string Error_Msg)`: Zapisuje przekazaną wiadomość jako nowy błąd do pliku Errors.txt.
+- `public void New_Custom_Error(string Error_Msg,  bool throwError = true)`: Zapisuje przekazaną wiadomość jako nowy błąd do pliku Errors.txt i rzuca wyjątek.
 - `public void Set_Error_File_Path(string New_Error_File_Path)`: Ustawia scierzkę do pliku do którego mają być zapisywanie błędy.
 - `private void Append_Error_To_File()`: Dodaje tekst do pliku z błędami
 
