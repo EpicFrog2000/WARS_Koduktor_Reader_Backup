@@ -79,7 +79,6 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(dane))
             {
                 Internal_Error_Logger.New_Error(dane, "Imie Nazwisko", pozycja.Col + 2, pozycja.Row - 1, "Brak Imienia i Nazwiska");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             else
             {
@@ -92,7 +91,6 @@ namespace Excel_Data_Importer_WARS
                 else
                 {
                     Internal_Error_Logger.New_Error(dane, "Imie Nazwisko", pozycja.Col + 2, pozycja.Row - 1, "Zły format w polu Imienia i Nazwiska");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
             }
 
@@ -101,7 +99,6 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(dane))
             {
                 Internal_Error_Logger.New_Error(dane, "Data", pozycja.Col + 4, pozycja.Row - 1, "Brak Daty");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             else
             {
@@ -112,18 +109,15 @@ namespace Excel_Data_Importer_WARS
                     if (Harmonogram_Pracy_Konduktora.Miesiac == 0)
                     {
                         Internal_Error_Logger.New_Error(dane, "Data(Miesiac)", pozycja.Col + 4, pozycja.Row - 1, "Zły format w polu Data (Miesiac)");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     if (!Helper.Try_Get_Type_From_String<int>(Sdane[1], ref Harmonogram_Pracy_Konduktora.Rok))
                     {
                         Internal_Error_Logger.New_Error(dane, "Data(Rok)", pozycja.Col + 4, pozycja.Row - 1, "Zły format w polu Data (Rok)");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
                 else
                 {
                     Internal_Error_Logger.New_Error(dane, "Data", pozycja.Col + 4, pozycja.Row - 1, "Zły format w polu Data");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
             }
         }
@@ -143,7 +137,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<int>(Dzien, ref Dane_Harmonogramu.Dzien))
                 {
                     Internal_Error_Logger.New_Error(Dzien, "Dzien", pozycja.Col, pozycja.Row + offset, "Zły format w polu Dzien miesiaca");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 string dane = Zakladka.Cell(pozycja.Row + offset, pozycja.Col + 2).GetFormattedString().Trim().Replace("  ", " ");
                 if (!string.IsNullOrEmpty(dane))
@@ -160,7 +153,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Absencja.RodzajAbsencji.TryParse(Dane_Harmonogramu.Absencja.Nazwa, out Dane_Harmonogramu.Absencja.Rodzaj_Absencji))
                         {
                             Internal_Error_Logger.New_Error(dane, "Rodzaj Absencji", pozycja.Col + 1, pozycja.Row + offset, "Nierozpoznany rodzaj absencji");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                         Dane_Harmonogramu.Absencja.Dzien = Dane_Harmonogramu.Dzien;
                         Dane_Harmonogramu.Absencja.Miesiac = Harmonogram_Pracy_Konduktora.Miesiac;
@@ -175,7 +167,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Godzina_Rozpoczecia_Pracy))
                     {
                         Internal_Error_Logger.New_Error(dane, "Godzina Rozpoczecia Pracy", pozycja.Col + 4, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -185,7 +176,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Godzina_Zakonczenia_Pracy))
                     {
                         Internal_Error_Logger.New_Error(dane, "Godzina Zakonczenia Pracy", pozycja.Col + 5, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -195,7 +185,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Czas_Pracy_Poza_Relacja_Od))
                     {
                         Internal_Error_Logger.New_Error(dane, "Czas Pracy Poza Relacja Od", pozycja.Col + 8, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -205,7 +194,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Czas_Pracy_Poza_Relacja_Do))
                     {
                         Internal_Error_Logger.New_Error(dane, "Czas Pracy Poza Relacja Do", pozycja.Col + 9, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -215,7 +203,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Czas_Odpoczynku_Wliczany_Do_CP_Od))
                     {
                         Internal_Error_Logger.New_Error(dane, "Czas Odpoczynku Wliczany Do CP Od", pozycja.Col + 10, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -225,7 +212,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Czas_Odpoczynku_Wliczany_Do_CP_Do))
                     {
                         Internal_Error_Logger.New_Error(dane, "Czas Odpoczynku Wliczany Do CP Do", pozycja.Col + 11, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -235,7 +221,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Od))
                     {
                         Internal_Error_Logger.New_Error(dane, "Czas Odpoczynku Nie Wliczany Do CP Od", pozycja.Col + 12, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -245,7 +230,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref Dane_Harmonogramu.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Do))
                     {
                         Internal_Error_Logger.New_Error(dane, "Czas Odpoczynku Nie Wliczany Do CP Do", pozycja.Col + 13, pozycja.Row + offset, "Zły format");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
                 Harmonogram_Pracy_Konduktora.Dane_Harmonogramu.Add(Dane_Harmonogramu);
@@ -316,19 +300,16 @@ namespace Excel_Data_Importer_WARS
                     {
                         transaction.Rollback();
                         Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
                     catch (FormatException ex)
                     {
                         transaction.Rollback();
                         Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
                         Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
                 }
             }
@@ -347,20 +328,17 @@ namespace Excel_Data_Importer_WARS
                 {
                     transaction.Rollback();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
                 catch (FormatException ex)
                 {
 
                     transaction.Rollback();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
             }
             

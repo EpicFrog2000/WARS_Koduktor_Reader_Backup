@@ -74,7 +74,6 @@ namespace Excel_Data_Importer_WARS
                             catch
                             {
                                 Internal_Error_Logger.New_Error(dane, "Naglowek", pozycja.Col + 3, pozycja.Row - 5, "Zły format pliku");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }// xddddddddddd
@@ -82,7 +81,6 @@ namespace Excel_Data_Importer_WARS
                     if (grafik.Miesiac < 1)
                     {
                         Internal_Error_Logger.New_Error(dane, "Miesiac", pozycja.Col + 3, pozycja.Row + rowOffset, "Błędna wartość w miesiac");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
 
@@ -90,7 +88,6 @@ namespace Excel_Data_Importer_WARS
                     if (string.IsNullOrEmpty(dane))
                     {
                         Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Brak wartości w komórce");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
                     if (int.TryParse(dane, out int tmprok))
@@ -98,14 +95,12 @@ namespace Excel_Data_Importer_WARS
                         if (tmprok < 1900)
                         {
                             Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Błędna wartość w rok");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                         grafik.Rok = tmprok;
                     }
                     else
                     {
                         Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Błędna wartość w rok");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
                     grafik.Pracownik = Get_Pracownik(Zakladka, new Helper.Current_Position { Row = Startpozycja.Row, Col = Startpozycja.Col + ((counter * 3) + 1) });
@@ -130,7 +125,6 @@ namespace Excel_Data_Importer_WARS
             else
             {
                 Internal_Error_Logger.New_Custom_Error($"Zły format pliku, nie znaleniono żadnych grafików z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                throw new Exception($"Zły format pliku, nie znaleniono żadnych grafików z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
 
         }
@@ -223,7 +217,6 @@ namespace Excel_Data_Importer_WARS
                     else
                     {
                         Internal_Error_Logger.New_Error(pole1, "Imie nazwisko akronim", pozycja.Col, pozycja.Row, "Błędny format danych w komórkach imie nazwisko akronim");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
             }
@@ -254,7 +247,6 @@ namespace Excel_Data_Importer_WARS
                 if(!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref dane_Dnia.Godzina_Pracy_Od))
                 {
                     Internal_Error_Logger.New_Error(dane, "Godzina pracy od", pozycja.Col, pozycja.Row, "Błędna wartość w godzinie pracy od");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 dane = worksheet.Cell(pozycja.Row, pozycja.Col + 1).GetFormattedString().Trim();
@@ -266,7 +258,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<TimeSpan>(dane, ref dane_Dnia.Godzina_Pracy_Do))
                 {
                     Internal_Error_Logger.New_Error(dane, "Godzina pracy do", pozycja.Col + 1, pozycja.Row, "Błędna wartość w godzinie pracy do");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 Dane_Dni.Add(dane_Dnia);
                 pozycja.Row += 1;
@@ -307,19 +298,16 @@ namespace Excel_Data_Importer_WARS
                                 {
                                     transaction.Rollback();
                                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                                 }
                                 catch (FormatException ex)
                                 {
                                     transaction.Rollback();
                                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                                 }
                                 catch (Exception ex)
                                 {
                                     transaction.Rollback();
                                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                                 }
 
                             }
@@ -335,20 +323,17 @@ namespace Excel_Data_Importer_WARS
                             {
                                 transaction.Rollback();
                                 Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
                             catch (FormatException ex) 
                             {
 
                                 transaction.Rollback();
                                 Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
                             catch (Exception ex)
                             {
                                 transaction.Rollback();
                                 Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                             }
                         }
                     }

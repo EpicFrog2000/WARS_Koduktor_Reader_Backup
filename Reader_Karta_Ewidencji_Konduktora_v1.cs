@@ -205,13 +205,11 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(dane))
             {
                 Internal_Error_Logger.New_Error(dane, "Naglowek", Pozycja.Col, Pozycja.Row - 3, "Program nie znalazł naglowka karty");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             Karta_Ewidencji.Set_Date(dane);
             if (Karta_Ewidencji.Miesiac < 1 || Karta_Ewidencji.Rok == 0)
             {
                 Internal_Error_Logger.New_Error(dane, "Naglowek", Pozycja.Col, Pozycja.Row - 3, "Zły format naglowka, nie wczytano miesiaca lub roku");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
 
             dane = Zakladka.Cell(Pozycja.Row - 2, Pozycja.Col + 22).GetFormattedString().Trim().Replace("  ", " ");
@@ -232,7 +230,6 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(Karta_Ewidencji.Pracownik.Akronim) && string.IsNullOrEmpty(Karta_Ewidencji.Pracownik.Imie))
             {
                 Internal_Error_Logger.New_Error(dane, "Imie Nazwisko Akronim", Pozycja.Col + 22, Pozycja.Row - 2, "Program nie znalazł imienia nazwiska i akronimu karty");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
         }
         private static void Get_Dane_Miesiaca(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
@@ -242,7 +239,6 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(dane))
             {
                 Internal_Error_Logger.New_Error(dane, "Dzien", Pozycja.Col, Pozycja.Row, "Program nie znalazł danych dnia miesiaca karty");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             int Row_Offset = 0;
             while (true) // skip puste pierwsze rzędy
@@ -260,7 +256,6 @@ namespace Excel_Data_Importer_WARS
                 if(dane.Contains("Relacja z poprzedniego miesiąca"))
                 {
                     Internal_Error_Logger.New_Error(dane, "Numer relacji", Pozycja.Col + 1, Pozycja.Row + Row_Offset, $"Proszę wpisać poprawny nr relacji oraz jej opis zamiast {dane}");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 Dane_Karty Dane_Karty = new();
                 Dane_Karty.Relacja.Numer_Relacji = dane;
@@ -268,7 +263,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<string>(dane, ref Dane_Karty.Relacja.Opis_Relacji_1))
                 {
                     Internal_Error_Logger.New_Error(dane, "Opis Relacji", Pozycja.Col + 2, Pozycja.Row + Row_Offset, "Program nie znalazł opisu do relacji");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 do // exit na brak nr dnia
@@ -279,7 +273,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<int>(dzien, ref Dane_Dnia.Dzien))
                     {
                         Internal_Error_Logger.New_Error(dzien, "Dzien", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia miesiaca");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
                     //godz pracy od
@@ -292,7 +285,6 @@ namespace Excel_Data_Importer_WARS
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Pracy_Od))
                             {
                                 Internal_Error_Logger.New_Error(part, "Godziny Pracy Od", Pozycja.Col + 4, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Od");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -307,7 +299,6 @@ namespace Excel_Data_Importer_WARS
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Pracy_Do))
                             {
                                 Internal_Error_Logger.New_Error(part, "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Do");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -322,7 +313,6 @@ namespace Excel_Data_Importer_WARS
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Odpoczynku_Od))
                             {
                                 Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Od", Pozycja.Col + 6, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Od");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -336,7 +326,6 @@ namespace Excel_Data_Importer_WARS
                             if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Odpoczynku_Do))
                             {
                                 Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Do");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                         }
                     }
@@ -347,7 +336,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_50))
                         {
                             Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych 50", Pozycja.Col + 13, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych 50");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     //nadg 100
@@ -357,7 +345,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_100))
                         {
                             Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych 100", Pozycja.Col + 14, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych 100");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     //nadg rycz 50
@@ -367,7 +354,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50))
                         {
                             Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych W Ryczalcie 50", Pozycja.Col + 15, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych W Ryczalcie 50");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     //nadg rycz 100
@@ -377,7 +363,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100))
                         {
                             Internal_Error_Logger.New_Error(dane, "Liczba Godzin Nadliczbowych W Ryczalcie 100", Pozycja.Col + 16, Pozycja.Row + Row_Offset, "Zły format Liczba Godzin Nadliczbowych W Ryczalcie 100");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                     Dane_Karty.Dane_Dni_Relacji.Add(Dane_Dnia);
@@ -413,16 +398,13 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<int>(dzien, ref Absencja.Dzien))
                 {
                     Internal_Error_Logger.New_Error(dzien, "Dzien Absencji", Pozycja.Col, Pozycja.Row + Row_Offset, "Zły format Dnia absencji");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 if (!Helper.Try_Get_Type_From_String<string>(dane.ToUpper(), ref Absencja.Nazwa))
                 {
                     Internal_Error_Logger.New_Error(dane, "Nazwa Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Zły format Nazwy absencji");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 if(!Absencja.RodzajAbsencji.TryParse(Absencja.Nazwa, out Absencja.Rodzaj_Absencji)){
                     Internal_Error_Logger.New_Error(dane, "Rodzaj Absencji", Pozycja.Col + 17, Pozycja.Row + Row_Offset, "Nierozpoznany rodzaj absencji");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 18).GetFormattedString().Trim().Replace("  ", " ");
@@ -527,7 +509,6 @@ namespace Excel_Data_Importer_WARS
                 {
                     connection.Close();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
@@ -560,15 +541,13 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
                 transaction.Rollback();
-                throw;
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 transaction.Rollback();
-                throw;
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
             }
             return 0;
         }
@@ -641,7 +620,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref parsed_wartosc))
                     {
                         Internal_Error_Logger.New_Error(dane, "Wartość Towarów", pozycja.Col + 23, pozycja.Row + offset);
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     suma_wart_towarow += parsed_wartosc;
                 }
@@ -652,7 +630,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref parsed_wartosc))
                     {
                         Internal_Error_Logger.New_Error(dane, "Liczba Napojow Awaryjnych", pozycja.Col + 24, pozycja.Row + offset);
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     Liczba_Napojow_Awaryjnych += parsed_wartosc;
                 }
@@ -681,7 +658,6 @@ namespace Excel_Data_Importer_WARS
                     {
                         connection.Close();
                         Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
 
                     if(Prowizja.Suma_Liczba_Napojow_Awaryjnych > 0)
@@ -713,15 +689,13 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Prowizje): {ex.Message}");
                 transaction.Rollback();
-                throw;
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Prowizje): {ex.Message}");
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 transaction.Rollback();
-                throw;
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
             }
             return count;
         }

@@ -51,7 +51,7 @@
         /// <summary>
         /// Tworzy wiadomość z podanych parametrów i dodaje wiadomość o błędzie do pliku z errorami.
         /// </summary>
-        public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "", bool throwError = false)
+        public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "", bool throwError = true)
         {
             Poprawna_Wartosc_Pola = nazwaPola!;
             Wartosc_Pola = wartoscPola!;
@@ -109,7 +109,7 @@
         /// <summary>
         /// Wpisuje do pliku z errorami wiadomość z parametru.
         /// </summary>
-        public void New_Custom_Error(string Error_Msg, bool throwError = false)
+        public void New_Custom_Error(string Error_Msg, bool throwError = true)
         {
             Error_Msg = $"-------------------------------------------------------------------------------{Environment.NewLine}{Error_Msg}{Environment.NewLine}-------------------------------------------------------------------------------{Environment.NewLine}";
             Append_Error_To_File(Error_Msg);

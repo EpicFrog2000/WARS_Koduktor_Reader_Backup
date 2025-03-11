@@ -93,7 +93,6 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(dane))
             {
                 Internal_Error_Logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row, "Brak opisu relacji");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             Relacja.Opis_Relacji_1 = dane;
 
@@ -101,7 +100,6 @@ namespace Excel_Data_Importer_WARS
             if (string.IsNullOrEmpty(dane))
             {
                 Internal_Error_Logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row + 1, "Brak opisu relacji");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             Relacja.Opis_Relacji_2 = dane;
         }
@@ -131,7 +129,6 @@ namespace Excel_Data_Importer_WARS
                 if (string.IsNullOrEmpty(dane))
                 {
                     Internal_Error_Logger.New_Error(dane, "Opis Relacji", pozycja.Col + 1, pozycja.Row + offset, "Brak Opisu Relacji");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
                 System_Obsługi_Relacji.Relacja.Opis_Relacji_1 = dane;
 
@@ -140,7 +137,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe))
                 {
                     Internal_Error_Logger.New_Error(dane, "Wynagrodzenie ryczałtowe podstawowe", pozycja.Col + 10, pozycja.Row + offset);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Wynagrodzenie ryczałtowe za godz. nadliczbowe
@@ -148,7 +144,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe))
                 {
                     Internal_Error_Logger.New_Error(dane, "Wynagrodzenie ryczałtowe za godz. nadliczbow", pozycja.Col + 11, pozycja.Row + offset);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Dodatek za pracę w nocy
@@ -156,7 +151,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy))
                 {
                     Internal_Error_Logger.New_Error(dane, "Dodatek za pracę w nocy", pozycja.Col + 12, pozycja.Row + offset);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Wynagrodzenie Calkowite
@@ -164,7 +158,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Całkowite))
                 {
                     Internal_Error_Logger.New_Error(dane, "Wynagrodzenie Calkowite", pozycja.Col + 13, pozycja.Row + offset);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 // Dodatek wyjazdowy
@@ -172,7 +165,6 @@ namespace Excel_Data_Importer_WARS
                 if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy))
                 {
                     Internal_Error_Logger.New_Error(dane, "Dodatek wyjazdowy", pozycja.Col + 14, pozycja.Row + offset);
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 offset++;
@@ -236,12 +228,10 @@ namespace Excel_Data_Importer_WARS
                             catch (SqlException ex)
                             {
                                 Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie (Insert_Relacja_Do_Optimy): {ex.Message}");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
                             catch (Exception ex)
                             {
                                 Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
-                                throw new Exception(Internal_Error_Logger.Get_Error_String());
                             }
 
                             foreach (System_Obsługi_Relacji System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
@@ -253,12 +243,10 @@ namespace Excel_Data_Importer_WARS
                                 catch (SqlException ex)
                                 {
                                     Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): {ex.Message}");
-                                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                                 }
                                 catch (Exception ex)
                                 {
                                     Internal_Error_Logger.New_Custom_Error($"Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): {ex.Message}");
-                                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                                 }
                             }
                             Insert_Atrybuty_Do_Optimy(Relacja, connection, transaction);
@@ -269,13 +257,11 @@ namespace Excel_Data_Importer_WARS
                     {
                         transaction.Rollback();
                         Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): {ex.Message}");
-                        throw;
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
                         Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
-                        throw;
                     }
                 }
             }
@@ -297,13 +283,12 @@ namespace Excel_Data_Importer_WARS
             catch (SqlException ex)
             {
                 Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Command_Atrybuty): {ex.Message}");
-                throw;
             }
             catch (Exception ex)
             {
                 Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
-                throw;
             }
+            return 0;
         }
     }
 }

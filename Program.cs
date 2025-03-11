@@ -181,7 +181,7 @@ namespace Excel_Data_Importer_WARS
                             Reader_Harmonogram_Pracy_Konduktora.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Nierozopznana:
-                            error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"");
+                            error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"", false);
                             Contains_Any_Bad_Data = true;
                             _ = Copy_Bad_Sheet_To_Files_Folder(Workbook.Properties, Zakladka, File_Path);
                             break;
@@ -368,7 +368,7 @@ namespace Excel_Data_Importer_WARS
             }
             catch
             {
-                error_logger.New_Custom_Error($"Nie udało się przenieść pliku: {filePath}");
+                error_logger.New_Custom_Error($"Nie udało się przenieść pliku: {filePath}", false);
             }
             finally
             {
