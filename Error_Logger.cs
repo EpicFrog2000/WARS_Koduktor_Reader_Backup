@@ -1,6 +1,6 @@
 ﻿namespace Excel_Data_Importer_WARS
 {
-    // TODO dać opcję do throw w trakcie tworzenia błędu
+
     internal class Error_Logger
     {
         private readonly bool ShowErrorMessageOnWrite;
@@ -51,7 +51,7 @@
         /// <summary>
         /// Tworzy wiadomość z podanych parametrów i dodaje wiadomość o błędzie do pliku z errorami.
         /// </summary>
-        public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "")
+        public void New_Error(string? wartoscPola = "", string? nazwaPola = "", int kolumna = -1, int rzad = -1, string? optionalmsg = "", bool throwError = false)
         {
             Poprawna_Wartosc_Pola = nazwaPola!;
             Wartosc_Pola = wartoscPola!;
@@ -62,6 +62,10 @@
             if (ShowErrorMessageOnWrite)
             {
                 Console.WriteLine(Get_Error_String());
+            }
+            if (throwError)
+            {
+                throw new Exception(Get_Error_String());
             }
         }
 
@@ -105,13 +109,17 @@
         /// <summary>
         /// Wpisuje do pliku z errorami wiadomość z parametru.
         /// </summary>
-        public void New_Custom_Error(string Error_Msg)
+        public void New_Custom_Error(string Error_Msg, bool throwError = false)
         {
             Error_Msg = $"-------------------------------------------------------------------------------{Environment.NewLine}{Error_Msg}{Environment.NewLine}-------------------------------------------------------------------------------{Environment.NewLine}";
             Append_Error_To_File(Error_Msg);
             if (ShowErrorMessageOnWrite)
             {
                 Console.WriteLine(Error_Msg);
+            }
+            if (throwError)
+            {
+                throw new Exception(Get_Error_String());
             }
         }
 

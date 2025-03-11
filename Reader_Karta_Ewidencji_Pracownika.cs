@@ -269,7 +269,6 @@ namespace Excel_Data_Importer_WARS
             if (Karta_Ewidencji_Pracownika.Miesiac == 0 || Karta_Ewidencji_Pracownika.Rok == 0)
             {
                 Internal_Error_Logger.New_Error(dane, "data", StartKarty.Col + 11, StartKarty.Row - 3, $"Nie wykryto daty w pliku. Oczekiwana dat między kolumna[{StartKarty.Col + 4}] rząd[{StartKarty.Row - 3}] a kolumna[{StartKarty.Col + 4 + 11}] rząd[{StartKarty.Row - 3}]");
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
 
             dane = string.Empty;
@@ -295,7 +294,6 @@ namespace Excel_Data_Importer_WARS
                 if (string.IsNullOrEmpty(Karta_Ewidencji_Pracownika.Pracownik.Imie) && string.IsNullOrEmpty(Karta_Ewidencji_Pracownika.Pracownik.Nazwisko))
                 {
                     Internal_Error_Logger.New_Error(dane, "nazwisko i imie", StartKarty.Col, StartKarty.Row - 2, $"Nie znaleziono pola z nazwiskiem i imieniem między kolumna[{StartKarty.Col}] rząd[{StartKarty.Row - 2}] a kolumna[{StartKarty.Col + 5}] rząd[{StartKarty.Row - 2}]");
-                    throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
                 Found:
@@ -344,7 +342,7 @@ namespace Excel_Data_Importer_WARS
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Error(dane, "Imie nazwisko akronim", StartKarty.Row - 2, StartKarty.Col, "Nieznany format");
+                Internal_Error_Logger.New_Error(dane, "Imie nazwisko akronim", StartKarty.Row - 2, StartKarty.Col, "Nieznany format", false);
                 throw new Exception($"{ex}, {Internal_Error_Logger.Get_Error_String()}");
             }
 
@@ -527,7 +525,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(d, ref Dane_Karty.Godziny_Rozpoczecia_Pracy))
                         {
                             Internal_Error_Logger.New_Error(dane, "Godzina Rozpoczęcia pracy", Pozycja.Col + 1, Pozycja.Row, "Zły format Godziny");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                 }
@@ -541,7 +538,6 @@ namespace Excel_Data_Importer_WARS
                         if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(d, ref Dane_Karty.Godziny_Zakonczenia_Pracy))
                         {
                             Internal_Error_Logger.New_Error(dane, "Godzina Zakończenia pracy", Pozycja.Col + 2, Pozycja.Row, "Zły format Godziny");
-                            throw new Exception(Internal_Error_Logger.Get_Error_String());
                         }
                     }
                 }
@@ -559,12 +555,10 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<string>(dane.ToUpper(), ref Absencja.Nazwa))
                     {
                         Internal_Error_Logger.New_Error(dane, "Nazwa Absencji", Pozycja.Col + 3, Pozycja.Row, "Zły format Nazwy absencji");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     if (!Absencja.RodzajAbsencji.TryParse(Absencja.Nazwa, out Absencja.Rodzaj_Absencji))
                     {
                         Internal_Error_Logger.New_Error(dane, "Rodzaj Absencji", Pozycja.Col + 3, Pozycja.Row, "Nierozpoznany rodzaj absencji");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
 
                     dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col + 7).GetFormattedString().Trim().Replace("  ", " ");
@@ -592,7 +586,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Karty.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach))
                     {
                         Internal_Error_Logger.New_Error(dane, "Liczba Godzin Do Odbioru Za Prace W Nadgodzinach", Pozycja.Col + 5, Pozycja.Row, "Zły format Liczba Godzin Do Odbioru Za Prace W Nadgodzinach");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -603,7 +596,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50))
                     {
                         Internal_Error_Logger.New_Error(dane, "Godziny Nadliczbowe Platne Z Dodatkiem 50", Pozycja.Col + 9, Pozycja.Row, "Zły format Godziny Nadliczbowe Platne Z Dodatkiem 50");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
 
@@ -614,7 +606,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<decimal>(dane, ref Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100))
                     {
                         Internal_Error_Logger.New_Error(dane, "Godziny Nadliczbowe Platne Z Dodatkiem 100", Pozycja.Col + 10, Pozycja.Row, "Zły format Godziny Nadliczbowe Platne Z Dodatkiem 100");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                 }
                 Pozycja.Row++;
@@ -760,7 +751,6 @@ namespace Excel_Data_Importer_WARS
                 {
                     connection.Close();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
@@ -792,15 +782,13 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
                 transaction.Rollback();
-                throw;
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
                 transaction.Rollback();
-                throw;
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
             }
             return 0;
         }
@@ -856,19 +844,16 @@ namespace Excel_Data_Importer_WARS
                             transaction.Rollback();
 
                             Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                                                 }
                         catch (FormatException ex)
                         {
                             transaction.Rollback();
                             Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                         catch (Exception ex)
                         {
                             transaction.Rollback();
                             Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                     }
                 }
@@ -888,7 +873,6 @@ namespace Excel_Data_Importer_WARS
                     if (!Helper.Try_Get_Type_From_String<string>(dane, ref Uwaga))
                     {
                         Internal_Error_Logger.New_Error(dane, "Uwaga karty", Pozycja.Col, Pozycja.Row, "Błąd w trakcie wczytywania uwagi karty");
-                        throw new Exception(Internal_Error_Logger.Get_Error_String());
                     }
                     return Uwaga;
                 }
@@ -909,17 +893,16 @@ namespace Excel_Data_Importer_WARS
                 }
                 catch (SqlException ex)
                 {
-                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}");
                     transaction.Rollback();
-                    throw;
+                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    Internal_Error_Logger.New_Custom_Error($"Error(Update_Opis_Karty): {ex.Message}");
                     transaction.Rollback();
-                    throw;
+                    Internal_Error_Logger.New_Custom_Error($"Error(Update_Opis_Karty): {ex.Message}");
                 }
-            }            
+            }
+            return false;
         }
     }
 }
