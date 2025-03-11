@@ -318,7 +318,7 @@ namespace Excel_Data_Importer_WARS
             {
                 try
                 {
-                    // TODO inne strefy do innych godzin
+                    // TODO, zapytać Wero czy tak może być żę w jednym dniu jest kilka rekordów o różnych strefach na 00:00, no bo w sumie to jak inaczej zrobić zerówki, nie da sie
                     dodano += Zrob_Insert_Plan_command(connection, transaction, Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Godzina_Rozpoczecia_Pracy, Dane_Harmonogramu.Godzina_Zakonczenia_Pracy, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Harmonogramu.Relacja.Numer_Relacji);
                     dodano += Zrob_Insert_Plan_command(connection, transaction, Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Czas_Pracy_Poza_Relacja_Od, Dane_Harmonogramu.Czas_Pracy_Poza_Relacja_Do, Helper.Strefa.Czas_Pracy_Poza_Relacją, Dane_Harmonogramu.Relacja.Numer_Relacji);
                     dodano += Zrob_Insert_Plan_command(connection, transaction, Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Czas_Odpoczynku_Wliczany_Do_CP_Od, Dane_Harmonogramu.Czas_Odpoczynku_Wliczany_Do_CP_Do, Helper.Strefa.Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP, Dane_Harmonogramu.Relacja.Numer_Relacji);
@@ -340,8 +340,7 @@ namespace Excel_Data_Importer_WARS
                     transaction.Rollback();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
-            }
-            
+            }            
             transaction.Commit();
             return dodano;
         }
@@ -383,5 +382,5 @@ namespace Excel_Data_Importer_WARS
     }
 }
 // TODO NA BAZIE TESTOWEJ ORAZ PROD:
-//ALTER TABLE cdn.PracPlanDni
-//ADD PPL_Relacja VARCHAR(100);
+// ALTER TABLE cdn.PracPlanDni
+// ADD PPL_Relacja VARCHAR(100);

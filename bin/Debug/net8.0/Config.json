@@ -1,9 +1,0 @@
-{
-  "Files_Folders": [
-    "E:\\ITEGER\\Praca\\KonduktorReader\\bin\\Debug\\net8.0\\Files"
-  ],
-  "Optima_Conection_String": "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;\r\n",
-  "Clear_Logs_On_Program_Restart": false,
-  "Clear_Processed_Files_On_Restart": true,
-  "Clear_Bad_Files_On_Restart": true
-}
