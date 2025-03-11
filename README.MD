@@ -5,7 +5,6 @@ Program służy do automatycznego importowania danych z plików Excel do bazy da
 #### Jakie są wyniki programu?
 [Zobacz dokument](Dokumentacja.docx)
 
-
 #### Jakie dane przetwarza?
 
 Grafiki pracy pracowników – harmonogramy pracy, w tym zaplanowane absencje.
