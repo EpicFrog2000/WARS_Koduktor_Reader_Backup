@@ -250,15 +250,15 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): {ex.Message}", false);
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
+                throw new Exception($"Error podczas operacji w bazie(Insert_Dane_Stawek_Do_Optimy): {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
+                throw new Exception($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
         }
         private static int Insert_Command_Atrybuty(string wartosc, string Nazwa_Atrybutu, DateTime Data_Od, DateTime Data_Do)

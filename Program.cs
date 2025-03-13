@@ -4,6 +4,8 @@ using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using static Excel_Data_Importer_WARS.DbManager;
 
 namespace Excel_Data_Importer_WARS
 {
@@ -11,7 +13,7 @@ namespace Excel_Data_Importer_WARS
     {
         private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static Config config = new();
-        private static readonly bool LOG_TO_TERMINAL = true;
+        private static readonly bool LOG_TO_TERMINAL = false;
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
@@ -75,28 +77,22 @@ namespace Excel_Data_Importer_WARS
                         Console.WriteLine($"Program nie znalazł folderu: {Folder_Path}");
                         continue;
                     }
-                    string[] Files_Paths = Directory.GetFiles(Folder_Path);
-                    if (Files_Paths.Length < 1)
-                    {
-                        Console.WriteLine($"Program nie znalazł żadnych plików w folderze: {Folder_Path}");
-                        continue;
-                    }
 
                     Check_Base_Dirs(Folder_Path);
 
-                    foreach (string filepath in Files_Paths)
+
+                    DbManager.OpenConnection();
+
+                    var files = Directory.EnumerateFiles(Folder_Path, "*.xlsx").ToList();
+
+                    const int batchSize = 8;
+                    for (int i = 0; i < files.Count; i += batchSize)
                     {
-                        DbManager.OpenConnection();
-                        await Process_Files(filepath);
-                        DbManager.CloseConnection();
+                        var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file));
+                        await Task.WhenAll(batch);
                     }
 
-                    //await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
-                    //{
-                    //    await Task.Run(() => Process_Files(filePath));
-                    //});
-
-                    //await Task.WhenAll(Files_Paths.Select(filePath => Process_Files(filePath)).ToList());
+                    DbManager.CloseConnection();
                 }
             } while (config.Tryb_Zapetlony);
 
@@ -118,19 +114,15 @@ namespace Excel_Data_Importer_WARS
             Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
             Console.ForegroundColor = ConsoleColor.White;
             
-            (XLWorkbook? Workbook, FileStream? Stream) = Open_Workbook(File_Path);
+            XLWorkbook? Workbook = await Open_Workbook(File_Path);
             if (Workbook == null)
             {
-                if (Stream != null)
-                {
-                    Stream!.Close();
-                }
                 Move_File(File_Path, Move_File_Opcje.Bad_Files_Folder);
                 Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 return;
             }
 
-            Usun_Ukryte_Karty(Workbook);
+            //Usun_Ukryte_Karty(Workbook);
 
             Error_Logger Internal_Error_Logger = new(true)
             {
@@ -151,7 +143,6 @@ namespace Excel_Data_Importer_WARS
             {
                 Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 Workbook!.Dispose();
-                Stream!.Close();
                 return;
             }
             
@@ -161,6 +152,10 @@ namespace Excel_Data_Importer_WARS
             {
                 Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
                 IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
+                if (Zakladka.Visibility == XLWorksheetVisibility.Hidden || Zakladka.Visibility == XLWorksheetVisibility.VeryHidden)
+                {
+                    continue;
+                }
                 Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
                 Helper.Typ_Zakladki Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
                 try
@@ -203,7 +198,6 @@ namespace Excel_Data_Importer_WARS
                 }
             }
             Workbook!.Dispose();
-            Stream!.Close();
             if (!Contains_Any_Bad_Data)
             {
                 Move_File(File_Path, Move_File_Opcje.Good_Files_Folder);
@@ -299,17 +293,18 @@ namespace Excel_Data_Importer_WARS
             Pomiar.Avg_Get_Metadane_Pliku = PomiaryStopWatch.Elapsed;
             return (lastModifiedBy, lastWriteTime);
         }
-        private static (XLWorkbook?, FileStream?) Open_Workbook(string File_Path)
+        private static async Task<XLWorkbook?> Open_Workbook(string File_Path)
         {
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
             XLWorkbook Workbook;
             try
             {
-                FileStream stream = new(File_Path, FileMode.Open, FileAccess.ReadWrite, FileShare.None, bufferSize: 8192);
-                Workbook = new(stream);
+                byte[] fileBytes = await File.ReadAllBytesAsync(File_Path);
+                using var memoryStream = new MemoryStream(fileBytes);
+                Workbook = new(memoryStream);
                 Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
-                return (Workbook, stream);
+                return Workbook;
             }
             catch
             {
@@ -317,7 +312,7 @@ namespace Excel_Data_Importer_WARS
                 Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
                 Console.ForegroundColor = ConsoleColor.White;
                 Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
-                return (null, null);
+                return null;
             }
         }
         private static void Move_File(string filePath, Move_File_Opcje opcja)

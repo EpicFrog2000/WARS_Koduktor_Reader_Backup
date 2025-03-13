@@ -788,15 +788,15 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
+                throw new Exception($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
             catch (Exception ex)
             {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
-                throw new Exception(Internal_Error_Logger.Get_Error_String());
+                throw new Exception($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
             return 0;
         }
@@ -903,15 +903,15 @@ namespace Excel_Data_Importer_WARS
                 }
                 catch (SqlException ex)
                 {
-                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}", false);
+                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                     DbManager.Transaction_Manager.RollBack_Transaction();
-                    throw new Exception($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}");
+                    throw new Exception($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
                 catch (Exception ex)
                 {
                     DbManager.Transaction_Manager.RollBack_Transaction();
-                    Internal_Error_Logger.New_Custom_Error($"Error(Update_Opis_Karty): {ex.Message}");
-                    throw new Exception($"Error(Update_Opis_Karty): {ex.Message}");
+                    Internal_Error_Logger.New_Custom_Error($"Error(Update_Opis_Karty): {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    throw new Exception($"Error(Update_Opis_Karty): {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
             }
         }
