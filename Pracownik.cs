@@ -8,9 +8,9 @@ namespace Excel_Data_Importer_WARS
         public string Imie = string.Empty;
         public string Nazwisko = string.Empty;
         public string Akronim = string.Empty;
-        public int Get_PraId(SqlConnection connection, SqlTransaction transaction)
+        public int Get_PraId()
         {
-            using SqlCommand command = new(DbManager.Get_PRI_PraId, connection, transaction);
+            using SqlCommand command = new(DbManager.Get_PRI_PraId, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction);
             if (string.IsNullOrEmpty(Akronim))
             {
                 command.Parameters.Add("@Akronim", SqlDbType.Int).Value = -1;

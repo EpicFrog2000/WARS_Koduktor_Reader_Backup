@@ -172,7 +172,7 @@ namespace Excel_Data_Importer_WARS
         }
 
         private static Error_Logger Internal_Error_Logger = new(true);
-        public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
+        public static async Task Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
         {
             Internal_Error_Logger = Error_Logger;
 
@@ -193,11 +193,9 @@ namespace Excel_Data_Importer_WARS
                 Prowizje[^1].Rok = Karta_Ewidencji.Rok;
                 Prowizje[^1].Miesiac = Karta_Ewidencji.Miesiac;
             }
+            await Dodaj_Dane_Do_Optimy(Karty_Ewidencji, Prowizje);
 
-            foreach (Karta_Ewidencji Karta_Ewidencji in Karty_Ewidencji)
-            {
-                Dodaj_Dane_Do_Optimy(Karta_Ewidencji, Prowizje);
-            }
+
         }
         private static void Get_Dane_Naglowka(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
         {
@@ -287,21 +285,28 @@ namespace Excel_Data_Importer_WARS
                                 Internal_Error_Logger.New_Error(part, "Godziny Pracy Od", Pozycja.Col + 4, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Od");
                             }
                         }
-                    }
 
-                    //godz pracy do
-                    dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 5).GetFormattedString().Trim().Replace("  ", " ");
-                    if (!string.IsNullOrEmpty(dane))
-                    {
-                        string[] parts = dane.Trim().Split(' ');
-                        foreach (string part in parts)
+                        //godz pracy do
+                        dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 5).GetFormattedString().Trim().Replace("  ", " ");
+                        if (!string.IsNullOrEmpty(dane))
                         {
-                            if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Pracy_Do))
+                            string[] parts2 = dane.Trim().Split(' ');
+                            foreach (string part in parts2)
                             {
-                                Internal_Error_Logger.New_Error(part, "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Do");
+                                if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Pracy_Do))
+                                {
+                                    Internal_Error_Logger.New_Error(part, "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Zły format Godziny Pracy Do");
+                                }
                             }
                         }
+                        else
+                        {
+                            Internal_Error_Logger.New_Error("", "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Brak Godziny Pracy Do w tym dniu");
+
+                        }
                     }
+
+                    
 
                     //godz. odpoczynku od
                     dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 6).GetFormattedString().Trim().Replace("  ", " ");
@@ -315,20 +320,27 @@ namespace Excel_Data_Importer_WARS
                                 Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Od", Pozycja.Col + 6, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Od");
                             }
                         }
-                    }
-                    //godz. odpoczynku do
-                    dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 7).GetFormattedString().Trim().Replace("  ", " ");
-                    if (!string.IsNullOrEmpty(dane))
-                    {
-                        string[] parts = dane.Trim().Split(' ');
-                        foreach (string part in parts)
+
+                        //godz. odpoczynku do
+                        dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 7).GetFormattedString().Trim().Replace("  ", " ");
+                        if (!string.IsNullOrEmpty(dane))
                         {
-                            if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Odpoczynku_Do))
+                            string[] parts2 = dane.Trim().Split(' ');
+                            foreach (string part in parts2)
                             {
-                                Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Do");
+                                if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(part, ref Dane_Dnia.Godziny_Odpoczynku_Do))
+                                {
+                                    Internal_Error_Logger.New_Error(part, "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Zły format Godziny Odpoczynku Do");
+                                }
                             }
                         }
+                        else
+                        {
+                            Internal_Error_Logger.New_Error("", "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Brak Godziny Odpoczynku Do w tym dniu");
+                        }
                     }
+
+
                     //nadg 50
                     dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 13).GetFormattedString().Trim().Replace("  ", " ");
                     if (!string.IsNullOrEmpty(dane))
@@ -374,7 +386,6 @@ namespace Excel_Data_Importer_WARS
 
                 Karta_Ewidencji.Dane_Karty.Add(Dane_Karty);
                 dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col).GetFormattedString().Trim().Replace("  ", " ");
-
             }
         }
         private static void Get_Absencje(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
@@ -414,12 +425,6 @@ namespace Excel_Data_Importer_WARS
                     //throw new Exception(Internal_Error_Logger.Get_Error_String());
                 }
 
-
-
-
-
-
-
                 Absencja.Rok = Karta_Ewidencji.Rok;
                 Absencja.Miesiac = Karta_Ewidencji.Miesiac;
                 
@@ -427,7 +432,7 @@ namespace Excel_Data_Importer_WARS
                 Row_Offset++;
             } while (true);
         }
-        private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji, SqlTransaction transaction, SqlConnection connection)
+        private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji)
         {
             
             HashSet<DateTime> Pasujace_Daty = [];
@@ -444,7 +449,7 @@ namespace Excel_Data_Importer_WARS
             {
                 if (!Pasujace_Daty.Contains(dzien))
                 {
-                    Zrob_Insert_Obecnosc_Command(connection, transaction, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
+                    Zrob_Insert_Obecnosc_Command(dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                 }
             }
 
@@ -460,7 +465,7 @@ namespace Excel_Data_Importer_WARS
                             //Dane_Dnia.Podziel_Nadgodziny();
                             for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
                             }
                         }
                         else
@@ -480,12 +485,12 @@ namespace Excel_Data_Importer_WARS
                                 Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
                                 for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++)
                                 {
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
+                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
                                 }
                             }
                             else
                             {
-                                Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
+                                Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                             }
                         }
                     }
@@ -493,7 +498,7 @@ namespace Excel_Data_Importer_WARS
             }
             return ilosc_wpisow;
         }
-        private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, Helper.Strefa Strefa, string Numer_Relacji)
+        private static int Zrob_Insert_Obecnosc_Command(DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, Helper.Strefa Strefa, string Numer_Relacji)
         {
             try
             {
@@ -503,15 +508,14 @@ namespace Excel_Data_Importer_WARS
                 int IdPracownika = -1;
                 try
                 {
-                    IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId(connection, transaction);
+                    IdPracownika = Karta_Ewidencji.Pracownik.Get_PraId();
                 }
                 catch (Exception ex)
                 {
-                    connection.Close();
                     Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                 }
 
-                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -523,7 +527,7 @@ namespace Excel_Data_Importer_WARS
 
                 if (!duplicate)
                 {
-                    using (SqlCommand command = new(DbManager.Insert_Obecnosci, connection, transaction))
+                    using (SqlCommand command = new(DbManager.Insert_Obecnosci, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
                         command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -541,62 +545,62 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                transaction.Rollback();
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception($"Error: {ex.Message}");
+
             }
             return 0;
         }
-        private static void Dodaj_Dane_Do_Optimy(Karta_Ewidencji Karta_Ewidencji, List<Prowizje> Prowizje)
+        private static async Task Dodaj_Dane_Do_Optimy(List<Karta_Ewidencji> Karty_Ewidencji, List<Prowizje> Prowizje)
         {
-            using (SqlConnection connection = new(DbManager.Connection_String))
+            await DbManager.Transaction_Manager.Create_Transaction();
+            foreach (Karta_Ewidencji Karta_Ewidencji in Karty_Ewidencji)
             {
-                connection.Open();
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
+                if (Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji) > 0)
                 {
-                    if(Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji, transaction, connection) > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"Nie dodano żadnych obesnosci");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji.Absencje, transaction, connection, Karta_Ewidencji.Pracownik, Internal_Error_Logger) > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano absencje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"Nie dodano żadnych absencji");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    if (Insert_Prowizje(Prowizje, transaction, connection) > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano prowizje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"Nie dodano żadnych prowizji");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    transaction.Commit();
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano obecnosci z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych obesnosci");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji.Absencje, Karta_Ewidencji.Pracownik, Internal_Error_Logger) > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano absencje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych absencji");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                if (Insert_Prowizje(Prowizje) > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano prowizje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych prowizji");
+                    Console.ForegroundColor = ConsoleColor.White;
                 }
             }
+            DbManager.Transaction_Manager.Commit_Transaction();
         }
         private static Prowizje Get_Prowizje(Helper.Current_Position pozycja, IXLWorksheet Zakladka)
         {
@@ -639,7 +643,7 @@ namespace Excel_Data_Importer_WARS
             Prowizja.Suma_Liczba_Napojow_Awaryjnych = Liczba_Napojow_Awaryjnych;
             return Prowizja;
         }
-        private static int Insert_Prowizje(List<Prowizje> Prowizje, SqlTransaction transaction, SqlConnection connection)
+        private static int Insert_Prowizje(List<Prowizje> Prowizje)
         {
             int count = 0;
             try
@@ -652,17 +656,16 @@ namespace Excel_Data_Importer_WARS
                     int pracId = -1;
                     try
                     {
-                        pracId = Prowizja.Pracownik.Get_PraId(connection, transaction);
+                        pracId = Prowizja.Pracownik.Get_PraId();
                     }
                     catch (Exception ex)
                     {
-                        connection.Close();
                         Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                     }
 
                     if(Prowizja.Suma_Liczba_Napojow_Awaryjnych > 0)
                     {
-                        using (SqlCommand command = new(DbManager.Insert_Prowizje, connection, transaction))
+                        using (SqlCommand command = new(DbManager.Insert_Prowizje, DbManager.GetConnection()))
                         {
                             command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Liczba_Napojow_Awaryjnych;
@@ -674,7 +677,7 @@ namespace Excel_Data_Importer_WARS
                     }
                     if (Prowizja.Suma_Wartosc_Towarow > 0)
                     {
-                        using (SqlCommand command = new(DbManager.Insert_Prowizje, connection, transaction))
+                        using (SqlCommand command = new(DbManager.Insert_Prowizje, DbManager.GetConnection()))
                         {
                             command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Wartosc_Towarow;
@@ -689,13 +692,15 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                transaction.Rollback();
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Prowizje): {ex.Message}");
+                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Insert_Prowizje): {ex.Message}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception($"Error podczas operacji w bazie(Insert_Prowizje): {ex.Message}");
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception($"Error: {ex.Message}");
             }
             return count;
         }

@@ -1,9 +1,9 @@
 ﻿namespace Excel_Data_Importer_WARS
 {
 
-    internal class Error_Logger
+    internal class Error_Logger(bool showmsg)
     {
-        private readonly bool ShowErrorMessageOnWrite;
+        private readonly bool ShowErrorMessageOnWrite = showmsg;
 
         // Plik excel na którym obecnie wykonwywane są operacje
         public string Nazwa_Pliku = string.Empty;
@@ -42,11 +42,6 @@
         public string Current_Bad_Files_Folder = string.Empty;
 
         public string Good_Files_Folder = string.Empty;
-
-        public Error_Logger(bool showmsg)
-        {
-            ShowErrorMessageOnWrite = showmsg;
-        }
 
         /// <summary>
         /// Tworzy wiadomość z podanych parametrów i dodaje wiadomość o błędzie do pliku z errorami.

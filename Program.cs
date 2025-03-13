@@ -18,14 +18,13 @@ namespace Excel_Data_Importer_WARS
         [DllImportAttribute("user32.dll", CharSet = CharSet.Unicode)]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
 
-        [STAThread]
-        public static void Main()
+        public static async Task Main()
         {
             Tylko_Jedna_Instancja();
 
             try
             {
-                Do_The_Thing();
+                await Do_The_Thing();
             }
             catch (Exception ex)
             {
@@ -37,7 +36,7 @@ namespace Excel_Data_Importer_WARS
                 Console.ReadLine();
             }
         }
-        private static void Do_The_Thing()
+        private static async Task Do_The_Thing()
         {
             // Start measuring time
             Stopwatch stopwatch = new();
@@ -59,7 +58,7 @@ namespace Excel_Data_Importer_WARS
 
                 if (!DbManager.Valid_SQLConnection_String())
                 {
-                    Console.WriteLine($"Invalid connection string: {DbManager.Connection_String}");
+                    Console.WriteLine($"Invalid connection string");
                     Console.ReadLine();
                 }
 
@@ -87,7 +86,9 @@ namespace Excel_Data_Importer_WARS
 
                     foreach (string filepath in Files_Paths)
                     {
-                        Process_Files(filepath);
+                        DbManager.OpenConnection();
+                        await Process_Files(filepath);
+                        DbManager.CloseConnection();
                     }
 
                     //await Parallel.ForEachAsync(Files_Paths, async (filePath, _) =>
@@ -108,7 +109,7 @@ namespace Excel_Data_Importer_WARS
             Console.WriteLine("Kliknij aby zakończyć...");
             Console.ReadLine();
         }
-        private static void Process_Files(string File_Path)
+        private static async Task Process_Files(string File_Path)
         {
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
@@ -124,7 +125,7 @@ namespace Excel_Data_Importer_WARS
                 {
                     Stream!.Close();
                 }
-                Move_File(File_Path, 0);
+                Move_File(File_Path, Move_File_Opcje.Bad_Files_Folder);
                 Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 return;
             }
@@ -153,7 +154,9 @@ namespace Excel_Data_Importer_WARS
                 Stream!.Close();
                 return;
             }
+            
             bool Contains_Any_Bad_Data = false;
+
             for (int Obecny_Numer_Zakladki = 1; Obecny_Numer_Zakladki <= Ilosc_Zakladek_W_Workbook; Obecny_Numer_Zakladki++)
             {
                 Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
@@ -165,20 +168,20 @@ namespace Excel_Data_Importer_WARS
                     switch (Typ_Zakladki)
                     {
                         case Helper.Typ_Zakladki.Tabela_Stawek:
-                            Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            await Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Karta_Ewidencji_Konduktora:
                             Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
-                            Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            await Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Karta_Ewidencji_Pracownika:
-                            Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            await Reader_Karta_Ewidencji_Pracownika.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Grafik_Pracy_Pracownika:
-                            Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            await Reader_Grafik_Pracy_Pracownika_2025_v3.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Harmonogram_Pracy_Konduktora:
-                            Reader_Harmonogram_Pracy_Konduktora.Process_Zakladka(Zakladka, Internal_Error_Logger);
+                            await Reader_Harmonogram_Pracy_Konduktora.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Nierozopznana:
                             error_logger.New_Custom_Error($"Nie rozpoznano tego typu zakładki w pliku: \"{error_logger.Nazwa_Pliku}\" zakladka: \"{error_logger.Nazwa_Zakladki}\" numer zakładki: \"{error_logger.Nr_Zakladki}\"", false);
@@ -203,11 +206,11 @@ namespace Excel_Data_Importer_WARS
             Stream!.Close();
             if (!Contains_Any_Bad_Data)
             {
-                Move_File(File_Path, 1);
+                Move_File(File_Path, Move_File_Opcje.Good_Files_Folder);
             }
             else
             {
-                Move_File(File_Path, 2);
+                Move_File(File_Path, Move_File_Opcje.Processed_Files_Folder);
             }
         }
         private static Helper.Typ_Zakladki Get_Typ_Zakladki(IXLWorksheet Worksheet)
@@ -317,7 +320,7 @@ namespace Excel_Data_Importer_WARS
                 return (null, null);
             }
         }
-        private static void Move_File(string filePath, int opcja)
+        private static void Move_File(string filePath, Move_File_Opcje opcja)
         {
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
@@ -328,30 +331,26 @@ namespace Excel_Data_Importer_WARS
             }
             try
             {
-
                 string destinationPath = string.Empty;
-                if (opcja == 0)
+                switch (opcja)
                 {
-                    destinationPath = Path.Combine(error_logger.Current_Bad_Files_Folder, Path.GetFileName(filePath));
-                }
-                else if (opcja == 1)
-                {
-                    destinationPath = Path.Combine(error_logger.Good_Files_Folder, Path.GetFileName(filePath));
-                }
-                else if (opcja == 2)
-                {
-                    destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
-                    if (File.Exists(destinationPath))
-                    {
-                        File.Delete(destinationPath);
-                    }
-                    File.Move(filePath, destinationPath);
-                    Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
-                    return;
-                }
-                else
-                {
-                    return;
+                    case Move_File_Opcje.Bad_Files_Folder:
+                        destinationPath = Path.Combine(error_logger.Current_Bad_Files_Folder, Path.GetFileName(filePath));
+                        break;
+                    case Move_File_Opcje.Good_Files_Folder:
+                        destinationPath = Path.Combine(error_logger.Good_Files_Folder, Path.GetFileName(filePath));
+                        break;
+                    case Move_File_Opcje.Processed_Files_Folder:
+                        destinationPath = Path.Combine(error_logger.Current_Processed_Files_Folder, Path.GetFileName(filePath));
+                        if (File.Exists(destinationPath))
+                        {
+                            File.Delete(destinationPath);
+                        }
+                        File.Move(filePath, destinationPath);
+                        Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                        return;
+                    default:
+                        return;
                 }
 
                 if (File.Exists(destinationPath))
@@ -449,54 +448,54 @@ namespace Excel_Data_Importer_WARS
                 File.Create(errorFilePath);
             }
         }
-        private static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
-        {
-            // nwm dlaczego textwrap jest zawsze true. Jebać to jest wystarczająco dobre.
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-            DataSet dataSet;
-            using (FileStream stream = File.Open(inputFilePath, FileMode.Open, FileAccess.Read))
-            using (IExcelDataReader reader = ExcelReaderFactory.CreateReader(stream))
-            {
-                ExcelDataSetConfiguration config = new()
-                {
-                    ConfigureDataTable = _ => new ExcelDataTableConfiguration
-                    {
-                        UseHeaderRow = true
-                    }
-                };
-                dataSet = reader.AsDataSet(config);
-            }
+        //private static void Convert_To_Xlsx(string inputFilePath, string outputFilePath)
+        //{
+        //    // nwm dlaczego textwrap jest zawsze true. Jebać to jest wystarczająco dobre.
+        //    System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        //    DataSet dataSet;
+        //    using (FileStream stream = File.Open(inputFilePath, FileMode.Open, FileAccess.Read))
+        //    using (IExcelDataReader reader = ExcelReaderFactory.CreateReader(stream))
+        //    {
+        //        ExcelDataSetConfiguration config = new()
+        //        {
+        //            ConfigureDataTable = _ => new ExcelDataTableConfiguration
+        //            {
+        //                UseHeaderRow = true
+        //            }
+        //        };
+        //        dataSet = reader.AsDataSet(config);
+        //    }
 
-            using XLWorkbook workbook = new();
-            foreach (DataTable table in dataSet.Tables)
-            {
-                IXLWorksheet worksheet = workbook.Worksheets.Add(table.TableName);
-                for (int i = 0; i < table.Columns.Count; i++)
-                    worksheet.Cell(1, i + 1).Value = table.Columns[i].ColumnName;
+        //    using XLWorkbook workbook = new();
+        //    foreach (DataTable table in dataSet.Tables)
+        //    {
+        //        IXLWorksheet worksheet = workbook.Worksheets.Add(table.TableName);
+        //        for (int i = 0; i < table.Columns.Count; i++)
+        //            worksheet.Cell(1, i + 1).Value = table.Columns[i].ColumnName;
 
-                for (int i = 0; i < table.Rows.Count; i++)
-                {
-                    for (int j = 0; j < table.Columns.Count; j++)
-                    {
-                        object value = table.Rows[i][j];
+        //        for (int i = 0; i < table.Rows.Count; i++)
+        //        {
+        //            for (int j = 0; j < table.Columns.Count; j++)
+        //            {
+        //                object value = table.Rows[i][j];
 
-                        if (value == DBNull.Value)
-                        {
-                            worksheet.Cell(i + 2, j + 1).Value = string.Empty;
-                        }
-                        else
-                        {
-                            worksheet.Cell(i + 2, j + 1).Value = value.ToString();
-                        }
-                    }
-                }
-            }
-            workbook.SaveAs(outputFilePath);
-            //(string o, DateTime d) = Get_Metadane_Pliku(inputFilePath);
-            //workbook.Properties.LastModifiedBy = o;
-            //workbook.Properties.Modified = d;
-            workbook.SaveAs(outputFilePath);
-        } //Kiedyś używane do konwertowania plików xls na xlsx ale w sumie to wyjebane (pora umierać)
+        //                if (value == DBNull.Value)
+        //                {
+        //                    worksheet.Cell(i + 2, j + 1).Value = string.Empty;
+        //                }
+        //                else
+        //                {
+        //                    worksheet.Cell(i + 2, j + 1).Value = value.ToString();
+        //                }
+        //            }
+        //        }
+        //    }
+        //    workbook.SaveAs(outputFilePath);
+        //    //(string o, DateTime d) = Get_Metadane_Pliku(inputFilePath);
+        //    //workbook.Properties.LastModifiedBy = o;
+        //    //workbook.Properties.Modified = d;
+        //    workbook.SaveAs(outputFilePath);
+        //} //Kiedyś używane do konwertowania plików xls na xlsx ale w sumie to wyjebane (pora umierać)
         private static void Tylko_Jedna_Instancja()
         {
             // Jeśli jest uruchomiona już jedna instancja to zakończ program
@@ -513,8 +512,12 @@ namespace Excel_Data_Importer_WARS
                 Environment.Exit(0);
             }
         }
-
-
+        private enum Move_File_Opcje
+        {
+            Bad_Files_Folder = 0,
+            Good_Files_Folder = 1,
+            Processed_Files_Folder = 2
+        }
     }
     static class Pomiar
     {

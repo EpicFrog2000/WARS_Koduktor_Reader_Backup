@@ -40,7 +40,7 @@ namespace Excel_Data_Importer_WARS
             Config new_config = JsonSerializer.Deserialize<Config>(json)!;
             Files_Folders = new_config.Files_Folders;
             Optima_Conection_String = new_config.Optima_Conection_String ?? "";
-            DbManager.Connection_String = Optima_Conection_String;
+            DbManager.Set_Connection_String(Optima_Conection_String);
             Clear_Logs_On_Program_Restart = new_config.Clear_Logs_On_Program_Restart;
             Clear_Bad_Files_On_Restart = new_config.Clear_Bad_Files_On_Restart;
             Clear_Processed_Files_On_Restart = new_config.Clear_Processed_Files_On_Restart;
@@ -80,7 +80,7 @@ namespace Excel_Data_Importer_WARS
                 Clear_Good_Files_On_Restart = config.Clear_Good_Files_On_Restart;
                 Tryb_Zapetlony = config.Tryb_Zapetlony;
             }
-            DbManager.Connection_String = Optima_Conection_String;
+            DbManager.Set_Connection_String(Optima_Conection_String);
             return existed;
         }
         public bool Check_File()

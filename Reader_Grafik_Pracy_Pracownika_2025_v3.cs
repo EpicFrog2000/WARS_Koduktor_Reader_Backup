@@ -39,7 +39,7 @@ namespace Excel_Data_Importer_WARS
             public TimeSpan Godzina_Pracy_Do  = TimeSpan.Zero;
         }
         public static Error_Logger Internal_Error_Logger = new(true);
-        public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger error_Logger)
+        public static async Task Process_Zakladka(IXLWorksheet Zakladka, Error_Logger error_Logger)
         {
             Internal_Error_Logger = error_Logger;
             List<Helper.Current_Position> Lista_Pozycji_Grafików_Z_Zakladki = Helper.Find_Starting_Points(Zakladka, "Data");
@@ -103,13 +103,13 @@ namespace Excel_Data_Importer_WARS
                         Internal_Error_Logger.New_Error(dane, "Rok", pozycja.Col + 6, pozycja.Row + rowOffset, "Błędna wartość w rok");
                     }
 
-                    grafik.Pracownik = Get_Pracownik(Zakladka, new Helper.Current_Position { Row = Startpozycja.Row, Col = Startpozycja.Col + ((counter * 3) + 1) });
+                    grafik.Pracownik = Get_Pracownik(Zakladka, new Helper.Current_Position(Startpozycja.Col + ((counter * 3) + 1), Startpozycja.Row));
                     if (string.IsNullOrEmpty(grafik.Pracownik.Imie) && string.IsNullOrEmpty(grafik.Pracownik.Nazwisko) && string.IsNullOrEmpty(grafik.Pracownik.Akronim))
                     {
                         break;
                     }
 
-                    List<Dane_Dnia> dane2 = Get_Dane_Dni(Zakladka, new Helper.Current_Position { Row = Startpozycja.Row + 4, Col = Startpozycja.Col + ((counter * 3) + 1) });
+                    List<Dane_Dnia> dane2 = Get_Dane_Dni(Zakladka, new Helper.Current_Position(Startpozycja.Col + ((counter * 3) + 1), Startpozycja.Row + 4));
                     foreach (Dane_Dnia d in dane2)
                     {
                         grafik.Dane_Dni.Add(d);
@@ -120,7 +120,7 @@ namespace Excel_Data_Importer_WARS
             }
             if (grafiki.Count > 0)
             {
-                Dodaj_Plany_do_Optimy(grafiki);
+                await Dodaj_Plany_do_Optimy(grafiki);
             }
             else
             {
@@ -265,81 +265,68 @@ namespace Excel_Data_Importer_WARS
             }
             return Dane_Dni;
         }
-        private static void Dodaj_Plany_do_Optimy(List<Grafik> grafiki)
+        private static async Task Dodaj_Plany_do_Optimy(List<Grafik> grafiki)
         {
+            await DbManager.Transaction_Manager.Create_Transaction();
             int dodano = 0;
-            using (SqlConnection connection = new(DbManager.Connection_String))
+            foreach (Grafik grafik in grafiki)
             {
-                connection.Open();
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
+                if(grafik.Dane_Dni.Count <= 0)
                 {
-                    foreach (Grafik grafik in grafiki)
+                    continue;
+                }
+                HashSet<DateTime> Pasujace_Daty = [];
+                foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
+                {
+                    try
                     {
-                        if(grafik.Dane_Dni.Count <= 0)
+                        Pasujace_Daty.Add(new DateTime(grafik.Rok, grafik.Miesiac, dane_DniA.Nr_Dnia));
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
+                DateTime startDate = new(grafik.Rok, grafik.Miesiac, 1);
+                DateTime endDate = new(grafik.Rok, grafik.Miesiac, DateTime.DaysInMonth(grafik.Rok, grafik.Miesiac));
+                for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
+                {
+                    if (!Pasujace_Daty.Contains(dzien))
+                    {
+                        try
                         {
-                            continue;
+                            Zrob_Insert_Plan_command(grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
                         }
-                        HashSet<DateTime> Pasujace_Daty = [];
-                        foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
+                        catch (Exception ex)
                         {
-                            Pasujace_Daty.Add(new DateTime(grafik.Rok, grafik.Miesiac, dane_DniA.Nr_Dnia));
-                        }
-                        DateTime startDate = new(grafik.Rok, grafik.Miesiac, 1);
-                        DateTime endDate = new(grafik.Rok, grafik.Miesiac, DateTime.DaysInMonth(grafik.Rok, grafik.Miesiac));
-                        for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
-                        {
-                            if (!Pasujace_Daty.Contains(dzien))
-                            {
-                                try
-                                {
-                                    Zrob_Insert_Plan_command(connection, transaction, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
-                                }
-                                catch (SqlException ex)
-                                {
-                                    transaction.Rollback();
-                                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                }
-                                catch (FormatException ex)
-                                {
-                                    transaction.Rollback();
-                                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                }
-                                catch (Exception ex)
-                                {
-                                    transaction.Rollback();
-                                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                }
-
-                            }
-                        }
-
-                        foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
-                        {
-                            try
-                            {
-                                dodano += Zrob_Insert_Plan_command(connection, transaction, grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
-                            }
-                            catch (SqlException ex)
-                            {
-                                transaction.Rollback();
-                                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            }
-                            catch (FormatException ex) 
-                            {
-
-                                transaction.Rollback();
-                                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            }
-                            catch (Exception ex)
-                            {
-                                transaction.Rollback();
-                                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            }
+                            
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                            DbManager.Transaction_Manager.RollBack_Transaction();
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                     }
-                    transaction.Commit();
+                }
+
+                foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
+                {
+                    try
+                    {
+                        if (DateTime.TryParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                        {
+                            dodano += Zrob_Insert_Plan_command(grafik.Pracownik, result, dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                        DbManager.Transaction_Manager.RollBack_Transaction();
+                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    }
                 }
             }
+            DbManager.Transaction_Manager.Commit_Transaction();
+            
             if (dodano > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -347,47 +334,56 @@ namespace Excel_Data_Importer_WARS
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
-        private static int Zrob_Insert_Plan_command(SqlConnection connection, SqlTransaction transaction, Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
+        private static int Zrob_Insert_Plan_command(Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
         {
-            int IdPracownika = pracownik.Get_PraId(connection, transaction);
-
-            if (startGodz!=TimeSpan.Zero && endGodz != TimeSpan.Zero)
+            try
             {
-                using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, connection, transaction))
+                int IdPracownika = pracownik.Get_PraId();
+
+                if (startGodz!=TimeSpan.Zero && endGodz != TimeSpan.Zero)
                 {
-                    command.Parameters.AddWithValue("@DataInsert", data + TimeSpan.FromSeconds(0));
+                    using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
+                    {
+                        command.Parameters.AddWithValue("@DataInsert", data + TimeSpan.FromSeconds(0));
+                        command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                        command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
+                        command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                        if ((int)command.ExecuteScalar() == 1)
+                        {
+                            return 0;
+                        }
+                    }
+                }
+                
+                using (SqlCommand command = new(DbManager.Insert_Plan_Pracy, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
+                {
+                    command.Parameters.AddWithValue("@DataInsert", data);
                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                     command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                    if ((int)command.ExecuteScalar() == 1)
+                    if (startGodz == TimeSpan.Zero && endGodz == startGodz)
                     {
-                        return 0;
+                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
+
                     }
+                    else
+                    {
+                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_Podstawowy;
+
+                    }
+                    command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
+                    command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
+                    command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
+                    command.ExecuteScalar();
+                    return 1;
                 }
+                
             }
-            
-            using (SqlCommand command = new(DbManager.Insert_Plan_Pracy, connection, transaction))
+            catch (Exception ex)
             {
-                command.Parameters.AddWithValue("@DataInsert", data);
-                command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
-                command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
-                command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                if (startGodz == TimeSpan.Zero && endGodz == startGodz)
-                {
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
-
-                }
-                else
-                {
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_Podstawowy;
-
-                }
-                command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
-                command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
-                command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
-                command.ExecuteScalar();
+                Console.WriteLine(ex.Message);
             }
-            return 1;
+            return 0;
         }
     }
 }

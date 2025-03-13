@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using ClosedXML.Excel;
 
+
 namespace Excel_Data_Importer_WARS
 {
     internal static class Helper
@@ -9,16 +10,11 @@ namespace Excel_Data_Importer_WARS
         {
             private int col = 1;
             private int row = 1;
-
-            public Current_Position()
-            {
-            }
             public Current_Position(int new_col, int new_row)
             {
                 Col = new_col;
                 Row = new_row;
             }
-
             public int Col
             {
                 get => col;
@@ -32,7 +28,6 @@ namespace Excel_Data_Importer_WARS
                     col = value;
                 }
             }
-
             public int Row
             {
                 get => row;
@@ -82,7 +77,6 @@ namespace Excel_Data_Importer_WARS
             Grafik_Pracy_Pracownika = 3,
             Harmonogram_Pracy_Konduktora = 4
         }
-
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)
         {
             if (string.IsNullOrEmpty(value))
@@ -123,7 +117,6 @@ namespace Excel_Data_Importer_WARS
             }
             return false;
         }
-
         public static bool Try_Get_Type_From_String<T>(string? value, Action<T> method)
         {
             T refvalue = default!;
@@ -134,20 +127,6 @@ namespace Excel_Data_Importer_WARS
             }
             return false;
         }
-
-        public static string Read_Value_Diffrent_Possible_Cells_In_Row(int Rows, int StartRow, int StartCol, IXLWorksheet Zakladka)
-        {
-            for (int i = 0; i < Rows; i++)
-            {
-                string Result = Zakladka.Cell(StartRow, StartCol).GetFormattedString().Trim().Replace("  ", " ");
-                if (!string.IsNullOrEmpty(Result))
-                {
-                    return Result;
-                }
-            }
-            return string.Empty;
-        }
-
         public static List<Current_Position> Find_Starting_Points(IXLWorksheet worksheet, string keyWord, bool CompareMode=true)
         {
             const int limit = 1000;
@@ -170,22 +149,14 @@ namespace Excel_Data_Importer_WARS
                 {
                     if (formattedValue.Contains(keyWord, StringComparison.OrdinalIgnoreCase))
                     {
-                        positions.Add(new Current_Position
-                        {
-                            Row = cell.Address.RowNumber,
-                            Col = cell.Address.ColumnNumber
-                        });
+                        positions.Add(new Current_Position(cell.Address.ColumnNumber, cell.Address.RowNumber));
                     }
                 }
                 else
                 {
                     if (formattedValue == keyWord)
                     {
-                        positions.Add(new Current_Position
-                        {
-                            Row = cell.Address.RowNumber,
-                            Col = cell.Address.ColumnNumber
-                        });
+                        positions.Add(new Current_Position(cell.Address.ColumnNumber, cell.Address.RowNumber));
                     }
                 }
                 
@@ -193,7 +164,6 @@ namespace Excel_Data_Importer_WARS
 
             return positions.Take(limit).ToList();
         }
-
         public static string Truncate(string? value, int maxLength) =>
             string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
     }

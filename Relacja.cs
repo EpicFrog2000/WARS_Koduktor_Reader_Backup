@@ -13,9 +13,9 @@ namespace Excel_Data_Importer_WARS
         public int Dzien_Rozpoczenia_Relacji = 0;
         public List<System_Obsługi_Relacji> System_Obsługi_Relacji = [];
 
-        public static int Get_Relacja_Id(string Numer_Relacji, SqlConnection connection, SqlTransaction transaction)
+        public static int Get_Relacja_Id(string Numer_Relacji)
         {
-            using (SqlCommand command = new(DbManager.Get_Relacja, connection, transaction))
+            using (SqlCommand command = new(DbManager.Get_Relacja, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
             {
                 command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                 command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = DBNull.Value;
@@ -31,15 +31,15 @@ namespace Excel_Data_Importer_WARS
             }
         }
 
-        public void Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger, SqlConnection connection, SqlTransaction transaction)
+        public void Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger)
         {
             try
             {
-                Get_Relacja_Id(Numer_Relacji, connection, transaction);
+                Get_Relacja_Id(Numer_Relacji);
             }
             catch
             {
-                using (SqlCommand command = new(DbManager.Insert_Relacja, connection, transaction))
+                using (SqlCommand command = new(DbManager.Insert_Relacja, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
                     command.Parameters.Add("@Nazwa_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                     //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = null;

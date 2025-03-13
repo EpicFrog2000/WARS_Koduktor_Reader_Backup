@@ -148,7 +148,7 @@ namespace Excel_Data_Importer_WARS
             }
         }
         private static Error_Logger Internal_Error_Logger = new(true);
-        public static void Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
+        public static async Task Process_Zakladka(IXLWorksheet Zakladka, Error_Logger Error_Logger)
         {
             Internal_Error_Logger = Error_Logger;
             List<Karta_Ewidencji_Pracownika> Karty_Ewidencji_Pracownika = [];
@@ -162,12 +162,8 @@ namespace Excel_Data_Importer_WARS
                 Karty_Ewidencji_Pracownika.Add(Karta_Ewidencji_Pracownika);
             }
             string Uwaga = Get_Uwaga_Karty(Zakladka);
-            foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
-            {
-                Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika, ref Uwaga);
-            }
 
-
+            await Dodaj_Dane_Do_Optimy(Karty_Ewidencji_Pracownika, Uwaga);
         }
         private static void Get_Dane_Naglowka_Karty(ref Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Current_Position StartKarty, IXLWorksheet Zakladka)
         {
@@ -211,7 +207,7 @@ namespace Excel_Data_Importer_WARS
                                 try
                                 {
                                     Karta_Ewidencji_Pracownika.Set_Miesiac(ndata[0]);
-                                    if (int.TryParse(Regex.Replace(ndata[1], @"\D", ""), out int rok))
+                                    if (int.TryParse(ndata[1].Where(char.IsDigit).ToArray(), out int rok))
                                     {
                                         Karta_Ewidencji_Pracownika.Rok = rok;
                                     }
@@ -366,7 +362,7 @@ namespace Excel_Data_Importer_WARS
                             string pattern = $@"\b{Regex.Escape(word)}\b";
                             dane = Regex.Replace(dane, pattern, "", RegexOptions.IgnoreCase);
                         }
-                        dane = Regex.Replace(dane, @"\s+", " ").Trim();
+                        dane = string.Join(" ", dane.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries));
                         if (dane.Contains("KARTA PRACY:"))
                         {
                             dane = dane.Replace("KARTA PRACY:", "").Trim();
@@ -411,7 +407,7 @@ namespace Excel_Data_Importer_WARS
                             string pattern = $@"\b{Regex.Escape(word)}\b";
                             dane = Regex.Replace(dane, pattern, "", RegexOptions.IgnoreCase);
                         }
-                        dane = Regex.Replace(dane, @"\s+", " ").Trim();
+                        dane = string.Join(" ", dane.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries));
                         if (dane.Contains("KARTA PRACY:"))
                         {
                             dane = dane.Replace("KARTA PRACY:", "").Trim();
@@ -445,7 +441,7 @@ namespace Excel_Data_Importer_WARS
                             string pattern = $@"\b{Regex.Escape(word)}\b";
                             dane = Regex.Replace(dane, pattern, "", RegexOptions.IgnoreCase);
                         }
-                        dane = Regex.Replace(dane, @"\s+", " ").Trim();
+                        dane = string.Join(" ", dane.Split([' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries));
                         if (dane.Contains("KARTA PRACY:"))
                         {
                             dane = dane.Replace("KARTA PRACY:", "").Trim();
@@ -527,20 +523,28 @@ namespace Excel_Data_Importer_WARS
                             Internal_Error_Logger.New_Error(dane, "Godzina Rozpoczęcia pracy", Pozycja.Col + 1, Pozycja.Row, "Zły format Godziny");
                         }
                     }
-                }
 
-                // godz zak pracy
-                dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col + 2).GetFormattedString().Trim().Replace("  ", " ");
-                if (!string.IsNullOrEmpty(dane))
-                {
-                    foreach (string d in dane.Split(' '))
+
+                    // godz zak pracy
+                    dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col + 2).GetFormattedString().Trim().Replace("  ", " ");
+                    if (!string.IsNullOrEmpty(dane))
                     {
-                        if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(d, ref Dane_Karty.Godziny_Zakonczenia_Pracy))
+                        foreach (string d in dane.Split(' '))
                         {
-                            Internal_Error_Logger.New_Error(dane, "Godzina Zakończenia pracy", Pozycja.Col + 2, Pozycja.Row, "Zły format Godziny");
+                            if (!Helper.Try_Get_Type_From_String<List<TimeSpan>>(d, ref Dane_Karty.Godziny_Zakonczenia_Pracy))
+                            {
+                                Internal_Error_Logger.New_Error(dane, "Godzina Zakończenia pracy", Pozycja.Col + 2, Pozycja.Row, "Zły format Godziny");
+                            }
                         }
                     }
+                    else
+                    {
+                        Internal_Error_Logger.New_Error(dane, "Godzina Zakończenia pracy", Pozycja.Col + 2, Pozycja.Row, "Brak godziny zakończenia pracy w tym dniu");
+                    }
+
                 }
+
+
 
                 // absencja
                 dane = Zakladka.Cell(Pozycja.Row, Pozycja.Col + 3).GetFormattedString().Trim().Replace("  ", " ");
@@ -612,85 +616,95 @@ namespace Excel_Data_Importer_WARS
                 Karta_Ewidencji_Pracownika.Dane_Karty.Add(Dane_Karty);
             }
         }
-        private static void Dodaj_Dane_Do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, ref string Uwaga)
+        private static async Task Dodaj_Dane_Do_Optimy(List<Karta_Ewidencji_Pracownika> Karty_Ewidencji_Pracownika, string Uwaga)
         {
-            using (SqlConnection connection = new(DbManager.Connection_String))
-            {
-                connection.Open();
-                using (SqlTransaction transaction = connection.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
-                {
-                    if (Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika, transaction, connection) > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano obecnosci z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"Nie dodano żadnych obesnosci");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji_Pracownika.Absencje, transaction, connection, Karta_Ewidencji_Pracownika.Pracownik, Internal_Error_Logger) > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano absencje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"Nie dodano żadnych absencji");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    if (Dodaj_Godz_Odbior_Do_Optimy(Karta_Ewidencji_Pracownika, transaction, connection) > 0)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Poprawnie dodano odbiory nadgodzin z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine($"Nie dodano żadnych odbiorow nadgodzin");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
+            await DbManager.Transaction_Manager.Create_Transaction();
 
-                    
-                    if (!string.IsNullOrEmpty(Uwaga))
+            foreach (Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika in Karty_Ewidencji_Pracownika)
+            {
+                if (Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika) > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano obecnosci z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych obesnosci");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+
+                if (Absencja.Dodaj_Absencje_do_Optimy(Karta_Ewidencji_Pracownika.Absencje, Karta_Ewidencji_Pracownika.Pracownik, Internal_Error_Logger) > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano absencje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych absencji");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+
+                if (Dodaj_Godz_Odbior_Do_Optimy(Karta_Ewidencji_Pracownika) > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano odbiory nadgodzin z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych odbiorow nadgodzin");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+
+
+                if (!string.IsNullOrEmpty(Uwaga))
+                {
+                    if (Update_Opis_Karty(Karta_Ewidencji_Pracownika, Uwaga))
                     {
-                        if (Update_Opis_Karty(Karta_Ewidencji_Pracownika, Uwaga, connection, transaction))
-                        {
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"Poprawnie dodano uwagę z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                            Console.ForegroundColor = ConsoleColor.White;
-                        }
-                        else
-                        {
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine($"Nie dodano żadnej uwagi");
-                            Console.ForegroundColor = ConsoleColor.White;
-                        }
-                        Uwaga = string.Empty; // Dodanie tego rekordu tylko raz
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"Poprawnie dodano uwagę z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                        Console.ForegroundColor = ConsoleColor.White;
                     }
-                    transaction.Commit();
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine($"Nie dodano żadnej uwagi");
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
+                    Uwaga = string.Empty;
                 }
             }
+            DbManager.Transaction_Manager.Commit_Transaction();
         }
-        private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, SqlTransaction transaction, SqlConnection connection)
+
+        private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika)
         {
             HashSet<DateTime> Pasujace_Daty = [];
             foreach (Dane_Karty daneKarty in Karta_Ewidencji_Pracownika.Dane_Karty)
             {
-                Pasujace_Daty.Add(new DateTime(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, daneKarty.Dzien));
+                try
+                {
+                    Pasujace_Daty.Add(new DateTime(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, daneKarty.Dzien));
+                }
+                catch
+                {
+                    break;
+                }
             }
+
             DateTime startDate = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
             DateTime endDate = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, DateTime.DaysInMonth(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac));
+
             for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
             {
                 if (!Pasujace_Daty.Contains(dzien))
                 {
-                    Zrob_Insert_Obecnosc_Command(connection, transaction, dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
+                    Zrob_Insert_Obecnosc_Command(dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
                 }
             }
 
@@ -706,7 +720,7 @@ namespace Excel_Data_Importer_WARS
                         {
                             if (Dane_Karty.Godziny_Rozpoczecia_Pracy[j] != Dane_Karty.Godziny_Zakonczenia_Pracy[j])
                             {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[j], Dane_Karty.Godziny_Zakonczenia_Pracy[j], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[j], Dane_Karty.Godziny_Zakonczenia_Pracy[j], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
                             }
                         }
                     }
@@ -721,13 +735,13 @@ namespace Excel_Data_Importer_WARS
                             {
                                 if (Dane_Karty.Godziny_Rozpoczecia_Pracy[k] != Dane_Karty.Godziny_Zakonczenia_Pracy[k])
                                 {
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[k], Dane_Karty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
+                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[k], Dane_Karty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
                                 }
                             }
                         }
                         else
                         {
-                            Zrob_Insert_Obecnosc_Command(connection, transaction, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
+                            Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
                         }
                     }
                 }
@@ -735,25 +749,18 @@ namespace Excel_Data_Importer_WARS
             }
             return ilosc_wpisow;
         }
-        private static int Zrob_Insert_Obecnosc_Command(SqlConnection connection, SqlTransaction transaction, DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Strefa Strefa)
+        private static int Zrob_Insert_Obecnosc_Command(DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Strefa Strefa)
         {
             try
             {
+
                 DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
                 DateTime godzDoDate = DbManager.Base_Date + endPodstawowy;
                 bool duplicate = false;
                 int IdPracownika = -1;
-                try
-                {
-                    IdPracownika = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId(connection, transaction);
-                }
-                catch (Exception ex)
-                {
-                    connection.Close();
-                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                }
+                IdPracownika = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId();
 
-                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, connection, transaction))
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -762,10 +769,9 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
                     duplicate = (int)command.ExecuteScalar() == 1;
                 }
-
                 if (!duplicate)
                 {
-                    using (SqlCommand command = new(DbManager.Insert_Obecnosci, connection, transaction))
+                    using (SqlCommand command = new(DbManager.Insert_Obecnosci, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
                         command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
@@ -782,29 +788,31 @@ namespace Excel_Data_Importer_WARS
             }
             catch (SqlException ex)
             {
-                transaction.Rollback();
-                Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             catch (Exception ex)
             {
-                transaction.Rollback();
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
+                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception(Internal_Error_Logger.Get_Error_String());
             }
             return 0;
         }
-        private static int Dodaj_Godz_Odbior_Do_Optimy(Karta_Ewidencji_Pracownika karta, SqlTransaction transaction, SqlConnection connection)
+        private static int Dodaj_Godz_Odbior_Do_Optimy(Karta_Ewidencji_Pracownika karta)
         {
             int ilosc_wpisow = 0;
             foreach (Dane_Karty dane_Dni in karta.Dane_Karty)
             {
                 if(dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach > 0)
                 {
-                    int IdPracownika = karta.Pracownik.Get_PraId(connection, transaction);
+                    int IdPracownika = karta.Pracownik.Get_PraId();
                     decimal Ilosc_Godzin = dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach;
                     DateTime godzOdDate = DbManager.Base_Date + TimeSpan.FromHours(8);
                     DateTime godzDoDate = DbManager.Base_Date + TimeSpan.FromHours(8) + TimeSpan.FromHours((double)dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach);
                     bool duplicate = false;
-                    using (SqlCommand command = new(DbManager.Check_Duplicate_Odbior_Nadgodzin, connection, transaction))
+                    using (SqlCommand command = new(DbManager.Check_Duplicate_Odbior_Nadgodzin, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
                         command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
                         command.Parameters.AddWithValue("@Strefa", Helper.Strefa.Czas_Pracy_Podstawowy);
@@ -824,7 +832,7 @@ namespace Excel_Data_Importer_WARS
                             if (dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach > 0)
                             {
                                 ilosc_wpisow++;
-                                using (SqlCommand command = new(DbManager.Insert_Odbior_Nadgodzin, connection, transaction))
+                                using (SqlCommand command = new(DbManager.Insert_Odbior_Nadgodzin, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                                 {
                                     command.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
                                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
@@ -841,19 +849,21 @@ namespace Excel_Data_Importer_WARS
                         }
                         catch (SqlException ex)
                         {
-                            transaction.Rollback();
-
-                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                                                }
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                            DbManager.Transaction_Manager.RollBack_Transaction();
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                        }
                         catch (FormatException ex)
                         {
-                            transaction.Rollback();
-                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                            DbManager.Transaction_Manager.RollBack_Transaction();
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                         catch (Exception ex)
                         {
-                            transaction.Rollback();
-                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                            DbManager.Transaction_Manager.RollBack_Transaction();
+                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
                         }
                     }
                 }
@@ -879,12 +889,12 @@ namespace Excel_Data_Importer_WARS
             }
             return "";
         }
-        private static bool Update_Opis_Karty(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, string Uwaga, SqlConnection connection, SqlTransaction transaction)
+        private static bool Update_Opis_Karty(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, string Uwaga)
         {
-            using (SqlCommand command = new(DbManager.Update_Uwaga, connection, transaction))
+            using (SqlCommand command = new(DbManager.Update_Uwaga, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
             {
                 command.Parameters.Add("@Uwaga", SqlDbType.NVarChar, 1024).Value = Helper.Truncate(Uwaga, 1024);
-                command.Parameters.Add("@PracId", SqlDbType.Int).Value = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId(connection, transaction);
+                command.Parameters.Add("@PracId", SqlDbType.Int).Value = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId();
                 command.Parameters.Add("@Data", SqlDbType.DateTime).Value = new DateTime(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
                 try
                 {
@@ -893,16 +903,17 @@ namespace Excel_Data_Importer_WARS
                 }
                 catch (SqlException ex)
                 {
-                    transaction.Rollback();
-                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}");
+                    Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}", false);
+                    DbManager.Transaction_Manager.RollBack_Transaction();
+                    throw new Exception($"Error podczas operacji w bazie(Update_Opis_Karty): {ex.Message}");
                 }
                 catch (Exception ex)
                 {
-                    transaction.Rollback();
+                    DbManager.Transaction_Manager.RollBack_Transaction();
                     Internal_Error_Logger.New_Custom_Error($"Error(Update_Opis_Karty): {ex.Message}");
+                    throw new Exception($"Error(Update_Opis_Karty): {ex.Message}");
                 }
             }
-            return false;
         }
     }
 }

@@ -1,17 +1,10 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Vml;
-using System.Threading;
-using Microsoft.Data.SqlClient;
-using System.Runtime.InteropServices;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using System.Data;
-using System.Transactions;
+﻿using Microsoft.Data.SqlClient;
+
 
 namespace Excel_Data_Importer_WARS
 {
     internal static class DbManager
     {
-        public static string Connection_String = string.Empty;
         public static readonly string Insert_Odbior_Nadgodzin = @"
     DECLARE @PRA_PraId INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @PRI_PraId);
     DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRA_PraId and PPR_Data = @DataInsert)
@@ -493,6 +486,12 @@ BEGIN
     WHERE PGR_PgrId = @IdDniaGodz;
 END
 ";
+        public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
+        private static string Connection_String = string.Empty;
+        public static void Set_Connection_String(string new_connection_string)
+        {
+            Connection_String = new_connection_string;
+        }
         public static bool Valid_SQLConnection_String()
         {
             try
@@ -509,6 +508,94 @@ END
                 return false;
             }
         }
-        public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
+        private static SqlConnection? Dbconnection = null;
+        private static readonly object Blokada = new();
+        private static void Init_Connection()
+        {
+            if (Dbconnection != null)
+            {
+                return;
+            }
+
+            lock (Blokada)
+            {
+                Dbconnection = new SqlConnection(Connection_String);   
+            }
+        }
+        public static void OpenConnection()
+        {
+            Init_Connection();
+            if (Dbconnection!.State != System.Data.ConnectionState.Open)
+            {
+                Dbconnection.Open();
+            }
+        }
+        public static void CloseConnection()
+        {
+            if(Dbconnection != null && Dbconnection.State != System.Data.ConnectionState.Closed)
+            {
+                Dbconnection.Close();
+            }
+        }
+        public static SqlConnection GetConnection()
+        {
+            OpenConnection();
+            return Dbconnection!;
+        }
+        public static class Transaction_Manager
+        {
+            private static SemaphoreSlim Create_Transaction_Semaphore = new(1, 1);
+            public static SqlTransaction? CurrentTransaction = null;
+            public static void Commit_Transaction()
+            {
+                if (CurrentTransaction == null)
+                {
+                    throw new Exception("No transaction to commit.");
+                }
+
+                try
+                {
+                    CurrentTransaction.Commit();
+                    CurrentTransaction.Dispose();
+                    CurrentTransaction = null;
+                }
+                catch (Exception ex)
+                {
+                    CurrentTransaction!.Rollback();
+                    CurrentTransaction.Dispose();
+                    CurrentTransaction = null;
+                    throw new Exception("Błąd podczas zatwierdzania transakcji: " + ex.Message);
+                }
+            }
+            public static void RollBack_Transaction()
+            {
+                if (CurrentTransaction == null)
+                {
+                    throw new Exception("No transaction to commit.");
+                }
+
+                try
+                {
+                    CurrentTransaction.Rollback();
+                    CurrentTransaction.Dispose();
+                    CurrentTransaction = null;
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Błąd podczas rollbackowania transakcji: " + ex.Message);
+                }
+            }
+
+            public static async Task Create_Transaction()
+            {
+                await Create_Transaction_Semaphore.WaitAsync();
+                while (CurrentTransaction != null)
+                {
+                    await Task.Delay(1);
+                }
+                CurrentTransaction = GetConnection().BeginTransaction();
+                Create_Transaction_Semaphore.Release();
+            }
+        }
     }
 }
