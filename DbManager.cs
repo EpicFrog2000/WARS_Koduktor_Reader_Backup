@@ -372,7 +372,6 @@ INSERT INTO CDN.PracPlanDniGodz
 	        1,
 	        1,
 	        '');";
-
         public static readonly string Check_Duplicate_Plan_Pracy = @"
 IF EXISTS (
 SELECT 1 

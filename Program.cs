@@ -13,13 +13,12 @@ namespace Excel_Data_Importer_WARS
     {
         private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static Config config = new();
-        private static readonly bool LOG_TO_TERMINAL = false;
+        private static readonly bool LOG_TO_TERMINAL = true;
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
         [DllImportAttribute("user32.dll", CharSet = CharSet.Unicode)]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
         public static async Task Main()
         {
             Tylko_Jedna_Instancja();
@@ -83,12 +82,12 @@ namespace Excel_Data_Importer_WARS
 
                     DbManager.OpenConnection();
 
-                    var files = Directory.EnumerateFiles(Folder_Path, "*.xlsx").ToList();
+                    string[] files = Directory.GetFiles(Folder_Path, "*.xlsx");
 
                     const int batchSize = 8;
-                    for (int i = 0; i < files.Count; i += batchSize)
+                    for (int i = 0; i < files.Length; i += batchSize)
                     {
-                        var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file));
+                        var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file)); // Coś długo się ta funkcja wykonuje, TODO fix
                         await Task.WhenAll(batch);
                     }
 
@@ -111,7 +110,7 @@ namespace Excel_Data_Importer_WARS
             PomiaryStopWatch.Restart();
             
             Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine($"Czytanie: {Path.GetFileNameWithoutExtension(File_Path)} {DateTime.Now}");
+            Console.WriteLine($"[{DateTime.Now}] Czytanie: {Path.GetFileNameWithoutExtension(File_Path)}");
             Console.ForegroundColor = ConsoleColor.White;
             
             XLWorkbook? Workbook = await Open_Workbook(File_Path);
@@ -309,6 +308,7 @@ namespace Excel_Data_Importer_WARS
             catch
             {
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
+                //error_logger.New_Custom_Error($"Program nie może odczytać pliku {File_Path}", false);
                 Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
                 Console.ForegroundColor = ConsoleColor.White;
                 Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
