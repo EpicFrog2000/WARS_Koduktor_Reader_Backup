@@ -144,9 +144,9 @@ I gotowe – maszyna w ruchu! Można odpalić program.
 - `Main()`: Główna metoda uruchamiająca aplikację.
 - `Do_The_Thing()`: Metoda wykonująca główne operacje.
 - `private static Typ_Zakladki Get_Typ_Zakladki(IXLWorksheet Worksheet)`: Zwraca typ zakładki. Każdy typ zakładki jest reprezentowany przez unikalny numer. Zakładka tzn. który typ danych jest w tem skoroszycie np. Grafiki pracy lub karty ewidencji konduktorów.
-- `private static Task Usun_Ukryte_Karty(XLWorkbook workbook)`: Usuwa z pliku Excel zakładki które zostały ukryte przez użytkownika gdyż najprawdopodobniej nie mają one być importowane skoro ma ich nie widać xd. (Chce się zajebać)
+- `private static Task Usun_Ukryte_Karty(XLWorkbook workbook)`: Usuwa z pliku Excel zakładki które zostały ukryte przez użytkownika gdyż najprawdopodobniej nie mają one być importowane skoro ma ich nie widać xd. (Nie używane przy nowej implementacji ładowania pliku)
 - `private static (string, DateTime) Get_Metadane_Pliku(XLWorkbook Workbook, string File_Path)`: Zwraca ostatni czas oraz osobę modyfikacji danego pliku.
-- `private static (XLWorkbook?, FileStream?) Open_Workbook(string File_Path)` otwiera plik Excel przez FileStream i zwraca handle na FileStream oraz XLWorkbook, które to należy zamknąć na koniec. (Zrobione jest to tak aby zoptymalizować użycie zasobów)
+- `private static async Task<XLWorkbook?> Open_Workbook(string File_Path)` otwiera plik Excel przez załadowanie do memorystream (Zrobione jest to tak aby zoptymalizować użycie zasobów)
 - `private static void Move_File(string filePath, int opcja)`: W zależności od opcji przenosi plik do odpowiednich folderów. (0 - Bad_Files\, 1 - Good_Files\, 2 - Processed_Files\)
 - `private static async Task Copy_Bad_Sheet_To_Files_Folder(XLWorkbookProperties op, IXLWorksheet sheetToCopy, string filePath)`: Tworzy kopię przekazanej zakładki, która zawiera błąd, tę kopię dodaje do folderu Bad_Files\.
 - `private static void Check_Base_Dirs(string path)`: Tworzy odpowiednie podfoldery jeśli nie instnieją i/lub czyści ich zawarość jeśli taka opcja została przekazana programowi.
@@ -159,7 +159,6 @@ Działanie programu:
   3. Tworzone są odpowiednie foldery w katalogach ustawionych z pliku konfiguracyjnego: `Check_Base_Dirs(Folder_Path)`
   4. Dla każdego pliku następuje `Process_Files(string File_Path)` w którym to:
   - Otwierany jest Arkusz
-  - Usuwane są poukrywane zakładki: `Usun_Ukryte_Karty(Workbook)`
   - Tworzony jest error logger do wczytywania zakładek
   - Sprawdzany jest typ zakładki `Get_Typ_Zakladki(Zakladka)`
   - W zależności od typu zakładki wykonuje się odpowiedni proces wczytywania danych z arkusza: `Process_Zakladka()`
@@ -182,6 +181,12 @@ Działanie programu:
 
 ### DbManager.cs
 - `public static bool Valid_SQLConnection_String()`: Zwraca czy połączenie z bazą jest prawidłowe z ustawonym connection stringiem.
+- `public static void OpenConnection()`: Otwiera MAX 1 połączenie z bazą danych.
+- `public static void CloseConnection()`: Zamyka obecne połączenie do bazy.
+- `public static SqlConnection GetConnection()`: Zwraca obecne aktywn połączenie.
+- `Transaction_Manager.Create_Transaction()`: Tworzy nową MAX 1 transakcję.
+- `Transaction_Manager.Commit_Transaction()`:` Commituje transakcję i ustawwia ją czyści;
+- `Transaction_Manager.RollBack_Transaction()`:` rollbackuje transakcję i ustawwia ją czyści;
 
 ### Helper.cs
 - `public static bool Try_Get_Type_From_String<T>(string? value, ref T result)`: Ustawia wartość w podaej zmiennej a <T> jeśłi value jest <T>, w przeciwnm wypadku zwraca fałsz.
