@@ -184,9 +184,10 @@ Działanie programu:
 - `public static void OpenConnection()`: Otwiera MAX 1 połączenie z bazą danych.
 - `public static void CloseConnection()`: Zamyka obecne połączenie do bazy.
 - `public static SqlConnection GetConnection()`: Zwraca obecne aktywn połączenie.
-- `Transaction_Manager.Create_Transaction()`: Tworzy nową MAX 1 transakcję.
-- `Transaction_Manager.Commit_Transaction()`:` Commituje transakcję i ustawwia ją czyści;
-- `Transaction_Manager.RollBack_Transaction()`:` rollbackuje transakcję i ustawwia ją czyści;
+- Celem Transaction_Manager jest zarządzanie transakcjami w programie tak aby na jednym połączeni uz bazą wykonywała się 1 tranzakcja na raz co ułatwi procesowanie wielu plików na raz.
+- `Transaction_Manager.Create_Transaction()`: Tworzy nową transakcję.
+- `Transaction_Manager.Commit_Transaction()`:` Commituje transakcję i się jej pozbywa;
+- `Transaction_Manager.RollBack_Transaction()`:` rollbackuje transakcję i się jej pozbywa;
 
 ### Helper.cs
 - `public static bool Try_Get_Type_From_String<T>(string? value, ref T result)`: Ustawia wartość w podaej zmiennej a <T> jeśłi value jest <T>, w przeciwnm wypadku zwraca fałsz.
