@@ -203,7 +203,6 @@ namespace Excel_Data_Importer_WARS
             PomiaryStopWatch.Restart();
             await Dodaj_Dane_Do_Optimy(Karty_Ewidencji, Prowizje);
             Helper.Pomiar.Avg_Dodawanie_Do_Bazy = PomiaryStopWatch.Elapsed;
-
         }
         private static void Get_Dane_Naglowka(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
         {

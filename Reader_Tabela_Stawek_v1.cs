@@ -236,7 +236,7 @@ namespace Excel_Data_Importer_WARS
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
 
-
+            // Zamiast tego w plikach mają być opisane dokładnie okesy obowiązywania danych stawek
             DateTime Data_Od = DateTime.ParseExact("2025.02.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture);
             DateTime Data_Do = DateTime.ParseExact("2025.03.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture).AddDays(-1);
 

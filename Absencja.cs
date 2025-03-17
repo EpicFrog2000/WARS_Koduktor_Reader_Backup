@@ -3,8 +3,6 @@ using Microsoft.Data.SqlClient;
 
 namespace Excel_Data_Importer_WARS
 {
-
-
     internal class Absencja
     {
         public int Dzien = 0;

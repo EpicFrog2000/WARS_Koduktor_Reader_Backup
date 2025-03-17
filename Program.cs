@@ -1,23 +1,19 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Spreadsheet;
-using ExcelDataReader;
 using System.Data;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using static Excel_Data_Importer_WARS.DbManager;
+
 
 namespace Excel_Data_Importer_WARS
 {
     static class Program
     {
-        private static Error_Logger error_logger = new(true); // true - Console write message on creating new error
-        private static Config config = new();
+        private static readonly Error_Logger error_logger = new(true); // true - Console write message on creating new error
+        private static readonly Config config = new();
         private static readonly bool LOG_TO_TERMINAL = true;
-
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
-        [DllImportAttribute("user32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
         public static async Task Main()
         {
@@ -273,17 +269,17 @@ namespace Excel_Data_Importer_WARS
             Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
             return Helper.Typ_Zakladki.Nierozopznana;
         }
-        private static void Usun_Ukryte_Karty(XLWorkbook workbook)
-        {
-            Stopwatch PomiaryStopWatch = Stopwatch.StartNew();
-            IXLWorksheet[] sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
-            foreach (IXLWorksheet sheet in sheetsToRemove)
-            {
-                workbook.Worksheets.Delete(sheet.Name);
-            }
-            workbook.Save();
-            Helper.Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
-        }
+        //private static void Usun_Ukryte_Karty(XLWorkbook workbook)
+        //{
+        //    Stopwatch PomiaryStopWatch = Stopwatch.StartNew();
+        //    IXLWorksheet[] sheetsToRemove = workbook.Worksheets.Where(s => s.Visibility == XLWorksheetVisibility.Hidden).ToArray();
+        //    foreach (IXLWorksheet sheet in sheetsToRemove)
+        //    {
+        //        workbook.Worksheets.Delete(sheet.Name);
+        //    }
+        //    workbook.Save();
+        //    Helper.Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
+        //}
         private static (string, DateTime) Get_Metadane_Pliku(XLWorkbook Workbook, string File_Path)
         {
             Stopwatch PomiaryStopWatch = new();

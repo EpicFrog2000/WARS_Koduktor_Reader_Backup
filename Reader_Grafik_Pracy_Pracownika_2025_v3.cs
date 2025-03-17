@@ -336,7 +336,6 @@ namespace Excel_Data_Importer_WARS
                 }
             }
             DbManager.Transaction_Manager.Commit_Transaction();
-            
             if (dodano > 0)
             {
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -374,12 +373,10 @@ namespace Excel_Data_Importer_WARS
                     if (startGodz == TimeSpan.Zero && endGodz == startGodz)
                     {
                         command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
-
                     }
                     else
                     {
                         command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_Podstawowy;
-
                     }
                     command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                     command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));

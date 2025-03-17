@@ -42,7 +42,6 @@ namespace Excel_Data_Importer_WARS
                 }
                 return 0;
             }
-
             public void Set_Miesiac(string value)
             {
                 if (string.IsNullOrEmpty(value))

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using DocumentFormat.OpenXml.Drawing;
 using Microsoft.Data.SqlClient;
 
 
@@ -509,7 +510,6 @@ END
             }
         }
 
-
         // Zrobione aby w programie bylo tylko 1 połączenie do bazy danych
         private static SqlConnection? Dbconnection = null;
         private static readonly object Blokada = new();
@@ -549,7 +549,7 @@ END
         // On jest po to aby w programie była tworzona tylko 1 transakcja na raz jeśli będzie wykorzystywane jednoczesne wczytywanie z kilku plików na raz
         public static class Transaction_Manager
         {
-            private static SemaphoreSlim Create_Transaction_Semaphore = new(1, 1);
+            private static readonly SemaphoreSlim Create_Transaction_Semaphore = new(1, 1);
             public static SqlTransaction? CurrentTransaction = null;
             public static void Commit_Transaction()
             {
