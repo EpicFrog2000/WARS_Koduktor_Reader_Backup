@@ -547,6 +547,7 @@ END
         }
 
         // On jest po to aby w programie była tworzona tylko 1 transakcja na raz jeśli będzie wykorzystywane jednoczesne wczytywanie z kilku plików na raz
+        // Dzięki temu kilka plików może być wczytywanych na raz do momentu wykonywania tranzakcji gdzie czekają na swoją kolej. Więc nie równocześnie wykonywana jest jedynie operacje na bazie danych.
         public static class Transaction_Manager
         {
             private static readonly SemaphoreSlim Create_Transaction_Semaphore = new(1, 1);

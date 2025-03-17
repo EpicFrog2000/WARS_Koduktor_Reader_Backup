@@ -258,7 +258,8 @@ namespace Excel_Data_Importer_WARS
             while (!string.IsNullOrEmpty(dane))
             {
                 dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 1).GetFormattedString().Trim().Replace("  ", " ");
-                if(dane.Contains("Relacja z poprzedniego miesiąca"))
+                // czasem jest zamiast opisu relacji to i to za dużo roboty to obslugiwanie tego, niech po prostu dobrze wpisują
+                if (dane.Contains("Relacja z poprzedniego miesiąca"))
                 {
                     Internal_Error_Logger.New_Error(dane, "Numer relacji", Pozycja.Col + 1, Pozycja.Row + Row_Offset, $"Proszę wpisać poprawny nr relacji oraz jej opis zamiast {dane}");
                 }

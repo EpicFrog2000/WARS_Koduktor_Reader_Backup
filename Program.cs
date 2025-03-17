@@ -18,7 +18,6 @@ namespace Excel_Data_Importer_WARS
         public static async Task Main()
         {
             Tylko_Jedna_Instancja();
-
             try
             {
                 await Do_The_Thing();
