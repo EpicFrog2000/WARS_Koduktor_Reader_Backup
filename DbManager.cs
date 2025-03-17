@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using DocumentFormat.OpenXml.Drawing;
 using Microsoft.Data.SqlClient;
 
 
@@ -603,7 +602,6 @@ END
                 CurrentTransaction = GetConnection().BeginTransaction();
                 Create_Transaction_Semaphore.Release();
                 Helper.Pomiar.Avg_Create_Transaction = PomiaryStopWatch.Elapsed;
-
             }
         }
     }

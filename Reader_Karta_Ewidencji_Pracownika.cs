@@ -3,8 +3,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Drawing.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.Data.SqlClient;
 
 //Jest przekopiowane praktycznie 1 do 1 ze starego programu dlatego jest taki murzyński kod

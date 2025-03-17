@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
 
@@ -78,7 +77,7 @@ namespace Excel_Data_Importer_WARS
                             }
                             catch
                             {
-                                Internal_Error_Logger.New_Error(dane, "Naglowek", pozycja.Col + 3, pozycja.Row - 5, "Zły format pliku");
+                                Internal_Error_Logger.New_Error(dane, "Naglowek", pozycja.Col + 3, pozycja.Row + rowOffset, "Zły format pliku");
                             }
                         }
                     }// xddddddddddd
