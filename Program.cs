@@ -35,7 +35,6 @@ namespace Excel_Data_Importer_WARS
         }
         private static async Task Do_The_Thing()
         {
-            // Start measuring time
             Stopwatch stopwatch = new();
             stopwatch.Start();
 
@@ -84,13 +83,12 @@ namespace Excel_Data_Importer_WARS
                     for (int i = 0; i < files.Length; i += batchSize)
                     {
                         var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file)); // Coś długo się ta funkcja wykonuje, TODO fix
-                        await Task.WhenAll(batch);                                                      // Nvm, może jednak ok ale i tak coś mi tu śmierdzi z czasem wykonywania.  
+                        await Task.WhenAll(batch);                                                     // Nvm, może jednak ok ale i tak coś mi tu śmierdzi z czasem wykonywania.  
                     }
 
                     DbManager.CloseConnection();
                 }
             } while (config.Tryb_Zapetlony);
-
 
             if (!LOG_TO_TERMINAL)
             {

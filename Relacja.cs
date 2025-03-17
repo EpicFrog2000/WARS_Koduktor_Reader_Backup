@@ -18,7 +18,7 @@ namespace Excel_Data_Importer_WARS
             using (SqlCommand command = new(DbManager.Get_Relacja, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
             {
                 command.Parameters.Add("@R_Nazwa", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
-                command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = DBNull.Value;
+                //command.Parameters.Add("@R_Typ", SqlDbType.Int).Value = DBNull.Value;
                 object result = command.ExecuteScalar();
                 if (result != null)
                 {

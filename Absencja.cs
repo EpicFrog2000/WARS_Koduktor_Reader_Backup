@@ -338,6 +338,7 @@ namespace Excel_Data_Importer_WARS
                 //RodzajAbsencji.ZZ => "" Kurwa niewiem POMOCY xd
                 //RodzajAbsencji.UD => "", NIE MA opieki nad dzieckiem 
                 _ => "Nieobecność (B2B)"
+                // Zostały dodane nowe typy nieobecnosci typu (plan), TODO zapytac sie o nie czy mają byc wykozystywane do nieobec w grafikach
             };
         }
     }
