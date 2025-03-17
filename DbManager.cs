@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Diagnostics;
+using Microsoft.Data.SqlClient;
 
 
 namespace Excel_Data_Importer_WARS
@@ -507,6 +508,9 @@ END
                 return false;
             }
         }
+
+
+        // Zrobione aby w programie bylo tylko 1 połączenie do bazy danych
         private static SqlConnection? Dbconnection = null;
         private static readonly object Blokada = new();
         private static void Init_Connection()
@@ -541,6 +545,8 @@ END
             OpenConnection();
             return Dbconnection!;
         }
+
+        // On jest po to aby w programie była tworzona tylko 1 transakcja na raz jeśli będzie wykorzystywane jednoczesne wczytywanie z kilku plików na raz
         public static class Transaction_Manager
         {
             private static SemaphoreSlim Create_Transaction_Semaphore = new(1, 1);
@@ -584,9 +590,10 @@ END
                     throw new Exception("Błąd podczas rollbackowania transakcji: " + ex.Message);
                 }
             }
-
             public static async Task Create_Transaction()
             {
+                Stopwatch PomiaryStopWatch = new();
+                PomiaryStopWatch.Restart();
                 await Create_Transaction_Semaphore.WaitAsync();
                 while (CurrentTransaction != null)
                 {
@@ -594,6 +601,8 @@ END
                 }
                 CurrentTransaction = GetConnection().BeginTransaction();
                 Create_Transaction_Semaphore.Release();
+                Helper.Pomiar.Avg_Create_Transaction = PomiaryStopWatch.Elapsed;
+
             }
         }
     }

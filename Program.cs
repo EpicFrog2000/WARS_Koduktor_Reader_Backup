@@ -33,7 +33,8 @@ namespace Excel_Data_Importer_WARS
             }
             finally
             {
-                Pomiar.Display_Times();
+                Helper.Pomiar.Display_Times();
+                Console.WriteLine("Kliknij aby zakończyć...");
                 Console.ReadLine();
             }
         }
@@ -88,7 +89,7 @@ namespace Excel_Data_Importer_WARS
                     for (int i = 0; i < files.Length; i += batchSize)
                     {
                         var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file)); // Coś długo się ta funkcja wykonuje, TODO fix
-                        await Task.WhenAll(batch);
+                        await Task.WhenAll(batch);                                                      // Nvm, może jednak ok ale i tak coś mi tu śmierdzi z czasem wykonywania.  
                     }
 
                     DbManager.CloseConnection();
@@ -101,8 +102,6 @@ namespace Excel_Data_Importer_WARS
                 Console.SetOut(originalOut);
             }
             Console.WriteLine("Czas wykonania programu: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\:fff"));
-            Console.WriteLine("Kliknij aby zakończyć...");
-            Console.ReadLine();
         }
         private static async Task Process_Files(string File_Path)
         {
@@ -117,11 +116,8 @@ namespace Excel_Data_Importer_WARS
             if (Workbook == null)
             {
                 Move_File(File_Path, Move_File_Opcje.Bad_Files_Folder);
-                Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 return;
             }
-
-            //Usun_Ukryte_Karty(Workbook);
 
             Error_Logger Internal_Error_Logger = new(true)
             {
@@ -140,7 +136,6 @@ namespace Excel_Data_Importer_WARS
             int Ilosc_Zakladek_W_Workbook = Workbook.Worksheets.Count;
             if (Ilosc_Zakladek_W_Workbook < 1)
             {
-                Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
                 Workbook!.Dispose();
                 return;
             }
@@ -149,6 +144,9 @@ namespace Excel_Data_Importer_WARS
 
             for (int Obecny_Numer_Zakladki = 1; Obecny_Numer_Zakladki <= Ilosc_Zakladek_W_Workbook; Obecny_Numer_Zakladki++)
             {
+                Stopwatch PomiaryStopWatch_zakladka = new();
+                PomiaryStopWatch_zakladka.Restart();
+
                 Internal_Error_Logger.Nr_Zakladki = Obecny_Numer_Zakladki;
                 IXLWorksheet Zakladka = Workbook.Worksheet(Obecny_Numer_Zakladki);
                 if (Zakladka.Visibility == XLWorksheetVisibility.Hidden || Zakladka.Visibility == XLWorksheetVisibility.VeryHidden)
@@ -157,6 +155,7 @@ namespace Excel_Data_Importer_WARS
                 }
                 Internal_Error_Logger.Nazwa_Zakladki = Zakladka.Name;
                 Helper.Typ_Zakladki Typ_Zakladki = Get_Typ_Zakladki(Zakladka);
+
                 try
                 {
                     switch (Typ_Zakladki)
@@ -193,7 +192,7 @@ namespace Excel_Data_Importer_WARS
                 {
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
-                    Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
+                    Helper.Pomiar.Avg_Process_1_Zakladka = PomiaryStopWatch_zakladka.Elapsed;
                 }
             }
             Workbook!.Dispose();
@@ -205,6 +204,8 @@ namespace Excel_Data_Importer_WARS
             {
                 Move_File(File_Path, Move_File_Opcje.Processed_Files_Folder);
             }
+            Helper.Pomiar.Avg_Process_Files = PomiaryStopWatch.Elapsed;
+
         }
         private static Helper.Typ_Zakladki Get_Typ_Zakladki(IXLWorksheet Worksheet)
         {
@@ -219,41 +220,41 @@ namespace Excel_Data_Importer_WARS
                     {
                         if (cell.GetString().Trim() == "Czas odpoczynku (wliczany do CP)")
                         {
-                            Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                            Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                             return Helper.Typ_Zakladki.Harmonogram_Pracy_Konduktora;
                         }
                     }
                     catch { }
                 }
-                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
             Cell_Value = Worksheet.Cell(1, 3).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("Tabela Stawek"))
             {
-                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return Helper.Typ_Zakladki.Tabela_Stawek;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).GetFormattedString().Trim().Replace("  ", " ");
             if (Cell_Value.Contains("KARTA EWIDENCJI CZASU PRACY"))
             {
-                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return Helper.Typ_Zakladki.Karta_Ewidencji_Konduktora;
             }
 
             Cell_Value = Worksheet.Cell(1, 1).Value.ToString();
             if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
             {
-                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
             Cell_Value = Worksheet.Cell(1, 2).Value.ToString();
             if (Cell_Value.Trim().StartsWith("GRAFIK PRACY MIESIĄC")) // grafik v2024 v2
             {
-                Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                 return Helper.Typ_Zakladki.Grafik_Pracy_Pracownika;
             }
 
@@ -263,13 +264,13 @@ namespace Excel_Data_Importer_WARS
                 {
                      if (cell.GetString().Trim() == "Dzień") // karta pracy NIE konduktora
                     {
-                        Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+                        Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
                         return Helper.Typ_Zakladki.Karta_Ewidencji_Pracownika;
                     }
                 }
                 catch { }
             }
-            Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
+            Helper.Pomiar.Avg_Get_Typ_Zakladki = PomiaryStopWatch.Elapsed;
             return Helper.Typ_Zakladki.Nierozopznana;
         }
         private static void Usun_Ukryte_Karty(XLWorkbook workbook)
@@ -281,7 +282,7 @@ namespace Excel_Data_Importer_WARS
                 workbook.Worksheets.Delete(sheet.Name);
             }
             workbook.Save();
-            Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
+            Helper.Pomiar.Avg_Usun_Ukryte_Karty = PomiaryStopWatch.Elapsed;
         }
         private static (string, DateTime) Get_Metadane_Pliku(XLWorkbook Workbook, string File_Path)
         {
@@ -289,7 +290,7 @@ namespace Excel_Data_Importer_WARS
             PomiaryStopWatch.Restart();
             DateTime lastWriteTime = File.GetLastWriteTime(File_Path);
             string lastModifiedBy = Workbook.Properties.LastModifiedBy ?? "";
-            Pomiar.Avg_Get_Metadane_Pliku = PomiaryStopWatch.Elapsed;
+            Helper.Pomiar.Avg_Get_Metadane_Pliku = PomiaryStopWatch.Elapsed;
             return (lastModifiedBy, lastWriteTime);
         }
         private static async Task<XLWorkbook?> Open_Workbook(string File_Path)
@@ -302,7 +303,7 @@ namespace Excel_Data_Importer_WARS
                 byte[] fileBytes = await File.ReadAllBytesAsync(File_Path);
                 using var memoryStream = new MemoryStream(fileBytes);
                 Workbook = new(memoryStream);
-                Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
                 return Workbook;
             }
             catch
@@ -311,7 +312,7 @@ namespace Excel_Data_Importer_WARS
                 //error_logger.New_Custom_Error($"Program nie może odczytać pliku {File_Path}", false);
                 Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
                 Console.ForegroundColor = ConsoleColor.White;
-                Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
                 return null;
             }
         }
@@ -321,7 +322,7 @@ namespace Excel_Data_Importer_WARS
             PomiaryStopWatch.Restart();
             if (!config.Move_Files_To_Processed_Folder)
             {
-                Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
                 return;
             }
             try
@@ -342,7 +343,7 @@ namespace Excel_Data_Importer_WARS
                             File.Delete(destinationPath);
                         }
                         File.Move(filePath, destinationPath);
-                        Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                        Helper.Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
                         return;
                     default:
                         return;
@@ -366,7 +367,7 @@ namespace Excel_Data_Importer_WARS
             }
             finally
             {
-                Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
+                Helper.Pomiar.Avg_MoveFile = PomiaryStopWatch.Elapsed;
             }
         }
         private static async Task Copy_Bad_Sheet_To_Files_Folder(XLWorkbookProperties op, IXLWorksheet sheetToCopy, string filePath)
@@ -385,7 +386,7 @@ namespace Excel_Data_Importer_WARS
                     await Task.Run(() => workbook.SaveAs(newFilePath));
                 }
             }
-            Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder = PomiaryStopWatch.Elapsed;
+            Helper.Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder = PomiaryStopWatch.Elapsed;
         }
         private static void Check_Base_Dirs(string path)
         {
@@ -514,116 +515,6 @@ namespace Excel_Data_Importer_WARS
             Processed_Files_Folder = 2
         }
     }
-    static class Pomiar
-    {
-        private static TimeSpan avg_Get_Metadane_Pliku = TimeSpan.Zero;
-        private static TimeSpan avg_Process_Files = TimeSpan.Zero;
-        private static TimeSpan avg_MoveFile = TimeSpan.Zero;
-        private static TimeSpan avg_Copy_Bad_Sheet_To_Files_Folder = TimeSpan.Zero;
-        private static TimeSpan avg_Open_Workbook = TimeSpan.Zero;
-        private static TimeSpan avg_Get_Typ_Zakladki = TimeSpan.Zero;
-        private static TimeSpan avg_Usun_Ukryte_Karty = TimeSpan.Zero;
-        public static TimeSpan Avg_Get_Metadane_Pliku
-        {
-            get => avg_Get_Metadane_Pliku;
-            set
-            {
-                if (avg_Get_Metadane_Pliku == TimeSpan.Zero)
-                {
-                    avg_Get_Metadane_Pliku = value;
-                    return;
-                }
-                avg_Get_Metadane_Pliku = (value + avg_Get_Metadane_Pliku) / 2;
-            }
-        }
-        public static TimeSpan Avg_Process_Files
-        {
-            get => avg_Process_Files;
-            set
-            {
-                if (avg_Process_Files == TimeSpan.Zero)
-                {
-                    avg_Process_Files = value;
-                    return;
-                }
-                avg_Process_Files = (value + avg_Process_Files) / 2;
-            }
-        }
-        public static TimeSpan Avg_MoveFile
-        {
-            get => avg_MoveFile;
-            set
-            {
-                if (avg_MoveFile == TimeSpan.Zero)
-                {
-                    avg_MoveFile = value;
-                    return;
-                }
-                avg_MoveFile = (value + avg_MoveFile) / 2;
-            }
-        }
-        public static TimeSpan Avg_Copy_Bad_Sheet_To_Files_Folder
-        {
-            get => avg_Copy_Bad_Sheet_To_Files_Folder;
-            set
-            {
-                if (avg_Copy_Bad_Sheet_To_Files_Folder == TimeSpan.Zero)
-                {
-                    avg_Copy_Bad_Sheet_To_Files_Folder = value;
-                    return;
-                }
-                avg_Copy_Bad_Sheet_To_Files_Folder = (value + avg_Copy_Bad_Sheet_To_Files_Folder) / 2;
-            }
-        }
-        public static TimeSpan Avg_Open_Workbook
-        {
-            get => avg_Open_Workbook;
-            set
-            {
-                if (avg_Open_Workbook == TimeSpan.Zero)
-                {
-                    avg_Open_Workbook = value;
-                    return;
-                }
-                avg_Open_Workbook = (value + avg_Open_Workbook) / 2;
-            }
-        }
-        public static TimeSpan Avg_Get_Typ_Zakladki
-        {
-            get => avg_Get_Typ_Zakladki;
-            set
-            {
-                if (avg_Get_Typ_Zakladki == TimeSpan.Zero)
-                {
-                    avg_Get_Typ_Zakladki = value;
-                    return;
-                }
-                avg_Get_Typ_Zakladki = (value + avg_Get_Typ_Zakladki) / 2;
-            }
-        }
-        public static TimeSpan Avg_Usun_Ukryte_Karty
-        {
-            get => avg_Usun_Ukryte_Karty;
-            set
-            {
-                if (avg_Usun_Ukryte_Karty == TimeSpan.Zero)
-                {
-                    avg_Usun_Ukryte_Karty = value;
-                    return;
-                }
-                avg_Usun_Ukryte_Karty = (value + avg_Usun_Ukryte_Karty) / 2;
-            }
-        }
-        public static void Display_Times()
-        {
-            Console.WriteLine($"Pomiar.Avg_Get_Typ_Zakladki: {Avg_Get_Typ_Zakladki}");
-            Console.WriteLine($"Pomiar.Avg_Get_Metadane_Pliku: {Avg_Get_Metadane_Pliku}");
-            Console.WriteLine($"Pomiar.Avg_Open_Workbook: {Avg_Open_Workbook}");
-            Console.WriteLine($"Pomiar.Avg_Process_Files: {Avg_Process_Files}");
-            Console.WriteLine($"Pomiar.Avg_MoveFile: {Avg_MoveFile}");
-            Console.WriteLine($"Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder: {Avg_Copy_Bad_Sheet_To_Files_Folder}");
-            Console.WriteLine($"Pomiar.Avg_Usun_Ukryte_Karty: {Avg_Usun_Ukryte_Karty}");
-        }
-    }
+
 }
 

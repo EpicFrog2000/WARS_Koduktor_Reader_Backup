@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using ClosedXML.Excel;
@@ -44,6 +45,10 @@ namespace Excel_Data_Importer_WARS
             Internal_Error_Logger = error_Logger;
             List<Helper.Current_Position> Lista_Pozycji_Grafików_Z_Zakladki = Helper.Find_Starting_Points(Zakladka, "Data");
             List<Grafik> grafiki = [];
+
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
+
             foreach (Helper.Current_Position Startpozycja in Lista_Pozycji_Grafików_Z_Zakladki)
             {
                 Helper.Current_Position pozycja = Startpozycja;
@@ -118,9 +123,14 @@ namespace Excel_Data_Importer_WARS
                     counter++;
                 }
             }
+            Helper.Pomiar.Avg_Get_Dane_Z_Pliku = PomiaryStopWatch.Elapsed;
+
+
             if (grafiki.Count > 0)
             {
+                PomiaryStopWatch.Restart();
                 await Dodaj_Plany_do_Optimy(grafiki);
+                Helper.Pomiar.Avg_Dodawanie_Do_Bazy = PomiaryStopWatch.Elapsed;
             }
             else
             {

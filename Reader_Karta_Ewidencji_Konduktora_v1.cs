@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
@@ -61,10 +62,9 @@ namespace Excel_Data_Importer_WARS
             public List<TimeSpan> Godziny_Pracy_Do = [];
 
             // Ja jebe ten WARS to jest jebany syf 
-            // KURWA, dostałem plik bez nagłowka, a zmieniła się szerokość karty i nie wiem czy coś zmieniło to w nagłówku więc pierdole, zrobię później bo to szybkie do przerobienia jest
             // Te godz ponizej zamiast tych Godz_PRacy_Od i Do
             // TODO: Dodać wczytytwanie z pliku
-            // TODO: Dodać zapisywanie do bazy danych
+            // TODO: Dodać zapisywanie do bazy danych -> jest kod napisany tylko przetestować
             public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Od = []; 
             public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Do = []; 
             public List<TimeSpan> Godziny_Pracy_Inne_Czynnosci_Od = [];
@@ -179,6 +179,10 @@ namespace Excel_Data_Importer_WARS
             List<Karta_Ewidencji> Karty_Ewidencji = [];
             List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Dzień miesiąca");
             List<Prowizje> Prowizje = [];
+
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
+
             foreach (Helper.Current_Position Pozycja in Pozycje)
             {
                 Karta_Ewidencji Karta_Ewidencji = new();
@@ -193,8 +197,12 @@ namespace Excel_Data_Importer_WARS
                 Prowizje[^1].Rok = Karta_Ewidencji.Rok;
                 Prowizje[^1].Miesiac = Karta_Ewidencji.Miesiac;
             }
-            await Dodaj_Dane_Do_Optimy(Karty_Ewidencji, Prowizje);
 
+            Helper.Pomiar.Avg_Get_Dane_Z_Pliku = PomiaryStopWatch.Elapsed;
+
+            PomiaryStopWatch.Restart();
+            await Dodaj_Dane_Do_Optimy(Karty_Ewidencji, Prowizje);
+            Helper.Pomiar.Avg_Dodawanie_Do_Bazy = PomiaryStopWatch.Elapsed;
 
         }
         private static void Get_Dane_Naglowka(ref Karta_Ewidencji Karta_Ewidencji, IXLWorksheet Zakladka, Helper.Current_Position Pozycja)
@@ -306,7 +314,9 @@ namespace Excel_Data_Importer_WARS
                         }
                     }
 
-                    
+                    //TODO wczytywanie rzeczy ponirzej przesunć o 1 kolimne w prawo a powyrzej zamienić na inne czasy pracy
+
+
 
                     //godz. odpoczynku od
                     dane = Zakladka.Cell(Pozycja.Row + Row_Offset, Pozycja.Col + 6).GetFormattedString().Trim().Replace("  ", " ");
@@ -493,6 +503,56 @@ namespace Excel_Data_Importer_WARS
                                 Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                             }
                         }
+
+
+                        //// TODO: usun to nad tym
+                        //if (Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count >= 1)
+                        //{
+                        //    for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count; j++)
+                        //    {
+                        //        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od[j], Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Obsługi_Relacji, Dane_Karty.Relacja.Numer_Relacji);
+                        //    }
+                        //}
+                        //else
+                        //{
+                        //    decimal godzNadlPlatne50 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_50 <= 0
+                        //        ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50
+                        //        : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_50;
+
+                        //    decimal godzNadlPlatne100 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_100 <= 0
+                        //        ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100
+                        //        : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_100;
+
+                        //    if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
+                        //    {
+                        //        TimeSpan baseTime = TimeSpan.FromHours(8);
+                        //        Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Add(baseTime);
+                        //        Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
+                        //        for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count; k++)
+                        //        {
+                        //            ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od[k], Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Obsługi_Relacji, Dane_Karty.Relacja.Numer_Relacji);
+                        //        }
+                        //    }
+                        //    else
+                        //    {
+                        //        Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
+                        //    }
+                        //}
+
+                        //if (Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Od.Count >= 1)
+                        //{
+                        //    for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Od.Count; j++)
+                        //    {
+                        //        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Od[j], Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Poza_Relacją, Dane_Karty.Relacja.Numer_Relacji);
+                        //    }
+                        //}
+                        //else
+                        //{
+                        //    Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
+                        //}
+
+
+
                     }
                 }
             }
@@ -500,6 +560,8 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Zrob_Insert_Obecnosc_Command(DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji Karta_Ewidencji, Helper.Strefa Strefa, string Numer_Relacji)
         {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             try
             {
                 DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
@@ -540,6 +602,7 @@ namespace Excel_Data_Importer_WARS
                         command.Parameters.Add("@Numer_Relacji", SqlDbType.NVarChar, 20).Value = Numer_Relacji;
                         command.ExecuteScalar();
                     }
+                    Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
                     return 1;
                 }
             }
@@ -547,15 +610,19 @@ namespace Excel_Data_Importer_WARS
             {
                 Internal_Error_Logger.New_Custom_Error($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
+                Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
+
                 throw new Exception($"Error podczas operacji w bazie(Zrob_Insert_Obecnosc_Command): {ex.Message}");
             }
             catch (Exception ex)
             {
                 Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
+                Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
                 throw new Exception($"Error: {ex.Message}");
 
             }
+            Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
             return 0;
         }
         private static async Task Dodaj_Dane_Do_Optimy(List<Karta_Ewidencji> Karty_Ewidencji, List<Prowizje> Prowizje)

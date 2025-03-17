@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
@@ -51,7 +52,8 @@ namespace Excel_Data_Importer_WARS
 
             List<Harmonogram_Pracy_Konduktora> Harmonogramy_Pracy_Konduktora = [];
             List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Dzień miesiąca");
-
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             foreach (Helper.Current_Position Pozycja in Pozycje)
             {
                 Harmonogram_Pracy_Konduktora Harmonogram_Pracy_Konduktora = new();
@@ -59,8 +61,12 @@ namespace Excel_Data_Importer_WARS
                 Get_Dane_Harmonogramu(Zakladka, Pozycja, ref Harmonogram_Pracy_Konduktora);
                 Harmonogramy_Pracy_Konduktora.Add(Harmonogram_Pracy_Konduktora);
             }
-            await Dodaj_Dane_Do_Optimy(Harmonogramy_Pracy_Konduktora);
 
+            Helper.Pomiar.Avg_Get_Dane_Z_Pliku = PomiaryStopWatch.Elapsed;
+
+            PomiaryStopWatch.Restart();
+            await Dodaj_Dane_Do_Optimy(Harmonogramy_Pracy_Konduktora);
+            Helper.Pomiar.Avg_Dodawanie_Do_Bazy = PomiaryStopWatch.Elapsed;
 
         }
         private static void Get_Dane_Naglowka(IXLWorksheet Zakladka, Helper.Current_Position pozycja, ref Harmonogram_Pracy_Konduktora Harmonogram_Pracy_Konduktora)

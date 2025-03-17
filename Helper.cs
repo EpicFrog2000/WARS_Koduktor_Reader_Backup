@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using ClosedXML.Excel;
 
 
@@ -129,6 +130,8 @@ namespace Excel_Data_Importer_WARS
         }
         public static List<Current_Position> Find_Starting_Points(IXLWorksheet worksheet, string keyWord, bool CompareMode=true)
         {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             const int limit = 1000;
             ConcurrentBag<Current_Position> positions = [];
             IXLCell[] cells = [.. worksheet.CellsUsed()];
@@ -138,11 +141,16 @@ namespace Excel_Data_Importer_WARS
                 if (positions.Count >= limit)
                 {
                     state.Stop();
+                    Helper.Pomiar.Avg_Find_Starting_Points = PomiaryStopWatch.Elapsed;
                     return;
                 }
 
                 if (cell.HasFormula && !cell.FormulaA1.Equals(cell.Address.ToString()))
+                {
+                    Helper.Pomiar.Avg_Find_Starting_Points = PomiaryStopWatch.Elapsed;
                     return;
+                }
+                    
 
                 string formattedValue = cell.GetFormattedString();
                 if (CompareMode)
@@ -161,10 +169,228 @@ namespace Excel_Data_Importer_WARS
                 }
                 
             });
-
+            Helper.Pomiar.Avg_Find_Starting_Points = PomiaryStopWatch.Elapsed;
             return positions.Take(limit).ToList();
         }
         public static string Truncate(string? value, int maxLength) =>
             string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
+        public static class Pomiar
+        {
+            private static TimeSpan avg_Get_Metadane_Pliku = TimeSpan.Zero;
+            private static TimeSpan avg_Process_Files = TimeSpan.Zero;
+            private static TimeSpan avg_Process_1_Zakladka = TimeSpan.Zero;
+            private static TimeSpan avg_MoveFile = TimeSpan.Zero;
+            private static TimeSpan avg_Copy_Bad_Sheet_To_Files_Folder = TimeSpan.Zero;
+            private static TimeSpan avg_Open_Workbook = TimeSpan.Zero;
+            private static TimeSpan avg_Get_Typ_Zakladki = TimeSpan.Zero;
+            private static TimeSpan avg_Usun_Ukryte_Karty = TimeSpan.Zero;
+            private static TimeSpan avg_Find_Starting_Points = TimeSpan.Zero;
+            private static TimeSpan avg_Insert_Obecnosc_Command = TimeSpan.Zero;
+            private static TimeSpan avg_Get_Dane_Z_Pliku = TimeSpan.Zero;
+            private static TimeSpan avg_Insert_Atrybuty_Do_Optimy = TimeSpan.Zero;
+            private static TimeSpan avg_Create_Transaction = TimeSpan.Zero;
+            private static TimeSpan avg_Dodawanie_Do_Bazy = TimeSpan.Zero;
+
+            public static TimeSpan Avg_Get_Metadane_Pliku
+            {
+                get => avg_Get_Metadane_Pliku;
+                set
+                {
+                    if (avg_Get_Metadane_Pliku == TimeSpan.Zero)
+                    {
+                        avg_Get_Metadane_Pliku = value;
+                        return;
+                    }
+                    avg_Get_Metadane_Pliku = (value + avg_Get_Metadane_Pliku) / 2;
+                }
+            }
+            public static TimeSpan Avg_Process_Files
+            {
+                get => avg_Process_Files;
+                set
+                {
+                    if (avg_Process_Files == TimeSpan.Zero)
+                    {
+                        avg_Process_Files = value;
+                        return;
+                    }
+                    avg_Process_Files = (value + avg_Process_Files) / 2;
+                }
+            }
+            public static TimeSpan Avg_MoveFile
+            {
+                get => avg_MoveFile;
+                set
+                {
+                    if (avg_MoveFile == TimeSpan.Zero)
+                    {
+                        avg_MoveFile = value;
+                        return;
+                    }
+                    avg_MoveFile = (value + avg_MoveFile) / 2;
+                }
+            }
+            public static TimeSpan Avg_Copy_Bad_Sheet_To_Files_Folder
+            {
+                get => avg_Copy_Bad_Sheet_To_Files_Folder;
+                set
+                {
+                    if (avg_Copy_Bad_Sheet_To_Files_Folder == TimeSpan.Zero)
+                    {
+                        avg_Copy_Bad_Sheet_To_Files_Folder = value;
+                        return;
+                    }
+                    avg_Copy_Bad_Sheet_To_Files_Folder = (value + avg_Copy_Bad_Sheet_To_Files_Folder) / 2;
+                }
+            }
+            public static TimeSpan Avg_Open_Workbook
+            {
+                get => avg_Open_Workbook;
+                set
+                {
+                    if (avg_Open_Workbook == TimeSpan.Zero)
+                    {
+                        avg_Open_Workbook = value;
+                        return;
+                    }
+                    avg_Open_Workbook = (value + avg_Open_Workbook) / 2;
+                }
+            }
+            public static TimeSpan Avg_Get_Typ_Zakladki
+            {
+                get => avg_Get_Typ_Zakladki;
+                set
+                {
+                    if (avg_Get_Typ_Zakladki == TimeSpan.Zero)
+                    {
+                        avg_Get_Typ_Zakladki = value;
+                        return;
+                    }
+                    avg_Get_Typ_Zakladki = (value + avg_Get_Typ_Zakladki) / 2;
+                }
+            }
+            public static TimeSpan Avg_Usun_Ukryte_Karty
+            {
+                get => avg_Usun_Ukryte_Karty;
+                set
+                {
+                    if (avg_Usun_Ukryte_Karty == TimeSpan.Zero)
+                    {
+                        avg_Usun_Ukryte_Karty = value;
+                        return;
+                    }
+                    avg_Usun_Ukryte_Karty = (value + avg_Usun_Ukryte_Karty) / 2;
+                }
+            }
+            public static TimeSpan Avg_Find_Starting_Points
+            {
+                get => avg_Find_Starting_Points;
+                set
+                {
+                    if (avg_Find_Starting_Points == TimeSpan.Zero)
+                    {
+                        avg_Find_Starting_Points = value;
+                        return;
+                    }
+                    avg_Find_Starting_Points = (value + avg_Find_Starting_Points) / 2;
+                }
+            }
+            public static TimeSpan Avg_Insert_Obecnosc_Command
+            {
+                get => avg_Insert_Obecnosc_Command;
+                set
+                {
+                    if (avg_Insert_Obecnosc_Command == TimeSpan.Zero)
+                    {
+                        avg_Insert_Obecnosc_Command = value;
+                        return;
+                    }
+                    avg_Insert_Obecnosc_Command = (value + avg_Insert_Obecnosc_Command) / 2;
+                }
+            }
+            public static TimeSpan Avg_Get_Dane_Z_Pliku
+            {
+                get => avg_Get_Dane_Z_Pliku;
+                set
+                {
+                    if (avg_Get_Dane_Z_Pliku == TimeSpan.Zero)
+                    {
+                        avg_Get_Dane_Z_Pliku = value;
+                        return;
+                    }
+                    avg_Get_Dane_Z_Pliku = (value + avg_Get_Dane_Z_Pliku) / 2;
+                }
+            }
+            public static TimeSpan Avg_Insert_Atrybuty_Do_Optimy
+            {
+                get => avg_Insert_Atrybuty_Do_Optimy;
+                set
+                {
+                    if (avg_Insert_Atrybuty_Do_Optimy == TimeSpan.Zero)
+                    {
+                        avg_Insert_Atrybuty_Do_Optimy = value;
+                        return;
+                    }
+                    avg_Insert_Atrybuty_Do_Optimy = (value + avg_Insert_Atrybuty_Do_Optimy) / 2;
+                }
+            }
+            public static TimeSpan Avg_Create_Transaction
+            {
+                get => avg_Create_Transaction;
+                set
+                {
+                    if (avg_Create_Transaction == TimeSpan.Zero)
+                    {
+                        avg_Create_Transaction = value;
+                        return;
+                    }
+                    avg_Create_Transaction = (value + avg_Create_Transaction) / 2;
+                }
+            }
+            public static TimeSpan Avg_Dodawanie_Do_Bazy
+            {
+                get => avg_Dodawanie_Do_Bazy;
+                set
+                {
+                    if (avg_Dodawanie_Do_Bazy == TimeSpan.Zero)
+                    {
+                        avg_Dodawanie_Do_Bazy = value;
+                        return;
+                    }
+                    avg_Dodawanie_Do_Bazy = (value + avg_Dodawanie_Do_Bazy) / 2;
+                }
+            }
+            public static TimeSpan Avg_Process_1_Zakladka
+            {
+                get => avg_Process_1_Zakladka;
+                set
+                {
+                    if (avg_Process_1_Zakladka == TimeSpan.Zero)
+                    {
+                        avg_Process_1_Zakladka = value;
+                        return;
+                    }
+                    avg_Process_1_Zakladka = (value + avg_Process_1_Zakladka) / 2;
+                }
+            }
+            // TODO dodać reszte do pomiarów
+            public static void Display_Times()
+            {
+                Console.WriteLine($"Pomiar.Avg_Process_Files: {Avg_Process_Files}");
+                Console.WriteLine($"Pomiar.Avg_Process_1_Zakladka: {Avg_Process_1_Zakladka}");
+                Console.WriteLine($"Pomiar.Avg_Open_Workbook: {Avg_Open_Workbook}");
+                Console.WriteLine($"Pomiar.Avg_Get_Metadane_Pliku: {Avg_Get_Metadane_Pliku}");
+                Console.WriteLine($"Pomiar.Avg_Get_Typ_Zakladki: {Avg_Get_Typ_Zakladki}");
+                //Console.WriteLine($"Pomiar.Avg_Usun_Ukryte_Karty: {Avg_Usun_Ukryte_Karty}");
+                Console.WriteLine($"Pomiar.Avg_Find_Starting_Points: {Avg_Find_Starting_Points}");
+                Console.WriteLine($"Pomiar.Avg_Get_Dane_Z_Pliku: {Avg_Get_Dane_Z_Pliku}");
+                Console.WriteLine($"Pomiar.Avg_Insert_Obecnosc_Command: {Avg_Insert_Obecnosc_Command}");
+                Console.WriteLine($"Pomiar.avg_Insert_Atrybuty_Do_Optimy: {avg_Insert_Atrybuty_Do_Optimy}");
+                Console.WriteLine($"Pomiar.avg_Create_Transaction: {avg_Create_Transaction}");
+                Console.WriteLine($"Pomiar.avg_Dodawanie_Do_Bazy: {avg_Dodawanie_Do_Bazy}");
+                Console.WriteLine($"Pomiar.Avg_MoveFile: {Avg_MoveFile}");
+                Console.WriteLine($"Pomiar.Avg_Copy_Bad_Sheet_To_Files_Folder: {Avg_Copy_Bad_Sheet_To_Files_Folder}");
+            }
+        }
     }
 }

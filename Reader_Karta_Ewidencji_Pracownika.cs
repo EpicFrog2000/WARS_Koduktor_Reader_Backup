@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
@@ -153,7 +154,8 @@ namespace Excel_Data_Importer_WARS
             Internal_Error_Logger = Error_Logger;
             List<Karta_Ewidencji_Pracownika> Karty_Ewidencji_Pracownika = [];
             List<Helper.Current_Position> Pozycje = Helper.Find_Starting_Points(Zakladka, "Dzień", false);
-
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             foreach (Helper.Current_Position Pozycja in Pozycje)
             {
                 Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika = new();
@@ -162,8 +164,12 @@ namespace Excel_Data_Importer_WARS
                 Karty_Ewidencji_Pracownika.Add(Karta_Ewidencji_Pracownika);
             }
             string Uwaga = Get_Uwaga_Karty(Zakladka);
+            Helper.Pomiar.Avg_Get_Dane_Z_Pliku = PomiaryStopWatch.Elapsed;
 
+
+            PomiaryStopWatch.Restart();
             await Dodaj_Dane_Do_Optimy(Karty_Ewidencji_Pracownika, Uwaga);
+            Helper.Pomiar.Avg_Dodawanie_Do_Bazy = PomiaryStopWatch.Elapsed;
         }
         private static void Get_Dane_Naglowka_Karty(ref Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Current_Position StartKarty, IXLWorksheet Zakladka)
         {
@@ -681,7 +687,6 @@ namespace Excel_Data_Importer_WARS
             }
             DbManager.Transaction_Manager.Commit_Transaction();
         }
-
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika)
         {
             HashSet<DateTime> Pasujace_Daty = [];
@@ -751,6 +756,8 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Zrob_Insert_Obecnosc_Command(DateTime Data_Karty, TimeSpan startPodstawowy, TimeSpan endPodstawowy, Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika, Helper.Strefa Strefa)
         {
+            Stopwatch PomiaryStopWatch = new();
+            PomiaryStopWatch.Restart();
             try
             {
 
@@ -783,6 +790,7 @@ namespace Excel_Data_Importer_WARS
                         command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
                         command.ExecuteScalar();
                     }
+                    Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
                     return 1;
                 }
             }
@@ -790,14 +798,17 @@ namespace Excel_Data_Importer_WARS
             {
                 Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
+                Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
                 throw new Exception($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
             catch (Exception ex)
             {
                 Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
                 DbManager.Transaction_Manager.RollBack_Transaction();
+                Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
                 throw new Exception($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
+            Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
             return 0;
         }
         private static int Dodaj_Godz_Odbior_Do_Optimy(Karta_Ewidencji_Pracownika karta)
