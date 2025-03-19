@@ -488,6 +488,22 @@ END
 ";
         public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
         private static string Connection_String = string.Empty;
+        
+        public static void Build_Connection_String(string Nazwa_Serwera, string Nazwa_Bazy)
+        {
+            if (string.IsNullOrEmpty(Nazwa_Serwera))
+            {
+                throw new Exception("Nazwa serwera nie może być pusta.");
+            }
+            if (string.IsNullOrEmpty(Nazwa_Bazy))
+            {
+                throw new Exception("Nazwa bazy nie może być pusta.");
+            }
+            Connection_String = $"Server={Nazwa_Serwera};Database={Nazwa_Bazy};Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
+        }
+
+
+
         public static void Set_Connection_String(string new_connection_string)
         {
             Connection_String = new_connection_string;

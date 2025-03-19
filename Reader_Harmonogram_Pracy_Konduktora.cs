@@ -30,6 +30,9 @@ namespace Excel_Data_Importer_WARS
                 Miesiac = months.FirstOrDefault(kvp => value.Contains(kvp.Value)).Key;
             }
         }
+        // TODO: zmieniło się miejsce dawania kodów nieobecności w arkuszach więc trzeba to zaktualizować
+        // chyba dodali też komórkę z napisem 'OBSŁUGA RELACJI' co przeniosło wszystko o 1 komórkę w duł więc należy to zaktualizować w get_typ_zakladki() chyba
+        // ALBO JEDNAK NIE XDDD, babka się jebnęła, więc czekam do piątku na jakieś sensowne dane
 
         private class Dane_Harmonogramu
         {

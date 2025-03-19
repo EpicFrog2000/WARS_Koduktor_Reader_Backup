@@ -5,7 +5,8 @@ namespace Excel_Data_Importer_WARS
     internal class Config
     {
         public List<string> Files_Folders { get; set; } = [Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files")];
-        public string Optima_Conection_String { get; set; } = "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
+        public string Nazwa_Serwera { get; set; } = string.Empty;
+        public string Nazwa_Bazy { get; set; } = string.Empty;
         public bool Clear_Logs_On_Program_Restart { get; set; } = false;
         public bool Clear_Bad_Files_On_Restart { get; set; } = false;
         public bool Clear_Processed_Files_On_Restart { get; set; } = false;
@@ -23,7 +24,8 @@ namespace Excel_Data_Importer_WARS
                 var defaultConfig = new
                 {
                     Files_Folders,
-                    Optima_Conection_String,
+                    Nazwa_Serwera,
+                    Nazwa_Bazy,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
@@ -39,8 +41,9 @@ namespace Excel_Data_Importer_WARS
             string json = File.ReadAllText(filePath);
             Config new_config = JsonSerializer.Deserialize<Config>(json)!;
             Files_Folders = new_config.Files_Folders;
-            Optima_Conection_String = new_config.Optima_Conection_String ?? "";
-            DbManager.Set_Connection_String(Optima_Conection_String);
+            Nazwa_Serwera = new_config.Nazwa_Serwera ?? "";
+            Nazwa_Bazy = new_config.Nazwa_Bazy ?? "";
+            DbManager.Build_Connection_String(Nazwa_Serwera, Nazwa_Bazy);
             Clear_Logs_On_Program_Restart = new_config.Clear_Logs_On_Program_Restart;
             Clear_Bad_Files_On_Restart = new_config.Clear_Bad_Files_On_Restart;
             Clear_Processed_Files_On_Restart = new_config.Clear_Processed_Files_On_Restart;
@@ -57,7 +60,8 @@ namespace Excel_Data_Importer_WARS
                 File.Create(Config_File_Path).Dispose();
                 var defaultConfig = new
                 {
-                    Optima_Conection_String,
+                    Nazwa_Serwera,
+                    Nazwa_Bazy,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
                     Clear_Logs_On_Program_Restart,
@@ -72,7 +76,8 @@ namespace Excel_Data_Importer_WARS
             if (config != null)
             {
                 Files_Folders = config.Files_Folders;
-                Optima_Conection_String = config.Optima_Conection_String;
+                Nazwa_Serwera = config.Nazwa_Serwera;
+                Nazwa_Bazy = config.Nazwa_Bazy;
                 Clear_Logs_On_Program_Restart = config.Clear_Logs_On_Program_Restart;
                 Clear_Bad_Files_On_Restart = config.Clear_Bad_Files_On_Restart;
                 Clear_Processed_Files_On_Restart = config.Clear_Processed_Files_On_Restart;
@@ -80,7 +85,7 @@ namespace Excel_Data_Importer_WARS
                 Clear_Good_Files_On_Restart = config.Clear_Good_Files_On_Restart;
                 Tryb_Zapetlony = config.Tryb_Zapetlony;
             }
-            DbManager.Set_Connection_String(Optima_Conection_String);
+            DbManager.Build_Connection_String(Nazwa_Serwera, Nazwa_Bazy);
             return existed;
         }
         public bool Check_File()
@@ -92,7 +97,8 @@ namespace Excel_Data_Importer_WARS
                 var defaultConfig = new
                 {
                     Files_Folders = new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files") },
-                    Optima_Conection_String,
+                    Nazwa_Serwera,
+                    Nazwa_Bazy,
                     Clear_Logs_On_Program_Restart,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
@@ -110,7 +116,8 @@ namespace Excel_Data_Importer_WARS
                 Dictionary<string, object> defaultConfig = new()
                 {
                     { "Files_Folders", new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files") } },
-                    { "Optima_Conection_String", Optima_Conection_String },
+                    { "Nazwa_Serwera", Nazwa_Serwera },
+                    { "Nazwa_Bazy", Nazwa_Bazy },
                     { "Clear_Logs_On_Program_Restart", Clear_Logs_On_Program_Restart },
                     { "Clear_Processed_Files_On_Restart", Clear_Processed_Files_On_Restart },
                     { "Clear_Bad_Files_On_Restart", Clear_Bad_Files_On_Restart },
@@ -137,7 +144,8 @@ namespace Excel_Data_Importer_WARS
                 var defaultConfig = new
                 {
                     Files_Folders = new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files") },
-                    Optima_Conection_String,
+                    Nazwa_Serwera,
+                    Nazwa_Bazy,
                     Clear_Logs_On_Program_Restart,
                     Clear_Processed_Files_On_Restart,
                     Clear_Bad_Files_On_Restart,
@@ -155,7 +163,8 @@ namespace Excel_Data_Importer_WARS
                 Dictionary<string, object> defaultConfig = new()
                 {
                     { "Files_Folders", new[] { Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files") } },
-                    { "Optima_Conection_String", Optima_Conection_String },
+                    { "Nazwa_Serwera", Nazwa_Serwera },
+                    { "Nazwa_Bazy", Nazwa_Bazy },
                     { "Clear_Logs_On_Program_Restart", Clear_Logs_On_Program_Restart },
                     { "Clear_Processed_Files_On_Restart", Clear_Processed_Files_On_Restart },
                     { "Clear_Bad_Files_On_Restart", Clear_Bad_Files_On_Restart },

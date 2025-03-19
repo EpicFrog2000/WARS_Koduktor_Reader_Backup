@@ -686,6 +686,8 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika)
         {
+            //---
+            // Insertuje dni z godzinami zerowymi w dni które nie były znalezione w karcie pracy
             HashSet<DateTime> Pasujace_Daty = [];
             foreach (Dane_Karty daneKarty in Karta_Ewidencji_Pracownika.Dane_Karty)
             {
@@ -709,6 +711,9 @@ namespace Excel_Data_Importer_WARS
                     Zrob_Insert_Obecnosc_Command(dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
                 }
             }
+            //----
+
+
 
             int ilosc_wpisow = 0;
             foreach (Dane_Karty Dane_Karty in Karta_Ewidencji_Pracownika.Dane_Karty)
@@ -717,7 +722,7 @@ namespace Excel_Data_Importer_WARS
                 {
                     if (Dane_Karty.Godziny_Rozpoczecia_Pracy.Count >= 1)
                     {
-                        //Dane_Karty.Podziel_Nadgodziny();                      
+                        //Dane_Karty.Podziel_Nadgodziny();                    
                         for (int j = 0; j < Dane_Karty.Godziny_Rozpoczecia_Pracy.Count; j++)
                         {
                             if (Dane_Karty.Godziny_Rozpoczecia_Pracy[j] != Dane_Karty.Godziny_Zakonczenia_Pracy[j])
@@ -757,7 +762,6 @@ namespace Excel_Data_Importer_WARS
             PomiaryStopWatch.Restart();
             try
             {
-
                 DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
                 DateTime godzDoDate = DbManager.Base_Date + endPodstawowy;
                 bool duplicate = false;
@@ -790,13 +794,6 @@ namespace Excel_Data_Importer_WARS
                     Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
                     return 1;
                 }
-            }
-            catch (SqlException ex)
-            {
-                Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
-                DbManager.Transaction_Manager.RollBack_Transaction();
-                Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
-                throw new Exception($"Error: {ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
             }
             catch (Exception ex)
             {

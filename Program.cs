@@ -3,7 +3,6 @@ using System.Data;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-
 namespace Excel_Data_Importer_WARS
 {
     static class Program
@@ -82,8 +81,8 @@ namespace Excel_Data_Importer_WARS
                     const int batchSize = 8;
                     for (int i = 0; i < files.Length; i += batchSize)
                     {
-                        var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file)); // Coś długo się ta funkcja wykonuje, TODO fix
-                        await Task.WhenAll(batch);                                                     // Nvm, może jednak ok ale i tak coś mi tu śmierdzi z czasem wykonywania.  
+                        var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file));
+                        await Task.WhenAll(batch);
                     }
 
                     DbManager.CloseConnection();
@@ -294,15 +293,13 @@ namespace Excel_Data_Importer_WARS
             try
             {
                 byte[] fileBytes = await File.ReadAllBytesAsync(File_Path);
-                using var memoryStream = new MemoryStream(fileBytes);
-                Workbook = new(memoryStream);
+                Workbook = new(new MemoryStream(fileBytes));
                 Helper.Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
                 return Workbook;
             }
             catch
             {
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
-                //error_logger.New_Custom_Error($"Program nie może odczytać pliku {File_Path}", false);
                 Console.WriteLine($"Program nie może odczytać pliku {File_Path}");
                 Console.ForegroundColor = ConsoleColor.White;
                 Helper.Pomiar.Avg_Open_Workbook = PomiaryStopWatch.Elapsed;
@@ -508,6 +505,4 @@ namespace Excel_Data_Importer_WARS
             Processed_Files_Folder = 2
         }
     }
-
 }
-

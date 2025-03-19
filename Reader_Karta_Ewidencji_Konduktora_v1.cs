@@ -65,8 +65,8 @@ namespace Excel_Data_Importer_WARS
             // Te godz ponizej zamiast tych Godz_PRacy_Od i Do
             // TODO: Dodać wczytytwanie z pliku
             // TODO: Dodać zapisywanie do bazy danych -> jest kod napisany tylko przetestować
-            public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Od = []; 
-            public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Do = []; 
+            public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Od = [];
+            public List<TimeSpan> Godziny_Pracy_Obsluga_relacji_Do = [];
             public List<TimeSpan> Godziny_Pracy_Inne_Czynnosci_Od = [];
             public List<TimeSpan> Godziny_Pracy_Inne_Czynnosci_Do = [];
 
@@ -160,7 +160,6 @@ namespace Excel_Data_Importer_WARS
                 Godziny_Pracy_Od = newGodziny_Pracy_Od;
                 Godziny_Pracy_Do = newGodziny_Pracy_Do;
             }
-
         }
         public class Prowizje
         {
@@ -444,7 +443,8 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji)
         {
-            
+            //---
+            // Insertuje dni z godzinami zerowymi w dni które nie były znalezione w karcie pracy
             HashSet<DateTime> Pasujace_Daty = [];
             foreach (Dane_Karty daneKarty in Karta_Ewidencji.Dane_Karty)
             {
@@ -462,6 +462,8 @@ namespace Excel_Data_Importer_WARS
                     Zrob_Insert_Obecnosc_Command(dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                 }
             }
+            //---
+
 
             int ilosc_wpisow = 0;
             foreach (Dane_Karty Dane_Karty in Karta_Ewidencji.Dane_Karty)
@@ -472,7 +474,6 @@ namespace Excel_Data_Importer_WARS
                     {
                         if (Dane_Dnia.Godziny_Pracy_Od.Count >= 1)
                         {
-                            //Dane_Dnia.Podziel_Nadgodziny();
                             for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                             {
                                 ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
@@ -503,7 +504,6 @@ namespace Excel_Data_Importer_WARS
                                 Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                             }
                         }
-
 
                         //// TODO: usun to nad tym
                         //if (Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count >= 1)
@@ -550,9 +550,6 @@ namespace Excel_Data_Importer_WARS
                         //{
                         //    Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
                         //}
-
-
-
                     }
                 }
             }
