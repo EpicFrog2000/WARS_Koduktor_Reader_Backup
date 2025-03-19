@@ -319,6 +319,7 @@ namespace Excel_Data_Importer_WARS
                         continue;
                     }
 
+                    // Tutaj zerówki akurat chyba są już automatycznie obsługiwane
                     dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Godzina_Rozpoczecia_Pracy, daneKarty.Godzina_Zakonczenia_Pracy, Helper.Strefa.Czas_Pracy_Podstawowy, daneKarty.Relacja.Numer_Relacji);
                     dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Pracy_Poza_Relacja_Od, daneKarty.Czas_Pracy_Poza_Relacja_Do, Helper.Strefa.Czas_Pracy_Poza_Relacją, daneKarty.Relacja.Numer_Relacji);
                     dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Do, Helper.Strefa.Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
@@ -370,6 +371,3 @@ namespace Excel_Data_Importer_WARS
         }
     }
 }
-// TODO NA BAZIE TESTOWEJ ORAZ PROD:
-// ALTER TABLE cdn.PracPlanDni
-// ADD PPL_Relacja VARCHAR(100);
