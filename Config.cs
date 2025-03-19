@@ -13,7 +13,6 @@ namespace Excel_Data_Importer_WARS
         public bool Move_Files_To_Processed_Folder { get; set; } = false;
         public bool Clear_Good_Files_On_Restart { get; set; } = false;
         public bool Tryb_Zapetlony { get; set; } = false;
-
         private readonly JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
         public bool GetConfigFromFile()
         {

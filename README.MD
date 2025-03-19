@@ -39,7 +39,8 @@ Przykładowy plik konfiguracyjny:
   "Files_Folders": [
     "C:\\Users\\norbert.tasarz\\Desktop\\pojedyncze pliki\\"
   ],
-  "Optima_Conection_String": "Server=ITEGERNT;Database=CDN_Wars_prod_ITEGER_22012025;Encrypt=True;TrustServerCertificate=True;Integrated Security=True;",
+  "Nazwa_Serwera": "ITEGERNT",
+  "Nazwa_Bazy": "CDN_Wars_prod_ITEGER_22012025",
   "Clear_Logs_On_Program_Restart": true,
   "Clear_Processed_Files_On_Restart": true,
   "Clear_Bad_Files_On_Restart": true,
@@ -48,11 +49,13 @@ Przykładowy plik konfiguracyjny:
   "Tryb_Zapetlony": false
 }
 ```
+
 ### Konfiguracja katalogów
 - **`Files_Folders`** - lista folderów, z których program importuje pliki Excel.
 
 ### Połączenie z bazą danych
-- **`Optima_Conection_String`** - ciąg połączeniowy do bazy danych.
+- **`Nazwa_Serwera`** - Nazwa serwera na którym ma operować program.
+- **`Nazwa_Bazy`** - Nazwa bazy danych na której ma operować program.
 
 ### Zarządzanie plikami i logami
 - **`Clear_Logs_On_Program_Restart`** - określa, czy logi z błędami powinny być kasowane po restarcie programu.
