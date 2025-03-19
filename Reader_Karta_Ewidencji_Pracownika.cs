@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.Data.SqlClient;
 
 //Jest przekopiowane praktycznie 1 do 1 ze starego programu dlatego jest taki murzyński kod
@@ -686,73 +687,55 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji_Pracownika Karta_Ewidencji_Pracownika)
         {
-            //---
-            // Insertuje dni z godzinami zerowymi w dni które nie były znalezione w karcie pracy
-            HashSet<DateTime> Pasujace_Daty = [];
-            foreach (Dane_Karty daneKarty in Karta_Ewidencji_Pracownika.Dane_Karty)
-            {
-                try
-                {
-                    Pasujace_Daty.Add(new DateTime(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, daneKarty.Dzien));
-                }
-                catch
-                {
-                    break;
-                }
-            }
-
-            DateTime startDate = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, 1);
-            DateTime endDate = new(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, DateTime.DaysInMonth(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac));
-
-            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
-            {
-                if (!Pasujace_Daty.Contains(dzien))
-                {
-                    Zrob_Insert_Obecnosc_Command(dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
-                }
-            }
-            //----
-
-
-
             int ilosc_wpisow = 0;
-            foreach (Dane_Karty Dane_Karty in Karta_Ewidencji_Pracownika.Dane_Karty)
+            int liczbaDniWMiesiacu = DateTime.DaysInMonth(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac);
+            for (int dzien = 1; dzien <= liczbaDniWMiesiacu; dzien++)
             {
-                if (DateTime.TryParse($"{Karta_Ewidencji_Pracownika.Rok}-{Karta_Ewidencji_Pracownika.Miesiac:D2}-{Dane_Karty.Dzien:D2}", out DateTime Data_Karty))
+                if (!DateTime.TryParse($"{Karta_Ewidencji_Pracownika.Rok}-{Karta_Ewidencji_Pracownika.Miesiac:D2}-{dzien:D2}", out DateTime Data_Karty))
                 {
-                    if (Dane_Karty.Godziny_Rozpoczecia_Pracy.Count >= 1)
-                    {
-                        //Dane_Karty.Podziel_Nadgodziny();                    
-                        for (int j = 0; j < Dane_Karty.Godziny_Rozpoczecia_Pracy.Count; j++)
-                        {
-                            if (Dane_Karty.Godziny_Rozpoczecia_Pracy[j] != Dane_Karty.Godziny_Zakonczenia_Pracy[j])
-                            {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[j], Dane_Karty.Godziny_Zakonczenia_Pracy[j], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 > 0 || Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100 > 0)
-                        {
-                            TimeSpan baseTime = TimeSpan.FromHours(8);
-                            Dane_Karty.Godziny_Rozpoczecia_Pracy.Add(baseTime);
-                            Dane_Karty.Godziny_Zakonczenia_Pracy.Add(baseTime + TimeSpan.FromHours((double)(Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 + Dane_Karty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100)));
-                            for (int k = 0; k < Dane_Karty.Godziny_Rozpoczecia_Pracy.Count; k++)
-                            {
-                                if (Dane_Karty.Godziny_Rozpoczecia_Pracy[k] != Dane_Karty.Godziny_Zakonczenia_Pracy[k])
-                                {
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Karty.Godziny_Rozpoczecia_Pracy[k], Dane_Karty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined); // 1 - pusta strefa
-                        }
-                    }
+                    continue;
                 }
-                
+
+                var daneKarty = Karta_Ewidencji_Pracownika.Dane_Karty.FirstOrDefault(d => d.Dzien == dzien);
+                if (daneKarty == null)
+                {
+                    Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined);
+                    continue;
+                }
+
+                Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Obecnosc(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, daneKarty.Dzien, daneKarty.Godziny_Rozpoczecia_Pracy, daneKarty.Godziny_Zakonczenia_Pracy, daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50, daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100, 0, 0);
+                switch (typ)
+                {
+                    case Helper.Typ_Insert_Obecnosc.Zerowka:
+                        Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji_Pracownika, Helper.Strefa.undefined);
+                        break;
+
+                    case Helper.Typ_Insert_Obecnosc.Normalna:
+                        for (int j = 0; j < daneKarty.Godziny_Rozpoczecia_Pracy.Count; j++)
+                        {
+                            if (daneKarty.Godziny_Rozpoczecia_Pracy[j] != daneKarty.Godziny_Zakonczenia_Pracy[j])
+                            {
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, daneKarty.Godziny_Rozpoczecia_Pracy[j], daneKarty.Godziny_Zakonczenia_Pracy[j], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
+                            }
+                        }
+                        break;
+
+                    case Helper.Typ_Insert_Obecnosc.Nadgodziny:
+                        TimeSpan baseTime = TimeSpan.FromHours(8);
+                        daneKarty.Godziny_Rozpoczecia_Pracy.Add(baseTime);
+                        daneKarty.Godziny_Zakonczenia_Pracy.Add(baseTime + TimeSpan.FromHours((double)(daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50 + daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100)));
+                        for (int k = 0; k < daneKarty.Godziny_Rozpoczecia_Pracy.Count; k++)
+                        {
+                            if (daneKarty.Godziny_Rozpoczecia_Pracy[k] != daneKarty.Godziny_Zakonczenia_Pracy[k])
+                            {
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, daneKarty.Godziny_Rozpoczecia_Pracy[k], daneKarty.Godziny_Zakonczenia_Pracy[k], Karta_Ewidencji_Pracownika, Helper.Strefa.Czas_Pracy_Podstawowy);
+                            }
+                        }
+                        break;
+
+                    case Helper.Typ_Insert_Obecnosc.Nieinsertuj:
+                        break;
+                }                
             }
             return ilosc_wpisow;
         }

@@ -501,9 +501,6 @@ END
             }
             Connection_String = $"Server={Nazwa_Serwera};Database={Nazwa_Bazy};Encrypt=True;TrustServerCertificate=True;Integrated Security=True;";
         }
-
-
-
         public static void Set_Connection_String(string new_connection_string)
         {
             Connection_String = new_connection_string;

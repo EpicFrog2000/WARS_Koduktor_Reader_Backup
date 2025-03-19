@@ -443,114 +443,62 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dodaj_Obecnosci_do_Optimy(Karta_Ewidencji Karta_Ewidencji)
         {
-            //---
-            // Insertuje dni z godzinami zerowymi w dni które nie były znalezione w karcie pracy
-            HashSet<DateTime> Pasujace_Daty = [];
-            foreach (Dane_Karty daneKarty in Karta_Ewidencji.Dane_Karty)
-            {
-                foreach (Dane_Dnia daneDnia in daneKarty.Dane_Dni_Relacji)
-                {
-                    Pasujace_Daty.Add(new DateTime(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, daneDnia.Dzien));
-                }
-            }
-            DateTime startDate = new(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, 1);
-            DateTime endDate = new(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, DateTime.DaysInMonth(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac));
-            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
-            {
-                if (!Pasujace_Daty.Contains(dzien))
-                {
-                    Zrob_Insert_Obecnosc_Command(dzien, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
-                }
-            }
-            //---
-
-
             int ilosc_wpisow = 0;
-            foreach (Dane_Karty Dane_Karty in Karta_Ewidencji.Dane_Karty)
+            int liczbaDniWMiesiacu = DateTime.DaysInMonth(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac);
+
+            for (int dzien = 1; dzien <= liczbaDniWMiesiacu; dzien++)
             {
-                foreach (Dane_Dnia Dane_Dnia in Dane_Karty.Dane_Dni_Relacji)
+                if (!DateTime.TryParse($"{Karta_Ewidencji.Rok}-{Karta_Ewidencji.Miesiac:D2}-{dzien:D2}", out DateTime dataKarty))
                 {
-                    if (DateTime.TryParse($"{Karta_Ewidencji.Rok}-{Karta_Ewidencji.Miesiac:D2}-{Dane_Dnia.Dzien:D2}", out DateTime Data_Karty))
-                    {
-                        if (Dane_Dnia.Godziny_Pracy_Od.Count >= 1)
+                    continue;
+                }
+
+                var dane = Karta_Ewidencji.Dane_Karty
+                    .SelectMany(k => k.Dane_Dni_Relacji, (karta, dzien) => new { karta.Relacja.Numer_Relacji, Dane_Dnia = dzien })
+                    .FirstOrDefault(d => d.Dane_Dnia.Dzien == dzien);
+
+                if (dane == null)
+                {
+                    Zrob_Insert_Obecnosc_Command(dataKarty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, "");
+                    continue;
+                }
+                Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Obecnosc(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, dane.Dane_Dnia.Dzien, dane.Dane_Dnia.Godziny_Pracy_Od, dane.Dane_Dnia.Godziny_Pracy_Do, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_50, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_100, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100);
+                switch (typ)
+                {
+                    case Helper.Typ_Insert_Obecnosc.Zerowka:
+                        Zrob_Insert_Obecnosc_Command(dataKarty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, "");
+                        break;
+
+                    case Helper.Typ_Insert_Obecnosc.Normalna:
+                        for (int j = 0; j < dane.Dane_Dnia.Godziny_Pracy_Od.Count; j++)
                         {
-                            for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Od.Count; j++)
+                            ilosc_wpisow += Zrob_Insert_Obecnosc_Command(dataKarty, dane.Dane_Dnia.Godziny_Pracy_Od[j], dane.Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, dane.Numer_Relacji);
+                        }
+                        break;
+
+                    case Helper.Typ_Insert_Obecnosc.Nadgodziny:
+                        decimal godzNadlPlatne50 = dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_50 <= 0
+                            ? (decimal)dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50
+                            : (decimal)dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_50;
+
+                        decimal godzNadlPlatne100 = dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_100 <= 0
+                            ? (decimal)dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100
+                            : (decimal)dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_100;
+
+                        if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
+                        {
+                            TimeSpan baseTime = TimeSpan.FromHours(8);
+                            dane.Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
+                            dane.Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
+                            for (int k = 0; k < dane.Dane_Dnia.Godziny_Pracy_Od.Count; k++)
                             {
-                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Od[j], Dane_Dnia.Godziny_Pracy_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
+                                ilosc_wpisow += Zrob_Insert_Obecnosc_Command(dataKarty, dane.Dane_Dnia.Godziny_Pracy_Od[k], dane.Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, dane.Numer_Relacji);
                             }
                         }
-                        else
-                        {
-                            decimal godzNadlPlatne50 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_50 <= 0
-                                ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50
-                                : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_50;
+                        break;
 
-                            decimal godzNadlPlatne100 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_100 <= 0
-                                ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100
-                                : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_100;
-
-                            if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
-                            {
-                                TimeSpan baseTime = TimeSpan.FromHours(8);
-                                Dane_Dnia.Godziny_Pracy_Od.Add(baseTime);
-                                Dane_Dnia.Godziny_Pracy_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
-                                for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Od.Count; k++)
-                                {
-                                    ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Od[k], Dane_Dnia.Godziny_Pracy_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Karty.Relacja.Numer_Relacji);
-                                }
-                            }
-                            else
-                            {
-                                Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
-                            }
-                        }
-
-                        //// TODO: usun to nad tym
-                        //if (Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count >= 1)
-                        //{
-                        //    for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count; j++)
-                        //    {
-                        //        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od[j], Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Obsługi_Relacji, Dane_Karty.Relacja.Numer_Relacji);
-                        //    }
-                        //}
-                        //else
-                        //{
-                        //    decimal godzNadlPlatne50 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_50 <= 0
-                        //        ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50
-                        //        : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_50;
-
-                        //    decimal godzNadlPlatne100 = Dane_Dnia.Liczba_Godzin_Nadliczbowych_100 <= 0
-                        //        ? (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100
-                        //        : (decimal)Dane_Dnia.Liczba_Godzin_Nadliczbowych_100;
-
-                        //    if (godzNadlPlatne50 > 0 || godzNadlPlatne100 > 0)
-                        //    {
-                        //        TimeSpan baseTime = TimeSpan.FromHours(8);
-                        //        Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Add(baseTime);
-                        //        Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Do.Add(baseTime + TimeSpan.FromHours((double)(godzNadlPlatne50 + godzNadlPlatne100)));
-                        //        for (int k = 0; k < Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od.Count; k++)
-                        //        {
-                        //            ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Od[k], Dane_Dnia.Godziny_Pracy_Obsluga_relacji_Do[k], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Obsługi_Relacji, Dane_Karty.Relacja.Numer_Relacji);
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-                        //        Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
-                        //    }
-                        //}
-
-                        //if (Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Od.Count >= 1)
-                        //{
-                        //    for (int j = 0; j < Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Od.Count; j++)
-                        //    {
-                        //        ilosc_wpisow += Zrob_Insert_Obecnosc_Command(Data_Karty, Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Od[j], Dane_Dnia.Godziny_Pracy_Inne_Czynnosci_Do[j], Karta_Ewidencji, Helper.Strefa.Czas_Pracy_Poza_Relacją, Dane_Karty.Relacja.Numer_Relacji);
-                        //    }
-                        //}
-                        //else
-                        //{
-                        //    Zrob_Insert_Obecnosc_Command(Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, ""); // 1 - pusta strefa
-                        //}
-                    }
+                    case Helper.Typ_Insert_Obecnosc.Nieinsertuj:
+                        break;
                 }
             }
             return ilosc_wpisow;

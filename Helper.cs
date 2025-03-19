@@ -78,6 +78,13 @@ namespace Excel_Data_Importer_WARS
             Grafik_Pracy_Pracownika = 3,
             Harmonogram_Pracy_Konduktora = 4
         }
+        public enum Typ_Insert_Obecnosc
+        {
+            Zerowka = 1,
+            Normalna = 2,
+            Nadgodziny = 3,
+            Nieinsertuj = 4
+        }
         public static bool Try_Get_Type_From_String<T>(string? value, ref T result)
         {
             if (string.IsNullOrEmpty(value))
@@ -174,6 +181,46 @@ namespace Excel_Data_Importer_WARS
         }
         public static string Truncate(string? value, int maxLength) =>
             string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
+        public static Typ_Insert_Obecnosc Get_Typ_Insert_Obecnosc(int Rok, int Miesiac, int Dzien, List<TimeSpan> Godziny_Pracy_Od,
+            List<TimeSpan> Godziny_Pracy_Do,
+            decimal Liczba_Godzin_Nadliczbowych_50 = 0,
+            decimal Liczba_Godzin_Nadliczbowych_100 = 0,
+            decimal Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50 = 0,
+            decimal Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100 = 0)
+        {
+            DateTime startDate = new(Rok, Miesiac, 1);
+            DateTime endDate = new(Rok, Miesiac, DateTime.DaysInMonth(Rok, Miesiac));
+
+            bool found = false;
+            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
+            {
+                if(dzien.Day == Dzien)
+                {
+                    found = true;
+                }
+            }
+            if (!found)
+            {
+                return Typ_Insert_Obecnosc.Zerowka;
+            }
+
+            if (Godziny_Pracy_Od.Count >= 1)
+            {
+                return Typ_Insert_Obecnosc.Normalna;
+            }
+            else
+            {
+                if (Liczba_Godzin_Nadliczbowych_50 > 0 || Liczba_Godzin_Nadliczbowych_100 > 0 || Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50 > 0 || Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100 > 0)
+                {
+                    return Typ_Insert_Obecnosc.Nadgodziny;
+                }
+                else
+                {
+                    return Typ_Insert_Obecnosc.Zerowka;
+                }
+            }
+        }
+        
         public static class Pomiar
         {
             private static TimeSpan avg_Get_Metadane_Pliku = TimeSpan.Zero;
