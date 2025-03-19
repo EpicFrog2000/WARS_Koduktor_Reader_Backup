@@ -278,62 +278,56 @@ namespace Excel_Data_Importer_WARS
         {
             await DbManager.Transaction_Manager.Create_Transaction();
             int dodano = 0;
-            foreach (Grafik grafik in grafiki)
+            try
             {
-                if(grafik.Dane_Dni.Count <= 0)
+                foreach (Grafik grafik in grafiki)
                 {
-                    continue;
-                }
-                HashSet<DateTime> Pasujace_Daty = [];
-                foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
-                {
-                    try
+                    if (grafik.Dane_Dni.Count <= 0)
                     {
-                        Pasujace_Daty.Add(new DateTime(grafik.Rok, grafik.Miesiac, dane_DniA.Nr_Dnia));
+                        continue;
                     }
-                    catch
+                    int liczbaDniWMiesiacu = DateTime.DaysInMonth(grafik.Rok, grafik.Miesiac);
+                    for (int dzien = 1; dzien <= liczbaDniWMiesiacu; dzien++)
                     {
-                        break;
-                    }
-                }
-                DateTime startDate = new(grafik.Rok, grafik.Miesiac, 1);
-                DateTime endDate = new(grafik.Rok, grafik.Miesiac, DateTime.DaysInMonth(grafik.Rok, grafik.Miesiac));
-                for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
-                {
-                    if (!Pasujace_Daty.Contains(dzien))
-                    {
-                        try
+                        if (!DateTime.TryParse($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien:D2}", out DateTime Data_Karty))
                         {
-                            Zrob_Insert_Plan_command(grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                            continue;
                         }
-                        catch (Exception ex)
-                        {
-                            
-                            Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
-                            DbManager.Transaction_Manager.RollBack_Transaction();
-                            throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                        }
-                    }
-                }
 
-                foreach (Dane_Dnia dane_DniA in grafik.Dane_Dni)
-                {
-                    try
-                    {
-                        if (DateTime.TryParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dane_DniA.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                        var daneKarty = grafik.Dane_Dni.FirstOrDefault(d => d.Nr_Dnia == dzien);
+                        if (daneKarty == null)
                         {
-                            dodano += Zrob_Insert_Plan_command(grafik.Pracownik, result, dane_DniA.Godzina_Pracy_Od, dane_DniA.Godzina_Pracy_Do);
+                            Zrob_Insert_Plan_command(grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                            continue;
                         }
-                    }
-                    catch (Exception ex)
-                    {
 
-                        Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
-                        DbManager.Transaction_Manager.RollBack_Transaction();
-                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                        Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Plan(grafik.Rok, grafik.Miesiac, dzien, daneKarty.Godzina_Pracy_Od, daneKarty.Godzina_Pracy_Do);
+                        switch (typ)
+                        {
+                            case Helper.Typ_Insert_Obecnosc.Zerowka:
+                                Zrob_Insert_Plan_command(grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                                break;
+
+                            case Helper.Typ_Insert_Obecnosc.Normalna:
+                                if (DateTime.TryParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{daneKarty.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                                {
+                                    dodano += Zrob_Insert_Plan_command(grafik.Pracownik, result, daneKarty.Godzina_Pracy_Od, daneKarty.Godzina_Pracy_Do);
+                                }
+                                break;
+
+                            case Helper.Typ_Insert_Obecnosc.Nieinsertuj:
+                                break;
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+            }
+
             DbManager.Transaction_Manager.Commit_Transaction();
             if (dodano > 0)
             {

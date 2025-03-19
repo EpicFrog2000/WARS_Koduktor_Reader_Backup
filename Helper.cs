@@ -80,7 +80,7 @@ namespace Excel_Data_Importer_WARS
         }
         public enum Typ_Insert_Obecnosc
         {
-            Zerowka = 1,
+            Zerowka = 1, // To znaczy że nie ma godzin pracy czyli insert godziny od 00:00 do 00:00
             Normalna = 2,
             Nadgodziny = 3,
             Nieinsertuj = 4
@@ -220,7 +220,33 @@ namespace Excel_Data_Importer_WARS
                 }
             }
         }
-        
+
+        public static Typ_Insert_Obecnosc Get_Typ_Insert_Plan(int Rok, int Miesiac, int Dzien, TimeSpan Godzina_Pracy_Od, TimeSpan Godzina_Pracy_Do)
+        {
+            DateTime startDate = new(Rok, Miesiac, 1);
+            DateTime endDate = new(Rok, Miesiac, DateTime.DaysInMonth(Rok, Miesiac));
+
+            bool found = false;
+            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
+            {
+                if (dzien.Day == Dzien)
+                {
+                    found = true;
+                }
+            }
+            if (!found)
+            {
+                return Typ_Insert_Obecnosc.Zerowka;
+            }
+
+            if(Godzina_Pracy_Od == Godzina_Pracy_Do)
+            {
+                return Typ_Insert_Obecnosc.Nieinsertuj;
+            }
+            return Typ_Insert_Obecnosc.Normalna;
+
+        }
+
         public static class Pomiar
         {
             private static TimeSpan avg_Get_Metadane_Pliku = TimeSpan.Zero;

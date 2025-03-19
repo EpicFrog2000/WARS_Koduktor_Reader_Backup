@@ -301,47 +301,36 @@ namespace Excel_Data_Importer_WARS
         private static int Dodaj_Plany_do_Optimy(Harmonogram_Pracy_Konduktora Harmonogram_Pracy_Konduktora)
         {
             int dodano = 0;
-            HashSet<DateTime> Pasujace_Daty = [];
-            foreach (Dane_Harmonogramu Dane_Harmonogramu in Harmonogram_Pracy_Konduktora.Dane_Harmonogramu)
-            {
-                Pasujace_Daty.Add(new DateTime(Harmonogram_Pracy_Konduktora.Rok, Harmonogram_Pracy_Konduktora.Miesiac, Dane_Harmonogramu.Dzien));
-            }
-            DateTime startDate = new(Harmonogram_Pracy_Konduktora.Rok, Harmonogram_Pracy_Konduktora.Miesiac, 1);
-            DateTime endDate = new(Harmonogram_Pracy_Konduktora.Rok, Harmonogram_Pracy_Konduktora.Miesiac, DateTime.DaysInMonth(Harmonogram_Pracy_Konduktora.Rok, Harmonogram_Pracy_Konduktora.Miesiac));
-            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
-            {
-                if (!Pasujace_Daty.Contains(dzien))
-                {
-                    try
-                    {
-                        Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien.Day:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero, Helper.Strefa.undefined, "");
-                    }
-                    catch(Exception ex)
-                    {
-                        Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
-                        DbManager.Transaction_Manager.RollBack_Transaction();
-                        throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                    }
-                }
-            }
 
-            foreach (Dane_Harmonogramu Dane_Harmonogramu in Harmonogram_Pracy_Konduktora.Dane_Harmonogramu)
+            try
             {
-                try
+                int liczbaDniWMiesiacu = DateTime.DaysInMonth(Harmonogram_Pracy_Konduktora.Rok, Harmonogram_Pracy_Konduktora.Miesiac);
+                for (int dzien = 1; dzien <= liczbaDniWMiesiacu; dzien++)
                 {
-                    // TODO, zapytać Wero czy tak może być żę w jednym dniu jest kilka rekordów o różnych strefach na 00:00, no bo w sumie to jak inaczej zrobić zerówki,
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Godzina_Rozpoczecia_Pracy, Dane_Harmonogramu.Godzina_Zakonczenia_Pracy, Helper.Strefa.Czas_Pracy_Podstawowy, Dane_Harmonogramu.Relacja.Numer_Relacji);
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Czas_Pracy_Poza_Relacja_Od, Dane_Harmonogramu.Czas_Pracy_Poza_Relacja_Do, Helper.Strefa.Czas_Pracy_Poza_Relacją, Dane_Harmonogramu.Relacja.Numer_Relacji);
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Czas_Odpoczynku_Wliczany_Do_CP_Od, Dane_Harmonogramu.Czas_Odpoczynku_Wliczany_Do_CP_Do, Helper.Strefa.Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP, Dane_Harmonogramu.Relacja.Numer_Relacji);
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{Dane_Harmonogramu.Dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), Dane_Harmonogramu.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Od, Dane_Harmonogramu.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Do, Helper.Strefa.Czas_Odpoczynku_Nie_Wliczany_Do_CP, Dane_Harmonogramu.Relacja.Numer_Relacji);
+                    if (!DateTime.TryParse($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", out DateTime Data_Karty))
+                    {
+                        continue;
+                    }
+
+                    var daneKarty = Harmonogram_Pracy_Konduktora.Dane_Harmonogramu.FirstOrDefault(d => d.Dzien == dzien);
+                    if (daneKarty == null)
+                    {
+                        Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero, Helper.Strefa.undefined, "");
+                        continue;
+                    }
+
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Godzina_Rozpoczecia_Pracy, daneKarty.Godzina_Zakonczenia_Pracy, Helper.Strefa.Czas_Pracy_Podstawowy, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Pracy_Poza_Relacja_Od, daneKarty.Czas_Pracy_Poza_Relacja_Do, Helper.Strefa.Czas_Pracy_Poza_Relacją, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Do, Helper.Strefa.Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Do, Helper.Strefa.Czas_Odpoczynku_Nie_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
                 }
-                catch (Exception ex)
-                {
-                    Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
-                    DbManager.Transaction_Manager.RollBack_Transaction();
-                    throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                }
-            }            
+            }
+            catch (Exception ex)
+            {
+                Internal_Error_Logger.New_Custom_Error($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}", false);
+                DbManager.Transaction_Manager.RollBack_Transaction();
+                throw new Exception($"{ex.Message} z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+            } 
             return dodano;
         }
         private static int Zrob_Insert_Plan_command(Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz, Helper.Strefa Strefa, string Numer_Relacji)
