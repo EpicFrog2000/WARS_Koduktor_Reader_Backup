@@ -309,7 +309,10 @@ namespace Excel_Data_Importer_WARS
                         else
                         {
                             Internal_Error_Logger.New_Error("", "Godziny Pracy Do", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Brak Godziny Pracy Do w tym dniu");
-
+                        }
+                        if (Dane_Dnia.Godziny_Pracy_Od.Count != Dane_Dnia.Godziny_Pracy_Do.Count)
+                        {
+                            Internal_Error_Logger.New_Error("", "Godziny Pracy", Pozycja.Col + 5, Pozycja.Row + Row_Offset, "Nie zgadza się liczba godzin pracy w tym dniu");
                         }
                     }
 
@@ -346,6 +349,11 @@ namespace Excel_Data_Importer_WARS
                         else
                         {
                             Internal_Error_Logger.New_Error("", "Godziny Odpoczynku Do", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Brak Godziny Odpoczynku Do w tym dniu");
+                        }
+
+                        if (Dane_Dnia.Godziny_Odpoczynku_Od.Count != Dane_Dnia.Godziny_Odpoczynku_Do.Count)
+                        {
+                            Internal_Error_Logger.New_Error("", "Godziny odpoczynku", Pozycja.Col + 7, Pozycja.Row + Row_Offset, "Nie zgadza się liczba godzin odpoczynku w tym dniu");
                         }
                     }
 
@@ -462,7 +470,7 @@ namespace Excel_Data_Importer_WARS
                     Zrob_Insert_Obecnosc_Command(dataKarty, TimeSpan.Zero, TimeSpan.Zero, Karta_Ewidencji, Helper.Strefa.undefined, "");
                     continue;
                 }
-                Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Obecnosc(Karta_Ewidencji.Rok, Karta_Ewidencji.Miesiac, dane.Dane_Dnia.Dzien, dane.Dane_Dnia.Godziny_Pracy_Od, dane.Dane_Dnia.Godziny_Pracy_Do, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_50, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_100, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100);
+                Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Obecnosc(dane.Dane_Dnia.Godziny_Pracy_Od, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_50, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_100, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50, dane.Dane_Dnia.Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100);
                 switch (typ)
                 {
                     case Helper.Typ_Insert_Obecnosc.Zerowka:
@@ -512,6 +520,7 @@ namespace Excel_Data_Importer_WARS
                 DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
                 DateTime godzDoDate = DbManager.Base_Date + endPodstawowy;
                 bool duplicate = false;
+                bool duplicateDE = false;
                 int IdPracownika = -1;
                 try
                 {
@@ -532,7 +541,17 @@ namespace Excel_Data_Importer_WARS
                     duplicate = (int)command.ExecuteScalar() == 1;
                 }
 
-                if (!duplicate)
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
+                {
+                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                    command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                    command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_W_Delegacji;
+                    duplicateDE = (int)command.ExecuteScalar() == 1;
+                }
+
+                if (!duplicate && !duplicateDE)
                 {
                     using (SqlCommand command = new(DbManager.Insert_Obecnosci, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
@@ -677,7 +696,7 @@ namespace Excel_Data_Importer_WARS
 
                     if(Prowizja.Suma_Liczba_Napojow_Awaryjnych > 0)
                     {
-                        using (SqlCommand command = new(DbManager.Insert_Prowizje, DbManager.GetConnection()))
+                        using (SqlCommand command = new(DbManager.Insert_Prowizje, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                         {
                             command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Liczba_Napojow_Awaryjnych;
@@ -689,7 +708,7 @@ namespace Excel_Data_Importer_WARS
                     }
                     if (Prowizja.Suma_Wartosc_Towarow > 0)
                     {
-                        using (SqlCommand command = new(DbManager.Insert_Prowizje, DbManager.GetConnection()))
+                        using (SqlCommand command = new(DbManager.Insert_Prowizje, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                         {
                             command.Parameters.Add("@PracID", SqlDbType.Int).Value = pracId;
                             command.Parameters.Add("@NowaWartosc", SqlDbType.Decimal).Value = Prowizja.Suma_Wartosc_Towarow;

@@ -301,17 +301,20 @@ namespace Excel_Data_Importer_WARS
                             continue;
                         }
 
-                        Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Plan(grafik.Rok, grafik.Miesiac, dzien, daneKarty.Godzina_Pracy_Od, daneKarty.Godzina_Pracy_Do);
+                        Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Plan(daneKarty.Godzina_Pracy_Od, daneKarty.Godzina_Pracy_Do);
                         switch (typ)
                         {
                             case Helper.Typ_Insert_Obecnosc.Zerowka:
-                                Zrob_Insert_Plan_command(grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                                if (DateTime.TryParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{daneKarty.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                                {
+                                    Zrob_Insert_Plan_command(grafik.Pracownik, result, TimeSpan.Zero, TimeSpan.Zero);
+                                }
                                 break;
 
                             case Helper.Typ_Insert_Obecnosc.Normalna:
-                                if (DateTime.TryParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{daneKarty.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result))
+                                if (DateTime.TryParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{daneKarty.Nr_Dnia:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime result2))
                                 {
-                                    dodano += Zrob_Insert_Plan_command(grafik.Pracownik, result, daneKarty.Godzina_Pracy_Od, daneKarty.Godzina_Pracy_Do);
+                                    dodano += Zrob_Insert_Plan_command(grafik.Pracownik, result2, daneKarty.Godzina_Pracy_Od, daneKarty.Godzina_Pracy_Do);
                                 }
                                 break;
 
@@ -335,49 +338,50 @@ namespace Excel_Data_Importer_WARS
                 Console.WriteLine($"Poprawnie dodawno plan z pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}");
                 Console.ForegroundColor = ConsoleColor.White;
             }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"Nie dodano żadnego planu z pliku {Internal_Error_Logger.Nazwa_Pliku} z zakladki {Internal_Error_Logger.Nr_Zakladki}");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
         }
         private static int Zrob_Insert_Plan_command(Pracownik pracownik, DateTime data, TimeSpan startGodz, TimeSpan endGodz)
         {
             try
             {
                 int IdPracownika = pracownik.Get_PraId();
-
-                if (startGodz!=TimeSpan.Zero && endGodz != TimeSpan.Zero)
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
-                    using (SqlCommand command = new(DbManager.Check_Duplicate_Plan_Pracy, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
+                    command.Parameters.AddWithValue("@DataInsert", data + TimeSpan.FromSeconds(0));
+                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
+                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
+                    command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
+                    if ((int)command.ExecuteScalar() == 1)
                     {
-                        command.Parameters.AddWithValue("@DataInsert", data + TimeSpan.FromSeconds(0));
-                        command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
-                        command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
-                        command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                        if ((int)command.ExecuteScalar() == 1)
-                        {
-                            return 0;
-                        }
+                        return 0;
                     }
                 }
-                
+
                 using (SqlCommand command = new(DbManager.Insert_Plan_Pracy, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
                     command.Parameters.AddWithValue("@DataInsert", data);
                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                     command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                    if (startGodz == TimeSpan.Zero && endGodz == startGodz)
-                    {
-                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
-                    }
-                    else
-                    {
-                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_Podstawowy;
-                    }
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
                     command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                     command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                     command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
-                    command.ExecuteScalar();
-                    return 1;
+                    int affected = command.ExecuteNonQuery();
+                    if (startGodz != TimeSpan.Zero && endGodz != TimeSpan.Zero)
+                    {
+                        return affected;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
-                
             }
             catch (Exception ex)
             {

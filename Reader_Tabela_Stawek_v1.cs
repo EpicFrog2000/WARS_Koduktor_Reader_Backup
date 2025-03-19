@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.Data.SqlClient;
@@ -183,12 +184,13 @@ namespace Excel_Data_Importer_WARS
         {
             try
             {
+                int dodane_relacje = 0;
                 await DbManager.Transaction_Manager.Create_Transaction();
                 foreach (Relacja Relacja in Relacje)
                 {
                     try
                     {
-                        Relacja.Insert_Relacja_Do_Optimy(Internal_Error_Logger);
+                        dodane_relacje += Relacja.Insert_Relacja_Do_Optimy(Internal_Error_Logger);
                     }
                     catch (SqlException ex)
                     {
@@ -203,7 +205,7 @@ namespace Excel_Data_Importer_WARS
                     {
                         try
                         {
-                            System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy(Internal_Error_Logger);
+                            dodane_relacje += System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy(Internal_Error_Logger);
                         }
                         catch (SqlException ex)
                         {
@@ -214,9 +216,22 @@ namespace Excel_Data_Importer_WARS
                             Internal_Error_Logger.New_Custom_Error($"Error w programie (System_Obsługi_Relacji.Relacja.Insert_Relacja_Do_Optimy): {ex.Message}");
                         }
                     }
+                    // TODO count affected atrybutów ale do tego rzeba całe query zmienić wiec mi sie nie chce
                     Insert_Atrybuty_Do_Optimy(Relacja);
                 }
                 DbManager.Transaction_Manager.Commit_Transaction();
+                if (dodane_relacje > 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Poprawnie dodano relacje z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"Nie dodano żadnych relacji pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
             }
             catch (SqlException ex)
             {
@@ -236,45 +251,32 @@ namespace Excel_Data_Importer_WARS
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
 
-            // Zamiast tego w plikach mają być opisane dokładnie okesy obowiązywania danych stawek
+            // TODO Zamiast tego w plikach mają być opisane dokładnie okesy obowiązywania danych stawek
             DateTime Data_Od = DateTime.ParseExact("2025.02.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture);
             DateTime Data_Do = DateTime.ParseExact("2025.03.01 00:00:00", "yyyy.MM.dd HH:mm:ss", CultureInfo.InvariantCulture).AddDays(-1);
 
-            int counter = 0;
             foreach (System_Obsługi_Relacji System_Obsługi_Relacji in Relacja.System_Obsługi_Relacji)
             {
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe.ToString(), "Wynagrodzenie ryczałtowe - Podstawowe", Data_Od, Data_Do);
+                    Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Podstawowe.ToString(), "Wynagrodzenie ryczałtowe - Podstawowe", Data_Od, Data_Do);
                 }
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe.ToString(), "Wynagrodzenie ryczałtowe - Nadgodziny", Data_Od, Data_Do);
+                    Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Wynagrodzenie_Za_Godz_Nadliczbowe.ToString(), "Wynagrodzenie ryczałtowe - Nadgodziny", Data_Od, Data_Do);
                 }
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy.ToString(), "Wynagrodzenie ryczałtowe - Nocki", Data_Od, Data_Do);
+                    Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Za_Pracę_W_Nocy.ToString(), "Wynagrodzenie ryczałtowe - Nocki", Data_Od, Data_Do);
                 }
                 if (System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy != -1)
                 {
-                    counter += Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy.ToString(), "Dodatek wyjazdowy", Data_Od, Data_Do);
+                    Insert_Command_Atrybuty(System_Obsługi_Relacji.Tabela_Stawek.Wynagrodzenie.Dodatek_Wyjazdowy.ToString(), "Dodatek wyjazdowy", Data_Od, Data_Do);
                 }
-            }
-            if (counter > 0)
-            {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine($"Poprawnie dodano dane z pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                Console.ForegroundColor = ConsoleColor.White;
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine($"Nie dodano żadnych danych pliku: {Internal_Error_Logger.Nazwa_Pliku} z zakladki: {Internal_Error_Logger.Nr_Zakladki} nazwa zakladki: {Internal_Error_Logger.Nazwa_Zakladki}");
-                Console.ForegroundColor = ConsoleColor.White;
             }
             Helper.Pomiar.Avg_Insert_Atrybuty_Do_Optimy = PomiaryStopWatch.Elapsed;
         }
-        private static int Insert_Command_Atrybuty(string wartosc, string Nazwa_Atrybutu, DateTime Data_Od, DateTime Data_Do)
+        private static void Insert_Command_Atrybuty(string wartosc, string Nazwa_Atrybutu, DateTime Data_Od, DateTime Data_Do)
         {
             try
             {
@@ -286,7 +288,6 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@ATHDataDo", SqlDbType.DateTime).Value = Data_Do;
                     command.ExecuteNonQuery();
                 }
-                return 1;
             }
             catch (SqlException ex)
             {
@@ -296,7 +297,6 @@ namespace Excel_Data_Importer_WARS
             {
                 Internal_Error_Logger.New_Custom_Error($"Error: {ex.Message}");
             }
-            return 0;
         }
     }
 }

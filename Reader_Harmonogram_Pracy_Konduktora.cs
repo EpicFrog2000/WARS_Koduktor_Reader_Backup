@@ -300,8 +300,8 @@ namespace Excel_Data_Importer_WARS
         }
         private static int Dodaj_Plany_do_Optimy(Harmonogram_Pracy_Konduktora Harmonogram_Pracy_Konduktora)
         {
-            int dodano = 0;
 
+            int dodano = 0;
             try
             {
                 int liczbaDniWMiesiacu = DateTime.DaysInMonth(Harmonogram_Pracy_Konduktora.Rok, Harmonogram_Pracy_Konduktora.Miesiac);

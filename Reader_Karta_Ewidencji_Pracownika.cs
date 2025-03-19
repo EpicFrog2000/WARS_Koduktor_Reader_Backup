@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Drawing.Spreadsheet;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.Data.SqlClient;
 
@@ -546,6 +547,10 @@ namespace Excel_Data_Importer_WARS
                         Internal_Error_Logger.New_Error(dane, "Godzina Zakończenia pracy", Pozycja.Col + 2, Pozycja.Row, "Brak godziny zakończenia pracy w tym dniu");
                     }
 
+                    if (Dane_Karty.Godziny_Rozpoczecia_Pracy.Count != Dane_Karty.Godziny_Zakonczenia_Pracy.Count)
+                    {
+                        Internal_Error_Logger.New_Error("", "Godziny pracy", Pozycja.Col + 2, Pozycja.Row, "Nie zgadza się liczba godzin pracy w tym dniu");
+                    }
                 }
 
 
@@ -665,7 +670,6 @@ namespace Excel_Data_Importer_WARS
                     Console.ForegroundColor = ConsoleColor.White;
                 }
 
-
                 if (!string.IsNullOrEmpty(Uwaga))
                 {
                     if (Update_Opis_Karty(Karta_Ewidencji_Pracownika, Uwaga))
@@ -703,7 +707,7 @@ namespace Excel_Data_Importer_WARS
                     continue;
                 }
 
-                Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Obecnosc(Karta_Ewidencji_Pracownika.Rok, Karta_Ewidencji_Pracownika.Miesiac, daneKarty.Dzien, daneKarty.Godziny_Rozpoczecia_Pracy, daneKarty.Godziny_Zakonczenia_Pracy, daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50, daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100, 0, 0);
+                Helper.Typ_Insert_Obecnosc typ = Helper.Get_Typ_Insert_Obecnosc(daneKarty.Godziny_Rozpoczecia_Pracy, daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_50, daneKarty.Godziny_Nadliczbowe_Platne_Z_Dodatkiem_100, 0, 0);
                 switch (typ)
                 {
                     case Helper.Typ_Insert_Obecnosc.Zerowka:
@@ -748,8 +752,11 @@ namespace Excel_Data_Importer_WARS
                 DateTime godzOdDate = DbManager.Base_Date + startPodstawowy;
                 DateTime godzDoDate = DbManager.Base_Date + endPodstawowy;
                 bool duplicate = false;
+                bool duplicateDE = false;
+
                 int IdPracownika = -1;
                 IdPracownika = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId();
+
 
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
@@ -760,7 +767,19 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
                     duplicate = (int)command.ExecuteScalar() == 1;
                 }
-                if (!duplicate)
+
+                // Jest tak bo robiony jest update jeśli chodzi o delegacje
+                using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
+                {
+                    command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
+                    command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
+                    command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
+                    command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_W_Delegacji;
+                    duplicateDE = (int)command.ExecuteScalar() == 1;
+                }
+
+                if (!duplicate && !duplicateDE)
                 {
                     using (SqlCommand command = new(DbManager.Insert_Obecnosci, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
@@ -772,10 +791,18 @@ namespace Excel_Data_Importer_WARS
                         command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
                         command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
                         command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
-                        command.ExecuteScalar();
+                        int affected = command.ExecuteNonQuery();
+                        Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
+                        if (startPodstawowy != TimeSpan.Zero && endPodstawowy != TimeSpan.Zero)
+                        {
+                            return affected;
+                        }
+                        else
+                        {
+                            return 0;
+                        }
                     }
-                    Helper.Pomiar.Avg_Insert_Obecnosc_Command = PomiaryStopWatch.Elapsed;
-                    return 1;
+
                 }
             }
             catch (Exception ex)

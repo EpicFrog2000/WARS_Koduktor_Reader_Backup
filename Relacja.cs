@@ -31,11 +31,12 @@ namespace Excel_Data_Importer_WARS
             }
         }
 
-        public void Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger)
+        public int Insert_Relacja_Do_Optimy(Error_Logger Internal_Error_Logger)
         {
             try
             {
                 Get_Relacja_Id(Numer_Relacji);
+                return 0;
             }
             catch
             {
@@ -48,7 +49,7 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@Godz_Rozpoczecia", SqlDbType.DateTime).Value = DbManager.Base_Date + Godzina_Rozpoczecia_Relacji;
                     command.Parameters.Add("@Data_Mod", SqlDbType.DateTime).Value = DateTime.Now;
                     command.Parameters.Add("@Os_Mod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
-                    command.ExecuteNonQuery();
+                    return command.ExecuteNonQuery();
                 }
             }
         }

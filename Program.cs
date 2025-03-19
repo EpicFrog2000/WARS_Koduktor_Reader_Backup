@@ -77,13 +77,16 @@ namespace Excel_Data_Importer_WARS
                     DbManager.OpenConnection();
 
                     string[] files = Directory.GetFiles(Folder_Path, "*.xlsx");
-
-                    const int batchSize = 8;
-                    for (int i = 0; i < files.Length; i += batchSize)
+                    foreach (string file in files)
                     {
-                        var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file));
-                        await Task.WhenAll(batch);
+                        await Process_Files(file);
                     }
+                    //const int batchSize = 8;
+                    //for (int i = 0; i < files.Length; i += batchSize)
+                    //{
+                    //    var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file));
+                    //    await Task.WhenAll(batch);
+                    //}
 
                     DbManager.CloseConnection();
                 }

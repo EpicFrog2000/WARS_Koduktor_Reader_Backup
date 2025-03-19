@@ -181,28 +181,12 @@ namespace Excel_Data_Importer_WARS
         }
         public static string Truncate(string? value, int maxLength) =>
             string.IsNullOrEmpty(value) ? string.Empty : value.Length > maxLength ? value[..maxLength] : value;
-        public static Typ_Insert_Obecnosc Get_Typ_Insert_Obecnosc(int Rok, int Miesiac, int Dzien, List<TimeSpan> Godziny_Pracy_Od,
-            List<TimeSpan> Godziny_Pracy_Do,
+        public static Typ_Insert_Obecnosc Get_Typ_Insert_Obecnosc(List<TimeSpan> Godziny_Pracy_Od,
             decimal Liczba_Godzin_Nadliczbowych_50 = 0,
             decimal Liczba_Godzin_Nadliczbowych_100 = 0,
             decimal Liczba_Godzin_Nadliczbowych_W_Ryczalcie_50 = 0,
             decimal Liczba_Godzin_Nadliczbowych_W_Ryczalcie_100 = 0)
         {
-            DateTime startDate = new(Rok, Miesiac, 1);
-            DateTime endDate = new(Rok, Miesiac, DateTime.DaysInMonth(Rok, Miesiac));
-
-            bool found = false;
-            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
-            {
-                if(dzien.Day == Dzien)
-                {
-                    found = true;
-                }
-            }
-            if (!found)
-            {
-                return Typ_Insert_Obecnosc.Zerowka;
-            }
 
             if (Godziny_Pracy_Od.Count >= 1)
             {
@@ -221,30 +205,17 @@ namespace Excel_Data_Importer_WARS
             }
         }
 
-        public static Typ_Insert_Obecnosc Get_Typ_Insert_Plan(int Rok, int Miesiac, int Dzien, TimeSpan Godzina_Pracy_Od, TimeSpan Godzina_Pracy_Do)
+        public static Typ_Insert_Obecnosc Get_Typ_Insert_Plan(TimeSpan Godzina_Pracy_Od, TimeSpan Godzina_Pracy_Do)
         {
-            DateTime startDate = new(Rok, Miesiac, 1);
-            DateTime endDate = new(Rok, Miesiac, DateTime.DaysInMonth(Rok, Miesiac));
-
-            bool found = false;
-            for (DateTime dzien = startDate; dzien <= endDate; dzien = dzien.AddDays(1))
+            if (Godzina_Pracy_Od == TimeSpan.Zero && Godzina_Pracy_Od == Godzina_Pracy_Do)
             {
-                if (dzien.Day == Dzien)
-                {
-                    found = true;
-                }
+                return Typ_Insert_Obecnosc.Nieinsertuj;
             }
-            if (!found)
-            {
-                return Typ_Insert_Obecnosc.Zerowka;
-            }
-
-            if(Godzina_Pracy_Od == Godzina_Pracy_Do)
+            if (Godzina_Pracy_Od == Godzina_Pracy_Do)
             {
                 return Typ_Insert_Obecnosc.Nieinsertuj;
             }
             return Typ_Insert_Obecnosc.Normalna;
-
         }
 
         public static class Pomiar
