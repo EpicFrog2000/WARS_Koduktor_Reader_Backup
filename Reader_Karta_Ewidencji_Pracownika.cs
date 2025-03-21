@@ -357,6 +357,7 @@ namespace Excel_Data_Importer_WARS
             {
                 // case 5:
                 // KARTA  PRACY: NAZWISKO IMIĘ ||| Imie | NAzwisko, akronim ;
+                // TODO DODAĆ Nazwisko Imie Akronim
 
                 case 0: // Karta pracy: Nazwisko Imie #lub# Karta pracy: Nazwisko Imie akronim #lub# Karta pracy: akronim Nazwisko Imie
                     dane = Zakladka.Cell(StartKarty.Row - 2, StartKarty.Col).GetFormattedString().Trim().Replace("  ", " ");
@@ -756,18 +757,15 @@ namespace Excel_Data_Importer_WARS
 
                 int IdPracownika = -1;
                 IdPracownika = Karta_Ewidencji_Pracownika.Pracownik.Get_PraId();
-
-
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                     command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = (int)Strefa;
                     duplicate = (int)command.ExecuteScalar() == 1;
                 }
-
                 // Jest tak bo robiony jest update jeśli chodzi o delegacje
                 using (SqlCommand command = new(DbManager.Check_Duplicate_Obecnosc, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                 {
@@ -775,19 +773,19 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                     command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                     command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.Czas_Pracy_W_Delegacji;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = (int)Helper.Strefa.Czas_Pracy_W_Delegacji;
                     duplicateDE = (int)command.ExecuteScalar() == 1;
                 }
-
                 if (!duplicate && !duplicateDE)
                 {
+                    
                     using (SqlCommand command = new(DbManager.Insert_Obecnosci, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
                         command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                         command.Parameters.Add("@DataInsert", SqlDbType.DateTime).Value = Data_Karty;
                         command.Parameters.Add("@PRI_PraId", SqlDbType.Int).Value = IdPracownika;
-                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
+                        command.Parameters.Add("@Strefa", SqlDbType.Int).Value = (int)Strefa;
                         command.Parameters.Add("@ImieMod", SqlDbType.NVarChar, 20).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20);
                         command.Parameters.Add("@NazwiskoMod", SqlDbType.NVarChar, 50).Value = Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50);
                         command.Parameters.Add("@DataMod", SqlDbType.DateTime).Value = Internal_Error_Logger.Last_Mod_Time;
@@ -830,8 +828,8 @@ namespace Excel_Data_Importer_WARS
                     using (SqlCommand command = new(DbManager.Check_Duplicate_Odbior_Nadgodzin, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                     {
                         command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                        command.Parameters.AddWithValue("@Strefa", Helper.Strefa.Czas_Pracy_Podstawowy);
-                        command.Parameters.AddWithValue("@Odb_Nadg", Helper.Odb_Nadg.W_PŁ);
+                        command.Parameters.AddWithValue("@Strefa", (int)Helper.Strefa.Czas_Pracy_Podstawowy);
+                        command.Parameters.AddWithValue("@Odb_Nadg", (int)Helper.Odb_Nadg.W_PŁ);
                         command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                         command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                         command.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
@@ -846,19 +844,18 @@ namespace Excel_Data_Importer_WARS
                         {
                             if (dane_Dni.Liczba_Godzin_Do_Odbioru_Za_Prace_W_Nadgodzinach > 0)
                             {
-                                ilosc_wpisow++;
                                 using (SqlCommand command = new(DbManager.Insert_Odbior_Nadgodzin, DbManager.GetConnection(), DbManager.Transaction_Manager.CurrentTransaction))
                                 {
                                     command.Parameters.AddWithValue("@DataInsert", DateTime.Parse($"{karta.Rok}-{karta.Miesiac:D2}-{dane_Dni.Dzien:D2}"));
                                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = godzOdDate;
                                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = godzDoDate;
                                     command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                                    command.Parameters.AddWithValue("@Strefa", Helper.Strefa.Czas_Pracy_Podstawowy); 
-                                    command.Parameters.AddWithValue("@Odb_Nadg", Helper.Odb_Nadg.W_PŁ);
+                                    command.Parameters.AddWithValue("@Strefa", (int)Helper.Strefa.Czas_Pracy_Podstawowy); 
+                                    command.Parameters.AddWithValue("@Odb_Nadg", (int)Helper.Odb_Nadg.W_PŁ);
                                     command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                                     command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                                     command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
-                                    command.ExecuteScalar();
+                                    ilosc_wpisow += command.ExecuteNonQuery();
                                 }
                             }
                         }

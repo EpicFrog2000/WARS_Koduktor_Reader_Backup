@@ -297,7 +297,7 @@ namespace Excel_Data_Importer_WARS
                         var daneKarty = grafik.Dane_Dni.FirstOrDefault(d => d.Nr_Dnia == dzien);
                         if (daneKarty == null)
                         {
-                            Zrob_Insert_Plan_command(grafik.Pracownik, DateTime.ParseExact($"{grafik.Rok}-{grafik.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero);
+                            Zrob_Insert_Plan_command(grafik.Pracownik, Data_Karty, TimeSpan.Zero, TimeSpan.Zero);
                             continue;
                         }
 
@@ -368,7 +368,7 @@ namespace Excel_Data_Importer_WARS
                     command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
                     command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                     command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Helper.Strefa.undefined;
+                    command.Parameters.Add("@Strefa", SqlDbType.Int).Value = (int)Helper.Strefa.undefined;
                     command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                     command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                     command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);

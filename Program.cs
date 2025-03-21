@@ -7,6 +7,8 @@ namespace Excel_Data_Importer_WARS
 {
     static class Program
     {
+        //TODO podobno zmieniała się znowu struktura plików xddddd
+        // wiec czekam na nowe pliki i trzeba to zakodować. Pora umierać.
         private static readonly Error_Logger error_logger = new(true); // true - Console write message on creating new error
         private static readonly Config config = new();
         private static readonly bool LOG_TO_TERMINAL = true;
@@ -79,12 +81,12 @@ namespace Excel_Data_Importer_WARS
                     string[] files = Directory.GetFiles(Folder_Path, "*.xlsx");
                     foreach (string file in files)
                     {
-                        await Process_Files(file);
+                        await Process_File(file);
                     }
                     //const int batchSize = 8;
                     //for (int i = 0; i < files.Length; i += batchSize)
                     //{
-                    //    var batch = files.Skip(i).Take(batchSize).Select(file => Process_Files(file));
+                    //    var batch = files.Skip(i).Take(batchSize).Select(file => Process_File(file));
                     //    await Task.WhenAll(batch);
                     //}
 
@@ -98,7 +100,7 @@ namespace Excel_Data_Importer_WARS
             }
             Console.WriteLine("Czas wykonania programu: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\:fff"));
         }
-        private static async Task Process_Files(string File_Path)
+        private static async Task Process_File(string File_Path)
         {
             Stopwatch PomiaryStopWatch = new();
             PomiaryStopWatch.Restart();
@@ -159,7 +161,7 @@ namespace Excel_Data_Importer_WARS
                             await Reader_Tabela_Stawek_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Karta_Ewidencji_Konduktora:
-                            Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1;
+                            Obecny_Numer_Zakladki = Ilosc_Zakladek_W_Workbook + 1; // Czyta tylko pierwszą zakładkę
                             await Reader_Karta_Ewidencji_Konduktora_v1.Process_Zakladka(Zakladka, Internal_Error_Logger);
                             break;
                         case Helper.Typ_Zakladki.Karta_Ewidencji_Pracownika:

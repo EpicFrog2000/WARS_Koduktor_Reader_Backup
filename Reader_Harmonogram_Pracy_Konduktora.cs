@@ -176,10 +176,10 @@ namespace Excel_Data_Importer_WARS
                             Internal_Error_Logger.New_Error(dane, "Godzina Zakonczenia Pracy", pozycja.Col + 5, pozycja.Row + offset, "Zły format");
                         }
                     }
-                    else
-                    {
-                        Internal_Error_Logger.New_Error(dane, "Godzina Zakonczenia Pracy", pozycja.Col + 5, pozycja.Row + offset, "Brak godziny zakończenia w tym dniu");
-                    }
+                    //else
+                    //{
+                    //    Internal_Error_Logger.New_Error(dane, "Godzina Zakonczenia Pracy", pozycja.Col + 5, pozycja.Row + offset, "Brak godziny zakończenia w tym dniu");
+                    //}
                 }
 
 
@@ -315,15 +315,15 @@ namespace Excel_Data_Importer_WARS
                     var daneKarty = Harmonogram_Pracy_Konduktora.Dane_Harmonogramu.FirstOrDefault(d => d.Dzien == dzien);
                     if (daneKarty == null)
                     {
-                        Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), TimeSpan.Zero, TimeSpan.Zero, Helper.Strefa.undefined, "");
+                        Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, Data_Karty, TimeSpan.Zero, TimeSpan.Zero, Helper.Strefa.undefined, "");
                         continue;
                     }
 
                     // Tutaj zerówki akurat chyba są już automatycznie obsługiwane
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Godzina_Rozpoczecia_Pracy, daneKarty.Godzina_Zakonczenia_Pracy, Helper.Strefa.Czas_Pracy_Podstawowy, daneKarty.Relacja.Numer_Relacji);
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Pracy_Poza_Relacja_Od, daneKarty.Czas_Pracy_Poza_Relacja_Do, Helper.Strefa.Czas_Pracy_Poza_Relacją, daneKarty.Relacja.Numer_Relacji);
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Do, Helper.Strefa.Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
-                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, DateTime.ParseExact($"{Harmonogram_Pracy_Konduktora.Rok}-{Harmonogram_Pracy_Konduktora.Miesiac:D2}-{dzien:D2}", "yyyy-MM-dd", CultureInfo.InvariantCulture), daneKarty.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Do, Helper.Strefa.Czas_Odpoczynku_Nie_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, Data_Karty, daneKarty.Godzina_Rozpoczecia_Pracy, daneKarty.Godzina_Zakonczenia_Pracy, Helper.Strefa.Czas_Pracy_Podstawowy, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, Data_Karty, daneKarty.Czas_Pracy_Poza_Relacja_Od, daneKarty.Czas_Pracy_Poza_Relacja_Do, Helper.Strefa.Czas_Pracy_Poza_Relacją, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, Data_Karty, daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Wliczany_Do_CP_Do, Helper.Strefa.Odpoczynek_Czas_Odpoczynku_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
+                    dodano += Zrob_Insert_Plan_command(Harmonogram_Pracy_Konduktora.Konduktor, Data_Karty, daneKarty.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Od, daneKarty.Czas_Odpoczynku_Nie_Wliczany_Do_CP_Do, Helper.Strefa.Czas_Odpoczynku_Nie_Wliczany_Do_CP, daneKarty.Relacja.Numer_Relacji);
                 }
             }
             catch (Exception ex)
@@ -359,9 +359,8 @@ namespace Excel_Data_Importer_WARS
                 command.Parameters.Add("@GodzOdDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + startGodz);
                 command.Parameters.Add("@GodzDoDate", SqlDbType.DateTime).Value = (DateTime)(DbManager.Base_Date + endGodz);
                 command.Parameters.AddWithValue("@PRI_PraId", IdPracownika);
-                command.Parameters.Add("@Strefa", SqlDbType.Int).Value = Strefa;
+                command.Parameters.Add("@Strefa", SqlDbType.Int).Value = (int)Strefa;
                 command.Parameters.Add("@NumerRelacji", SqlDbType.NVarChar, 100).Value = Numer_Relacji;
-
                 command.Parameters.AddWithValue("@ImieMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 20));
                 command.Parameters.AddWithValue("@NazwiskoMod", Helper.Truncate(Internal_Error_Logger.Last_Mod_Osoba, 50));
                 command.Parameters.AddWithValue("@DataMod", Internal_Error_Logger.Last_Mod_Time);
@@ -371,3 +370,5 @@ namespace Excel_Data_Importer_WARS
         }
     }
 }
+
+// TODO dodać do cdn.PracPlanDni kolumnę PPL_Relacja na prod i na testowej

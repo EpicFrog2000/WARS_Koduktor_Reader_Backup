@@ -6,8 +6,9 @@ namespace Excel_Data_Importer_WARS
 {
     internal static class DbManager
     {
+        //TODO uproscic te gówno kurwa śmierdzące jebane zapytania (robota Kamila)
         public static readonly string Insert_Odbior_Nadgodzin = @"
-    DECLARE @PRA_PraId INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = @PRI_PraId);
+    DECLARE @PRA_PraId INT = (SELECT PracKod.PRA_PraId FROM CDN.PracKod where PRA_Kod = CAST(@PRI_PraId AS varchar(MAX)))
     DECLARE @EXISTSDZIEN DATETIME = (SELECT PracPracaDni.PPR_Data FROM cdn.PracPracaDni WHERE PPR_PraId = @PRA_PraId and PPR_Data = @DataInsert)
     IF @EXISTSDZIEN is null
     BEGIN
@@ -23,7 +24,7 @@ namespace Excel_Data_Importer_WARS
                         ,[PPR_OpeZalNazwisko]
                         ,[PPR_Zrodlo])
                     VALUES
-                        (@PRI_PraId
+                        (CAST(@PRI_PraId AS varchar(MAX))
                         ,@DataInsert
                         ,GETDATE()
                         ,GETDATE()
@@ -48,7 +49,7 @@ namespace Excel_Data_Importer_WARS
 		    PGR_Uwagi,
 		    PGR_OdbNadg)
 	    VALUES
-		    ((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = @PRI_PraId),
+		    ((select PPR_PprId from cdn.PracPracaDni where CAST(PPR_Data as datetime) = @DataInsert and PPR_PraId = CAST(@PRI_PraId AS varchar(MAX))),
 		    1,
 		    DATEADD(MINUTE, 0, @GodzOdDate),
 		    DATEADD(MINUTE, 0, @GodzDoDate),
@@ -65,7 +66,7 @@ namespace Excel_Data_Importer_WARS
         SELECT COUNT(*)
         FROM CDN.PracPracaDniGodz 
         WHERE PGR_OdbNadg = 4
-            AND PGR_Strefa = 2
+            AND PGR_Strefa = @Strefa
             AND PGR_OdGodziny = DATEADD(MINUTE, 0, @GodzOdDate)
             AND PGR_DoGodziny = DATEADD(MINUTE, 0, @GodzDoDate)
             AND PGR_PprId = (SELECT PPR_PprId FROM cdn.PracPracaDni WHERE CAST(PPR_Data AS datetime) = @DataInsert AND PPR_PraId = @PRI_PraId)
@@ -408,9 +409,9 @@ END";
         public static readonly string Get_PRI_PraId = @"
 DECLARE @PRI_PraId INT = NULL;
 
-IF @Akronim IS NOT NULL AND @Akronim != 0
+IF @Akronim IS NOT NULL AND @Akronim > 0
 BEGIN
-    SELECT @PRI_PraId = PRA_PraId FROM CDN.PracKod WHERE PRA_Kod = @Akronim;
+    SELECT @PRI_PraId = PRA_PraId FROM CDN.PracKod WHERE PRA_Kod = CAST(@Akronim AS nvarchar(MAX));
 END
 
 IF @PRI_PraId IS NULL
@@ -488,7 +489,6 @@ END
 ";
         public static readonly DateTime Base_Date = new(1899, 12, 30); // Do zapytan sql (zostawić z powodów historycznych xdd, tak powstało pół godzinki)
         private static string Connection_String = string.Empty;
-        
         public static void Build_Connection_String(string Nazwa_Serwera, string Nazwa_Bazy)
         {
             if (string.IsNullOrEmpty(Nazwa_Serwera))
@@ -521,7 +521,6 @@ END
                 return false;
             }
         }
-
         // Zrobione aby w programie bylo tylko 1 połączenie do bazy danych
         private static SqlConnection? Dbconnection = null;
         private static readonly object Blokada = new();
